@@ -1,25 +1,38 @@
-import logo from './logo.svg';
 import './App.css';
+import {BrowserRouter, Route, Routes} from "react-router-dom";
+import Homepage from "./components/homepage/homepage";
+import Login from "./components/login/login";
+import CustomNavbar from "./components/navbar/navbar";
+import Footer from "./components/footer/footer";
+import { ThemeContext } from "./Theme";
+import React, { useContext } from "react";
+import UserProfile from "./components/userProfile/userProfile";
 
 function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+    const { theme } = useContext(ThemeContext);
+
+    return (
+        <div className={`App ${theme}`}>
+            <BrowserRouter>
+                {/* Navbar */}
+                <CustomNavbar/>
+
+                <div className="min-vh-100 bg-light">
+                    <Routes>
+                        <Route path="/" element={<Homepage/>}/>
+                        <Route path="/userProfile" element={<UserProfile/>}/>
+                        <Route path="/login" element={<Login/>}/>
+                    </Routes>
+                </div>
+                {/* Routes */}
+
+
+                {/* Footer */}
+                <Footer/>
+
+            </BrowserRouter>
+        </div>
+    );
 }
 
 export default App;
