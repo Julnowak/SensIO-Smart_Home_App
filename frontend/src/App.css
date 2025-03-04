@@ -74,3 +74,32 @@
   --bg-secondary: var(--bg-secondary-dark);
   --bg-navbar: var(--bg-navbar-dark);
 }
+
+/* Light Theme */
+.white .navbar {
+    background-color: var(--bg-navbar-light) !important;
+}
+
+.white .navbar-brand,
+.white .nav-link {
+    color: var(--text-primary-light) !important;
+}
+
+/* Dark Theme */
+.dark .navbar {
+    background-color: var(--bg-navbar-dark) !important;
+}
+
+.dark .navbar-brand,
+.dark .nav-link {
+    color: var(--text-primary-dark) !important;
+}
+
+/* Navbar Toggle Button (Hamburger) */
+.navbar-toggler {
+    border-color: white !important;
+}
+
+.navbar-toggler-icon {
+    filter: invert(1); /* Makes it white */
+}

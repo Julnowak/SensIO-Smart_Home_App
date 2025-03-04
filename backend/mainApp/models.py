@@ -39,7 +39,6 @@ class AppUser(AbstractBaseUser, PermissionsMixin):
     address = models.CharField(max_length=200,blank=True, null=True)
     name = models.CharField(max_length=200,blank=True, null=True)
     surname = models.CharField(max_length=200,blank=True, null=True)
-    user_type = models.CharField(max_length=50, default="klient")
     profile_picture = models.ImageField(blank=True, null=True)
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']

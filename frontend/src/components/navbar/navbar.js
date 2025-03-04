@@ -5,10 +5,13 @@ import { ThemeContext } from "../../Theme";
 import "./navbar.css"
 import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
 import LoginRoundedIcon from '@mui/icons-material/LoginRounded';
+import Cookies from 'js-cookie';
 
 const CustomNavbar = () => {
     const { theme, toggleTheme } = useContext(ThemeContext);
 
+    // if (cook)
+    console.log(Cookies.get('csrftoken'))
     return (
         <div>
             {/* Navbar */}
