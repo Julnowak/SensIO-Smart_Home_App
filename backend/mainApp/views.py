@@ -9,6 +9,7 @@ from rest_framework import permissions, status
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from mainApp.models import AppUser
 from mainApp.serializers import UserRegisterSerializer, UserLoginSerializer
@@ -16,48 +17,11 @@ from mainApp.serializers import UserRegisterSerializer, UserLoginSerializer
 UserModel = get_user_model()
 
 
-def custom_validation(data):
-    email = data['email'].strip()
-    username = data['username'].strip()
-    password = data['password'].strip()
-
-    # if not email or UserModel.objects.filter(email=email).exists():
-    #     raise ValidationError('choose another email')
-    #
-    # if not password or len(password) < 8:
-    #     raise ValidationError('choose another password, min 8 characters')
-    #
-    # if not username:
-    #     raise ValidationError('choose another username')
-    return data
-
-
-def validate_email(data):
-    email = data['email'].strip()
-    if not email:
-        raise ValidationError('an email is needed')
-    return True
-
-
-def validate_username(data):
-    username = data['username'].strip()
-    if not username:
-        raise ValidationError('choose another username')
-    return True
-
-
-def validate_password(data):
-    password = data['password'].strip()
-    if not password:
-        raise ValidationError('a password is needed')
-    return True
-
-
 class UserRegister(APIView):
     permission_classes = (permissions.AllowAny,)
 
     def post(self, request):
-        validated_data = custom_validation(request.data)
+        validated_data = request.data
 
         if AppUser.objects.filter(username=validated_data['username'].lower()):
             return Response({"error": "Wybrana nazwa użytkownika już istnieje."}, status=status.HTTP_401_UNAUTHORIZED)
@@ -80,38 +44,35 @@ class UserRegister(APIView):
 
 
 class UserLogin(APIView):
-    permission_classes = (permissions.AllowAny,)
+    permission_classes = [permissions.AllowAny,]  # Allow any user to access this view
 
     def post(self, request):
-        data = request.data
-        print(data)
+        username = request.data.get("username")
+        password = request.data.get("password")
 
-        # Validate email and password
-        assert validate_email(data)
-        assert validate_password(data)
+        print(request.data)
 
-        serializer = UserLoginSerializer(data=data)
-        if serializer.is_valid(raise_exception=True):
-            user = authenticate(request, email=data['email'], password=data['password'])
-            try:
-                login(request, user)
+        # Ensure both fields are present
+        if not username or not password:
+            return Response({"error": "Username and password are required"}, status=status.HTTP_400_BAD_REQUEST)
 
-                user_data = {
-                    'id': user.user_id,
-                    'username': user.username,
-                    'email': user.email,
-                }
+        # Authenticate the user
+        user = authenticate(username=username, password=password)
 
-                print(user_data)
-                return Response(user_data, status=status.HTTP_200_OK)
-            except:
-                print("adadad")
-                return Response({"error": "Wprowadzono nieprawidłowy email lub hasło."}, status=status.HTTP_401_UNAUTHORIZED)
+        if user is None:
+            return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        login(request, user)
+
+        # Generate JWT tokens
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+        })
 
 
 class UserLogout(APIView):
-    permission_classes = (permissions.IsAuthenticated,)  # Only authenticated users can log out
-    authentication_classes = (SessionAuthentication,)  # Use session-based authentication
 
     def post(self, request):
         logout(request)  # This logs out the user (clears session)Clear the session cookie explicitly
@@ -120,7 +81,6 @@ class UserLogout(APIView):
 
 class OneUserData(APIView):
     permission_classes = (permissions.IsAuthenticated,)  # Only authenticated users can log out
-    authentication_classes = (SessionAuthentication, BasicAuthentication,)  # Use session-based authentication
 
     def get(self, request):
         print(request.user)

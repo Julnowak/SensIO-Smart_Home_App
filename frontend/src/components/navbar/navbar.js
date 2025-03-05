@@ -1,17 +1,18 @@
 import React, {useContext} from 'react';
 import {Container, Nav, Navbar} from "react-bootstrap";
-import {Link} from "react-router-dom";
+import {Link, Navigate} from "react-router-dom";
 import { ThemeContext } from "../../Theme";
 import "./navbar.css"
 import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
 import LoginRoundedIcon from '@mui/icons-material/LoginRounded';
 import Cookies from 'js-cookie';
+import {AuthContext, isUserAuthenticated} from "../../AuthContext";
+import {LogoutRounded} from "@mui/icons-material";
 
 const CustomNavbar = () => {
     const { theme, toggleTheme } = useContext(ThemeContext);
+    const {isAuthenticated} = useContext(AuthContext);
 
-    // if (cook)
-    console.log(Cookies.get('csrftoken'))
     return (
         <div>
             {/* Navbar */}
@@ -33,7 +34,10 @@ const CustomNavbar = () => {
                             <Nav.Link as={Link} to="/userProfile" className="text-white">Features</Nav.Link>
                             <Nav.Link as={Link} to="/about" className="text-white">About</Nav.Link>
                             <Nav.Link as={Link} to="/contact" className="text-white">Kontakt</Nav.Link>
-                            <Nav.Link as={Link} to="/login" className="text-white"><LoginRoundedIcon/></Nav.Link>
+                            {!isAuthenticated?
+                                <Nav.Link as={Link} to="/login" className="text-white"><LoginRoundedIcon/></Nav.Link>:
+                                <Nav.Link as={Link} to="/logout" className="text-white"><LogoutRounded/></Nav.Link>}
+
                         </Nav>
                     </Navbar.Collapse>
                 </Container>

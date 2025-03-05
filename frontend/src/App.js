@@ -11,27 +11,30 @@ import Main from "./components/main/main";
 import {API_BASE_URL} from "./config";
 import client from "./client";
 import CookieConsent from "./components/cookieConsent/cookieConsent";
+import {AuthProvider} from "./AuthContext";
+import Logout from "./components/logout/logout";
 
 function App() {
     const { theme } = useContext(ThemeContext);
 
     const [isLoading, setIsLoading] = useState(true);
 
-    useEffect(() => {
-
-        client.get(`${API_BASE_URL}/user/`)
-            .then(function () {
-                console.log("Zalogowano")
-            })
-            .catch(function () {
-                console.log("Nie udało się zalogować")
-            });
-
-    }, []);
+    // useEffect(() => {
+    //
+    //     client.get(`${API_BASE_URL}/user/`)
+    //         .then(function () {
+    //             console.log("Zalogowano")
+    //         })
+    //         .catch(function () {
+    //             console.log("Nie udało się zalogować")
+    //         });
+    //
+    // }, []);
 
     return (
         <div className={`App ${theme}`}>
             <BrowserRouter>
+                <AuthProvider>
                 {/* Navbar */}
                 <CustomNavbar/>
 
@@ -40,6 +43,7 @@ function App() {
                         <Route path="/" element={<Homepage/>}/>
                         <Route path="/userProfile" element={<UserProfile/>}/>
                         <Route path="/login" element={<Login/>}/>
+                        <Route path="/logout" element={<Logout/>}/>
                         <Route path="/main" element={<Main/>}/>
                     </Routes>
                 </div>
@@ -49,7 +53,7 @@ function App() {
                 {/* Footer */}
                 <Footer/>
                 {/*<CookieConsent/>*/}
-
+                </AuthProvider>
             </BrowserRouter>
         </div>
     );

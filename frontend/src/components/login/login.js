@@ -1,41 +1,20 @@
-import React, {useState} from 'react';
+import React, {useContext, useState} from 'react';
 import {Link} from "react-router-dom";
 import {Container, Button, Form, Card} from "react-bootstrap";
-import client from "../../client";
 import {useNavigate} from "react-router-dom";
-import {API_BASE_URL} from "../../config";
+import { AuthContext } from "../../AuthContext";
 
 const Login = () => {
+    const { loginUser } = useContext(AuthContext);
     const [errmess, setErrmess] = useState(null);
     const navigate = useNavigate()
     const [email, setEmail] = useState("");
-    const [username, setUsername] = useState(null);
     const [password, setPassword] = useState("");
 
     async function submitLogin(event) {
         event.preventDefault();
-        try {
-            console.log("dfwf")
-
-            // Perform login
-            const response = await client.post(
-                `${API_BASE_URL}/login/`,
-                {
-                    email: email,
-                    password: password,
-                    login: username
-                },
-            )
-
-            console.log(response.data)
-            if(response){
-                navigate("/main")
-            }
-
-        } catch (err) {
-            setErrmess("Podaj poprawny login lub hasło.");
-            console.error('Login failed:', err.message);
-        }
+        await loginUser(email, password);
+        navigate("/main")
     }
 
 

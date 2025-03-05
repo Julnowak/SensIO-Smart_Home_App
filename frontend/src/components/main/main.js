@@ -1,6 +1,8 @@
 import React from 'react';
 import {useState, useEffect} from "react";
 import {Card} from "react-bootstrap";
+import {isUserAuthenticated} from "../../AuthContext"
+import { Navigate } from 'react-router-dom';
 
 const sensorsMockData = [
     {id: 1, type: "temperature", value: 22.5, unit: "°C"},
@@ -24,6 +26,12 @@ const Main = () => {
         }, 5000);
         return () => clearInterval(interval);
     }, []);
+
+
+    if (!isUserAuthenticated()) {
+        // Redirect to login page if no token exists
+        return <Navigate to="/login" />;
+    }
 
     return (
         <div className="container min-vh-100 bg-dark text-white py-5 text-center">
