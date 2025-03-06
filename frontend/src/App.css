@@ -96,10 +96,45 @@
 }
 
 /* Navbar Toggle Button (Hamburger) */
-.navbar-toggler {
+.dark .navbar-toggler {
     border-color: white !important;
 }
 
-.navbar-toggler-icon {
+.dark .navbar-toggler-icon {
     filter: invert(1); /* Makes it white */
+}
+
+/* Navbar Toggle Button (Hamburger) */
+.white .navbar-toggler {
+    border-color: black !important;
+}
+
+.white .navbar-toggler-icon {
+    filter: invert(1); /* Makes it white */
+}
+
+/* FOOTER */
+.dark .footer {
+    background-color: black !important;
+    color: white !important;
+}
+
+.white .footer {
+    background-color: cornflowerblue !important;
+    color: black !important;
+}
+
+.white .header {
+    background-color: cornflowerblue !important;
+    color: black !important;
+}
+
+.white .background-main {
+    background-color: white !important;
+    color: black !important;
+}
+
+.dark .background-main {
+    background-color: black !important;
+    color: white !important;
 }

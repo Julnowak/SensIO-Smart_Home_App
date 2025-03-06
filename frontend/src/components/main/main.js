@@ -3,6 +3,8 @@ import {useState, useEffect} from "react";
 import {Card} from "react-bootstrap";
 import {isUserAuthenticated} from "../../AuthContext"
 import { Navigate } from 'react-router-dom';
+import {PieChart} from "@mui/x-charts";
+import Droplet from "../../graphical_elements/droplet";
 
 const sensorsMockData = [
     {id: 1, type: "temperature", value: 22.5, unit: "°C"},
@@ -51,6 +53,22 @@ const Main = () => {
                     </div>
                 ))}
             </div>
+
+            {/*<PieChart*/}
+            {/*  series={[*/}
+            {/*    {*/}
+            {/*      data: [*/}
+            {/*        { id: 0, value: 10, label: 'series A' },*/}
+            {/*        { id: 1, value: 15, label: 'series B' },*/}
+            {/*        { id: 2, value: 20, label: 'series C' },*/}
+            {/*      ],*/}
+            {/*    },*/}
+            {/*  ]}*/}
+            {/*  width={400}*/}
+            {/*  height={200}*/}
+            {/*/>*/}
+
+            <Droplet fillPercentage={60} />
             <div
                 className="mt-4 p-3 bg-secondary text-white rounded shadow-lg d-flex align-items-center justify-content-center">
                 {/*<Lightbulb className={ledState ? "text-warning me-3" : "text-muted me-3"}/>*/}

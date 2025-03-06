@@ -62,20 +62,20 @@ class Home(models.Model):
         return "Dom " + str(self.home_id)
 
 
-class Sensor(models.Model):
-    sensor_id = models.AutoField(primary_key=True)
+class Device(models.Model):
+    device_id = models.AutoField(primary_key=True)
     home = models.ForeignKey(Home, on_delete=models.CASCADE)
-    name = models.CharField(max_length=200, default="Czujnik " + str(sensor_id))
+    name = models.CharField(max_length=200, default="Czujnik " + str(device_id))
     created_at = models.DateField()
 
     def __str__(self):
-        return "Czujnik " + str(self.sensor_id)
+        return "Czujnik " + str(self.device_id)
 
 
 class Measurement(models.Model):
     measurement_id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=200, default="Pomiar " + str(measurement_id))
-    sensor = models.ForeignKey(Sensor, on_delete=models.CASCADE)
+    sensor = models.ForeignKey(Device, on_delete=models.CASCADE)
     value = models.DecimalField(default=0.00, decimal_places=10, max_digits=20)
     # type = models.
     created_at = models.DateField()
