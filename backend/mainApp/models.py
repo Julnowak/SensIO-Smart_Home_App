@@ -53,8 +53,11 @@ class AppUser(AbstractBaseUser, PermissionsMixin):
 
 class Home(models.Model):
     home_id = models.AutoField(primary_key=True)
-    localization = models.DecimalField(default=0.00, decimal_places=2, max_digits=3)
-    name = models.CharField(max_length=200, default="Dom " + str(home_id))
+    name = models.CharField(max_length=200)
+    address = models.CharField(max_length=500, null=True, blank=True)
+    regards = models.TextField(max_length=1000, default=None, null=True, blank=True)
+    owner = models.ForeignKey(AppUser, on_delete=models.CASCADE, blank=True, null=True)
+    floor_num = models.IntegerField(default=1)
     code = models.CharField(max_length=100, default=get_random_string(length=20))
     created_at = models.DateField()
 

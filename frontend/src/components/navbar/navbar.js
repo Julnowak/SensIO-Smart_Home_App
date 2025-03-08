@@ -59,10 +59,10 @@ const CustomNavbar = () => {
                             {!isAuthenticated ?
                                 null
                                 :
-                                <span>
-                                    <Nav.Link href="/charts" className="text-white">Wykresy</Nav.Link>
+                                <>
+                                    <Nav.Link href="/dashboard" className="text-white">Wykresy</Nav.Link>
                                     <Nav.Link href="/history" className="text-white">Historia</Nav.Link>
-                                </span>
+                                </>
                             }
 
                             {!isAuthenticated ?

@@ -40,7 +40,7 @@
 
 
 :root {
-  --primary-blue: rgb(0, 0, 255);
+  --primary-blue: #4d4351;
   --secondary-blue: rgb(96, 96, 182);
 
   --text-primary-light: black;
@@ -55,8 +55,8 @@
   --bg-secondary-light: rgb(212, 212, 212);
   --bg-secondary-dark: rgb(34, 34, 34);
 
-  --bg-navbar-light: rgb(104, 104, 255);
-  --bg-navbar-dark: rgb(29, 29, 58);
+  --bg-navbar-light: #958c9b;
+  --bg-navbar-dark: #41304a;
 }
 
 .white {
@@ -115,12 +115,12 @@
 
 /* FOOTER */
 .dark .footer {
-    background-color: black !important;
+    background-color: var(--bg-navbar-dark) !important;
     color: white !important;
 }
 
 .white .footer {
-    background-color: cornflowerblue !important;
+    background-color: var(--bg-navbar-light) !important;
     color: black !important;
 }
 
@@ -135,6 +135,43 @@
 }
 
 .dark .background-main {
-    background-color: black !important;
+    background-color: #2a2929 !important;
     color: white !important;
 }
+
+
+/* Stylizacja scrollbara */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #222;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.58);
+
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #000000;
+}
+
+::-webkit-scrollbar-button {
+  display: none;
+}
+
+
+/*.white ::-webkit-scrollbar-track {*/
+/*  background: #cbcbcb;*/
+/*}*/
+
+/*.white ::-webkit-scrollbar-thumb {*/
+/*  background: #9f9f9f;*/
+
+/*}*/
+
+/*.white ::-webkit-scrollbar-thumb:hover {*/
+/*  background: #818181;*/
+/*}*/

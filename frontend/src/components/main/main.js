@@ -4,7 +4,8 @@ import {Card} from "react-bootstrap";
 import {isUserAuthenticated} from "../../AuthContext"
 import { Navigate } from 'react-router-dom';
 import {PieChart} from "@mui/x-charts";
-import Droplet from "../../graphical_elements/droplet";
+import Droplet from "../graphical_elements/droplet";
+import EditableCanvas from "../editableCanvas/editableCanvas";
 
 const sensorsMockData = [
     {id: 1, type: "temperature", value: 22.5, unit: "°C"},
@@ -75,6 +76,8 @@ const Main = () => {
                 <span className="h5">LED Control</span>
                 {/*<Switch className="ms-3" checked={ledState} onCheckedChange={setLedState}/>*/}
             </div>
+
+            <EditableCanvas/>
         </div>
     );
 };

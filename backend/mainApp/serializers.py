@@ -4,6 +4,8 @@ from rest_framework import serializers
 # from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, get_user_model
 
+from mainApp.models import Home
+
 UserModel = get_user_model()
 
 
@@ -38,3 +40,8 @@ class UserSerializer(serializers.ModelSerializer):
         model = UserModel
         fields = '__all__'
 
+
+class HomeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Home
+        fields = '__all__'

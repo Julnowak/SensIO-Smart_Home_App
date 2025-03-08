@@ -6,7 +6,9 @@ urlpatterns = [
     path('register/', views.UserRegister.as_view(), name='register'),
     path('login/', views.UserLogin.as_view(), name='login'),
     path('logout/', views.UserLogout.as_view(), name='logout'),
-    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('token/refresh/', TokenRefreshView.as_view(), name='token-refresh'),
 
     path('user/', views.OneUserData.as_view(), name='user'),
+    path('myHomes/', views.UserHomesData.as_view(), name='my-homes'),
+    path('home/<int:home_id>', views.HomeData.as_view(), name='home'),
 ]

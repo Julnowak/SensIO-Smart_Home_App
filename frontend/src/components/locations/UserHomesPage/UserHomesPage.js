@@ -1,30 +1,55 @@
 import React, {useState, useEffect} from "react";
+import client from "../../../client";
+import {API_BASE_URL} from "../../../config";
+import {Lia500Px} from "react-icons/lia";
 
 const UserHomesPage = () => {
-    const exampleLocations = [
-        {id: 1, name: "Warszawa", description: "Stolica Polski"},
-        {id: 2, name: "Kraków", description: "Miasto Królów"},
-        {id: 3, name: "Gdańsk", description: "Port nad Bałtykiem"},
-        {id: 4, name: "Wrocław", description: "Miasto mostów"},
-        {id: 5, name: "Poznań", description: "Miasto koziołków"},
-        {id: 6, name: "Łódź", description: "Miasto przemysłu"}
-    ];
+    // const exampleLocations = [
+    //     {id: 1, name: "Warszawa", description: "Stolica Polski"},
+    //     {id: 2, name: "Kraków", description: "Miasto Królów"},
+    //     {id: 3, name: "Gdańsk", description: "Port nad Bałtykiem"},
+    //     {id: 4, name: "Wrocław", description: "Miasto mostów"},
+    //     {id: 5, name: "Poznań", description: "Miasto koziołków"},
+    //     {id: 6, name: "Łódź", description: "Miasto przemysłu"}
+    // ];
 
-    const [locations, setLocations] = useState(exampleLocations);
-    const [filteredLocations, setFilteredLocations] = useState(exampleLocations);
+    const [locations, setLocations] = useState([]);
+    const [filteredLocations, setFilteredLocations] = useState([]);
     const [search, setSearch] = useState("");
     const [newLocation, setNewLocation] = useState({name: "", description: ""});
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
+    const token = localStorage.getItem("access");
 
+    useEffect(() => {
+        const fetchLocations = async () => {
+            try {
+                const response = await client.get(API_BASE_URL + "myHomes/", {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+                console.log(response.data);
+                setLocations(response.data);  // Update locations with fetched data
+                setFilteredLocations(response.data); // Initialize filtered locations
+            } catch (error) {
+                console.error("Failed to fetch locations", error);
+            }
+        };
+
+        if (token) {
+            fetchLocations();
+        }
+    }, [token]); // Fetch data only when token changes
+
+// Filtering logic runs separately
     useEffect(() => {
         const filtered = locations.filter((location) =>
             location.name.toLowerCase().includes(search.toLowerCase())
         );
         setFilteredLocations(filtered);
         setCurrentPage(1);
-    }, [search, locations]);
-
+    }, [search, locations]); // Runs when search or locations change
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
     const currentItems = filteredLocations.slice(indexOfFirstItem, indexOfLastItem);
@@ -67,10 +92,12 @@ const UserHomesPage = () => {
             </div>
             <ul className="list-group mb-3">
                 {currentItems.map((location) => (
+                    <a href={`/home/${location.home_id}`}>
                     <li key={location.id} className="list-group-item">
                         <h5>{location.name}</h5>
                         <p>{location.description}</p>
                     </li>
+                    </a>
                 ))}
             </ul>
             <div className="d-flex justify-content-between">

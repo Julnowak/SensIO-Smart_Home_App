@@ -14,9 +14,12 @@ import CookieConsent from "./components/cookieConsent/cookieConsent";
 import {AuthProvider} from "./AuthContext";
 import Logout from "./components/logout/logout";
 import History from "./components/history/history";
-import UserDevicesPage from "./components/UserDevicesPage/UserDevicesPage";
-import UserHomesPage from "./components/UserHomesPage/UserHomesPage";
+import UserDevicesPage from "./components/userDevicesPage/UserDevicesPage";
+import UserHomesPage from "./components/locations/UserHomesPage/UserHomesPage";
 import DevicePage from "./components/DevicePage/DevicePage";
+import AddHome from "./components/locations/addHome/addHome";
+import BuildingPage from "./components/BuildingPage/BuildingPage";
+import Dashboard from "./components/dashboard/dashboard";
 
 function App() {
     const { theme } = useContext(ThemeContext);
@@ -52,7 +55,10 @@ function App() {
                         <Route path="/history" element={<History/>}/>
                         <Route path="/myDevices" element={<UserDevicesPage/>}/>
                         <Route path="/myHomes" element={<UserHomesPage/>}/>
+                        <Route path="/addHome" element={<AddHome/>}/>
+                        <Route path="/dashboard" element={<Dashboard/>}/>
                         <Route path="/device/:id" element={<DevicePage/>}/>
+                        <Route path="/home/:id" element={<BuildingPage/>}/>
                     </Routes>
                 </div>
                 {/* Routes */}
