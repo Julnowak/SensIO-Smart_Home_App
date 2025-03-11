@@ -4,7 +4,7 @@ from rest_framework import serializers
 # from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, get_user_model
 
-from mainApp.models import Home
+from mainApp.models import Home, Device
 
 UserModel = get_user_model()
 
@@ -44,4 +44,10 @@ class UserSerializer(serializers.ModelSerializer):
 class HomeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Home
+        fields = '__all__'
+
+
+class DeviceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Device
         fields = '__all__'

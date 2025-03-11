@@ -1,0 +1,5 @@
+@media (max-width: 500px) {
+    .button-text {
+        display: none;
+    }
+}

@@ -1,16 +1,49 @@
-import React, {useContext} from 'react';
+import React, {useContext, useEffect, useState} from 'react';
 import {Container, Nav, Navbar, NavDropdown} from "react-bootstrap";
-import {Link} from "react-router-dom";
 import {ThemeContext} from "../../Theme";
 import "./navbar.css"
 import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
 import LoginRoundedIcon from '@mui/icons-material/LoginRounded';
 import {AuthContext} from "../../AuthContext";
 import {LogoutRounded} from "@mui/icons-material";
+import client from "../../client";
+import {API_BASE_URL} from "../../config";
 
 const CustomNavbar = () => {
     const {theme, toggleTheme} = useContext(ThemeContext);
     const {isAuthenticated} = useContext(AuthContext);
+    const [image, setImage] = useState(null);
+    const token = localStorage.getItem("access");
+    const image_set = localStorage.getItem("image_set")
+    let flag = false;
+
+    useEffect(() => {
+        const fetchUserData = async () => {
+            try {
+                const response = await client.get(API_BASE_URL + "user/", {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+                setImage(response.data.profile_picture.slice(15));
+                localStorage.setItem("image_set", response.data.profile_picture.slice(15))
+            } catch (error) {
+                console.log("Nie udało się zalogować");
+            }
+        };
+
+        if (!flag){
+            if (token && !image_set) {
+                fetchUserData();
+            }
+            else {
+                setImage(image_set)
+            }
+            flag = true;
+        }
+
+
+    }, [image, image_set, token]);
 
     return (
         <div>
@@ -34,21 +67,25 @@ const CustomNavbar = () => {
                                 <Nav.Link href="/main" className="text-white"><HomeRoundedIcon/></Nav.Link>
                             }
                             <div className="header-toggle-buttons">
-                                <button onClick={() => toggleTheme()}>{theme}</button>
+                                <button style={{width: 70, height: 40}} onClick={() => toggleTheme()} >{theme}</button>
                             </div>
 
                             {!isAuthenticated ?
                                 null
                                 :
                                 <NavDropdown title="Zarządzaj" id="basic-nav-dropdown">
-                                    <NavDropdown.Item href="/myHomes">Moje lokacje</NavDropdown.Item>
+                                    <NavDropdown.Item href="/myHomes">
+                                        Moje lokacje
+                                    </NavDropdown.Item>
                                     <NavDropdown.Item href="/myDevices">
                                         Moje urządzenia
                                     </NavDropdown.Item>
-                                    <NavDropdown.Item href="#action/3.3">Reguły</NavDropdown.Item>
+                                    <NavDropdown.Item href="/myRooms">
+                                        Moje pomieszczenia
+                                    </NavDropdown.Item>
                                     <NavDropdown.Divider/>
-                                    <NavDropdown.Item href="#action/3.4">
-                                        Separated link
+                                    <NavDropdown.Item href="/rules">
+                                        Reguły
                                     </NavDropdown.Item>
                                 </NavDropdown>
                             }
@@ -69,7 +106,7 @@ const CustomNavbar = () => {
                                 null
                                 :
                                 <Nav.Link href="/userProfile" className="text-white">
-                                    <img width={35} src={"/images/doggo_big.png"}/>
+                                    <img width={35} style={{borderRadius: 17}} src={image}/>
                                 </Nav.Link>
                             }
 

@@ -1,7 +1,10 @@
+import datetime
+
 from django.db import models
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.utils.crypto import get_random_string
+from django.utils.timezone import now
 
 # Create your models here.
 class AppUserManager(BaseUserManager):
@@ -59,17 +62,39 @@ class Home(models.Model):
     owner = models.ForeignKey(AppUser, on_delete=models.CASCADE, blank=True, null=True)
     floor_num = models.IntegerField(default=1)
     code = models.CharField(max_length=100, default=get_random_string(length=20))
-    created_at = models.DateField()
+    current = models.BooleanField(default=False)
+    created_at = models.DateField(default=now)
 
     def __str__(self):
         return "Dom " + str(self.home_id)
 
 
+class Floor(models.Model):
+    floor_id = models.AutoField(primary_key=True)
+    home = models.ForeignKey(Home, on_delete=models.CASCADE)
+    floor_number = models.IntegerField()
+
+    def __str__(self):
+        return "Piętro " + str(self.floor_id)
+
+
+class Room(models.Model):
+    room_id = models.AutoField(primary_key=True)
+    home = models.ForeignKey(Home, on_delete=models.CASCADE)
+    floor = models.ForeignKey(Floor, on_delete=models.CASCADE, null=True, blank=True)
+    name = models.CharField(max_length=200, default="Pokój")
+    light = models.BooleanField(default=False)
+    warning = models.BooleanField(default=False)
+    position = models.JSONField()
+
+    def __str__(self):
+        return "Pokój " + str(self.room_id)
+
+
 class Device(models.Model):
     device_id = models.AutoField(primary_key=True)
-    home = models.ForeignKey(Home, on_delete=models.CASCADE)
-    name = models.CharField(max_length=200, default="Czujnik " + str(device_id))
-    created_at = models.DateField()
+    room = models.ForeignKey(Room, on_delete=models.CASCADE, blank=True, null=True)
+    name = models.CharField(max_length=200)
 
     def __str__(self):
         return "Czujnik " + str(self.device_id)

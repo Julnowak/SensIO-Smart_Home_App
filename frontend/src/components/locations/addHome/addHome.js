@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import EditableCanvas from "../../editableCanvas/editableCanvas";
 
 const AddHome = () => {
   const [name, setName] = useState("");
@@ -19,9 +20,12 @@ const AddHome = () => {
   };
 
   return (
-    <div className="container mt-4">
-      <div className="card p-3 mb-3">
-        <div className="mb-2">
+    <div style={{margin: "auto"}}>
+
+      <div className="p-3 mb-3">
+
+        <div style={{margin: 30, maxWidth: 1000}}>
+          <h1 style={{textAlign: "left"}}>Nowa lokacja</h1>
           <input
             type="text"
             className="form-control"
@@ -29,7 +33,7 @@ const AddHome = () => {
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
-        </div>
+
         <div className="mb-2">
           <input
             type="text"
@@ -53,20 +57,14 @@ const AddHome = () => {
         {Array.from({ length: floors }, (_, floorIndex) => (
           <div key={floorIndex} className="card p-3 mb-2">
             <h5 className="card-title">Piętro {floorIndex + 1}</h5>
-            <button className="btn btn-primary mb-2" onClick={() => handleAddRoom(floorIndex)}>
-              Dodaj pokój
-            </button>
-            <div className="d-flex flex-wrap">
-              {rooms[floorIndex]?.map((room, index) => (
-                <div key={room.id} className="border p-2 m-1">
-                  {room.type} {index + 1}
-                </div>
-              ))}
-            </div>
+            <EditableCanvas/>
           </div>
         ))}
       </div>
+
       <button className="btn btn-success" onClick={handleAddFloor}>Dodaj piętro</button>
+      </div>
+
     </div>
   );
 };

@@ -156,7 +156,14 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_ORIGIN_ALLOW_ALL = True
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
-    'ROTATE_REFRESH_TOKENS': True,
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),  # Short-lived access token
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=10),  # Long-lived refresh token
+    'ROTATE_REFRESH_TOKENS': True,  # Issue new refresh token on use
+    'BLACKLIST_AFTER_ROTATION': True,  # Blacklist old refresh token
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': 'your_secret_key',  # Keep this secret
 }
+
+import os
+MEDIA_URL = '../frontend/public/images/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, '../frontend/public/images/media/')

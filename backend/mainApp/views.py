@@ -1,18 +1,19 @@
+import json
+
 from django.contrib.auth import authenticate, login, logout
-from django.core.exceptions import ValidationError
 from django.contrib.auth import get_user_model
-from django.middleware.csrf import get_token
-from django.shortcuts import render
+from django.http import JsonResponse
+from django.core.cache import cache
+from .models import Room, Device
 
 # Create your views here.
 from rest_framework import permissions, status
-from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from mainApp.models import AppUser, Home
-from mainApp.serializers import UserRegisterSerializer, UserLoginSerializer, HomeSerializer
+from mainApp.serializers import UserRegisterSerializer, HomeSerializer, DeviceSerializer, UserSerializer
 
 UserModel = get_user_model()
 
@@ -79,8 +80,8 @@ class OneUserData(APIView):
     permission_classes = (permissions.IsAuthenticated,)  # Only authenticated users can log out
 
     def get(self, request):
-        print(request.user)
-        return Response(status=status.HTTP_200_OK)
+        serializer = UserSerializer(request.user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class UserHomesData(APIView):
@@ -99,3 +100,44 @@ class HomeData(APIView):
         home = Home.objects.get(home_id=home_id)
         serializer = HomeSerializer(home)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class DevicesData(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get(self, request):
+        devices = Device.objects.filter(room__home__owner=request.user)
+        serializer = DeviceSerializer(devices, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class LayoutHandler(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def post(self, request):
+        layout = request.data['layout']
+        json_data = f'{layout}'
+        rooms = json.loads(json_data)
+        for v in rooms.values():
+            name = None
+            pos = {}
+            for k, vv in v.items():
+                if k == "name":
+                    name = vv
+                elif k == "position":
+                    pos = vv
+            Room.objects.create(name=name, position=pos, home_id=1)
+        return Response(status=status.HTTP_200_OK)
+
+
+def get_light_status(request, room_id):
+    light_status = cache.get(f"room_{room_id}_light")
+    if light_status is None:
+        try:
+            # room = Room.objects.get(room_id=room_id)
+            # light_status = room.light
+            print("sd")
+        except Room.DoesNotExist:
+            return JsonResponse({"error": "Room not found"}, status=404)
+
+    return JsonResponse({"room_id": room_id, "light": light_status})
