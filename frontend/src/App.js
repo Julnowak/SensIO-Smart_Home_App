@@ -8,9 +8,6 @@ import { ThemeContext } from "./Theme";
 import React, {useContext, useEffect, useState} from "react";
 import UserProfile from "./components/userProfile/userProfile";
 import Main from "./components/main/main";
-import {API_BASE_URL} from "./config";
-import client from "./client";
-import CookieConsent from "./components/cookieConsent/cookieConsent";
 import {AuthProvider} from "./AuthContext";
 import Logout from "./components/logout/logout";
 import History from "./components/history/history";
@@ -20,23 +17,10 @@ import DevicePage from "./components/DevicePage/DevicePage";
 import AddHome from "./components/locations/addHome/addHome";
 import BuildingPage from "./components/BuildingPage/BuildingPage";
 import Dashboard from "./components/dashboard/dashboard";
+import UserRoomsPage from "./components/userRoomsPage/userRoomsPage";
 
 function App() {
     const { theme } = useContext(ThemeContext);
-
-    const [isLoading, setIsLoading] = useState(true);
-
-    // useEffect(() => {
-    //
-    //     client.get(`${API_BASE_URL}/user/`)
-    //         .then(function () {
-    //             console.log("Zalogowano")
-    //         })
-    //         .catch(function () {
-    //             console.log("Nie udało się zalogować")
-    //         });
-    //
-    // }, []);
 
     return (
         <div className={`App ${theme}`}>
@@ -55,6 +39,7 @@ function App() {
                         <Route path="/history" element={<History/>}/>
                         <Route path="/myDevices" element={<UserDevicesPage/>}/>
                         <Route path="/myHomes" element={<UserHomesPage/>}/>
+                        <Route path="/myRooms" element={<UserRoomsPage/>}/>
                         <Route path="/addHome" element={<AddHome/>}/>
                         <Route path="/dashboard" element={<Dashboard/>}/>
                         <Route path="/device/:id" element={<DevicePage/>}/>

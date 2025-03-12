@@ -4,7 +4,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth import get_user_model
 from django.http import JsonResponse
 from django.core.cache import cache
-from .models import Room, Device
+from .models import Room, Device, Floor
 
 # Create your views here.
 from rest_framework import permissions, status
@@ -13,7 +13,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from mainApp.models import AppUser, Home
-from mainApp.serializers import UserRegisterSerializer, HomeSerializer, DeviceSerializer, UserSerializer
+from mainApp.serializers import UserRegisterSerializer, HomeSerializer, DeviceSerializer, UserSerializer, RoomSerializer
 
 UserModel = get_user_model()
 
@@ -98,8 +98,13 @@ class HomeData(APIView):
 
     def get(self, request, home_id):
         home = Home.objects.get(home_id=home_id)
+        floor = 1
+
+        rooms = Room.objects.filter(home=home, floor=floor)
+
+        roomsSerializer = RoomSerializer(rooms, many=True)
         serializer = HomeSerializer(home)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response({"homeData": serializer.data, "roomsData": roomsSerializer.data}, status=status.HTTP_200_OK)
 
 
 class DevicesData(APIView):
@@ -111,6 +116,15 @@ class DevicesData(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+class RoomsData(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get(self, request):
+        rooms = Room.objects.filter(home__owner=request.user)
+        serializer = RoomSerializer(rooms, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
 class LayoutHandler(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
@@ -118,15 +132,28 @@ class LayoutHandler(APIView):
         layout = request.data['layout']
         json_data = f'{layout}'
         rooms = json.loads(json_data)
-        for v in rooms.values():
+        print(rooms)
+        d = {}
+        for v in rooms:
             name = None
             pos = {}
+            parent = None
+            f = Floor.objects.get(floor_id=v['floor'])
             for k, vv in v.items():
                 if k == "name":
                     name = vv
                 elif k == "position":
                     pos = vv
-            Room.objects.create(name=name, position=pos, home_id=1)
+                elif k == "parent":
+                    if "temp" in str(vv):
+                        parent = d[vv]
+                    else:
+                        parent = vv
+            if not Room.objects.filter(floor=f, position=pos).exists():
+                new = Room.objects.create(name=name, position=pos, home=f.home, floor=f, parent=parent)
+                if "temp" in str(v['room_id']):
+                    d[v['room_id']] = new.room_id
+
         return Response(status=status.HTTP_200_OK)
 
 

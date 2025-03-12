@@ -9,7 +9,9 @@ import {Add, Edit, EditOff} from "@mui/icons-material";
 
 const BuildingPage = () => {
     const [location, setLocation] = useState(null);
+    const [layout, setLayout] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
+    const [editRoom, setEditRoom] = useState(false);
     const [formData, setFormData] = useState({});
     const token = localStorage.getItem("access");
     const params = useParams()
@@ -22,8 +24,9 @@ const BuildingPage = () => {
                 },
             }) // Pobiera dane lokacji
             .then((response) => {
-                setLocation(response.data);
-                setFormData(response.data);
+                setLocation(response.data.homeData);
+                setFormData(response.data.homeData);
+                setLayout(response.data.roomsData);
             })
             .catch((error) => console.error("Error fetching location:", error));
     }, [params.id, token]);
@@ -83,7 +86,6 @@ const BuildingPage = () => {
                         <input name="floor_num" type="number" value={formData.floor_num} onChange={handleChange}
                                className="form-control" placeholder="Liczba pięter"/>
                         <button onClick={handleSave} className="btn btn-success w-100 mt-3">Zapisz</button>
-                        <EditableCanvas/>
                     </div>
                 ) : (
                     <div style={{textAlign: "left"}}>
@@ -91,10 +93,24 @@ const BuildingPage = () => {
                         <p className="text-muted">Uwagi: {location.regards || "Brak"}</p>
                         <p className="text-muted">Liczba pięter: {location.floor_num}</p>
                         <p className="text-muted small">Kod: {location.code}</p>
-                        <LayoutViewer/>
+
                     </div>
                 )}
 
+                <div>
+                    Piętro
+                    <select className="form-control">
+                        <option>{location.floor_num}</option>
+                    </select>
+                </div>
+
+                <button onClick={function () {
+                    setEditRoom(!editRoom)
+                }} className="btn btn-warning" >
+                    Edytuj
+                </button>
+
+                {editRoom? <EditableCanvas layout={layout} floor_id={location.floor_num}/>:<LayoutViewer layout={layout}/>}
 
             </div>
         </div>

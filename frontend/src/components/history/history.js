@@ -18,7 +18,7 @@ const [page, setPage] = useState(1);
   );
 
   return (
-    <div className="container mt-4">
+    <div>
       <h1 className="mb-4">Logi systemu Smart Home</h1>
       <div className="row mb-3">
         <div className="col">

@@ -5,7 +5,7 @@ import client from "../../client";
 import {API_BASE_URL} from "../../config";
 import Paginator from "../../paginator/paginator";
 
-const UserDevicesPage = () => {
+const UserRoomsPage = () => {
     const exampleDevices = [
         {id: 1, name: "Smart TV", description: "Telewizor 4K", room: "Salon", color: "#ff5733"},
         {id: 2, name: "Laptop", description: "Dell XPS 15", room: "Biuro", color: "#33ff57"},
@@ -28,7 +28,7 @@ const UserDevicesPage = () => {
     useEffect(() => {
         const fetchDevices = async () => {
             try {
-                const response = await client.get(API_BASE_URL + "myDevices/", {
+                const response = await client.get(API_BASE_URL + "myRooms/", {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
@@ -69,7 +69,7 @@ const UserDevicesPage = () => {
                     alignItems: "center",
                 }}>
                     <h1 style={{textAlign: "left", margin: "20px 0"}}>
-                        Moje urządzenia
+                        Moje pokoje
                     </h1>
 
                     <a href={"/addDevice"}>
@@ -111,4 +111,4 @@ const UserDevicesPage = () => {
     );
 };
 
-export default UserDevicesPage;
+export default UserRoomsPage;

@@ -85,6 +85,7 @@ class Room(models.Model):
     name = models.CharField(max_length=200, default="Pokój")
     light = models.BooleanField(default=False)
     warning = models.BooleanField(default=False)
+    parent = models.IntegerField(null=True, blank=True)
     position = models.JSONField()
 
     def __str__(self):

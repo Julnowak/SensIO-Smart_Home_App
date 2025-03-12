@@ -13,6 +13,7 @@ urlpatterns = [
     path('user/', views.OneUserData.as_view(), name='user'),
     path('myHomes/', views.UserHomesData.as_view(), name='my-homes'),
     path('myDevices/', views.DevicesData.as_view(), name='my-devices'),
+    path('myRooms/', views.RoomsData.as_view(), name='my-rooms'),
     path('home/<int:home_id>', views.HomeData.as_view(), name='home'),
 
     path("room/<int:room_id>/light/", get_light_status, name="get_light_status"),

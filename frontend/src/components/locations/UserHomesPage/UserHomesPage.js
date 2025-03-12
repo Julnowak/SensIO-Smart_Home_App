@@ -53,11 +53,11 @@ const UserHomesPage = () => {
 
 
     return (<div style={{maxWidth: 1000, margin: "auto"}}>
-        <div style={{maxWidth: 1000, margin: "0 20px"}}>
+        <div style={{maxWidth: 1000, padding: "20px"}}>
             <div style={{
                 display: "flex", justifyContent: "space-between", alignItems: "center",
             }}>
-                <h1 style={{textAlign: "left", margin: 0}}>
+                <h1 style={{textAlign: "left", margin: "20px 0"}}>
                     Moje Lokacje
                 </h1>
 

@@ -70,7 +70,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="container mt-5">
+    <div>
       <h1 className="text-center mb-4">Smart Home Dashboard</h1>
       <div className="row">
         <div className="col-md-6">
