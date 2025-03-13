@@ -4,6 +4,8 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth import get_user_model
 from django.http import JsonResponse
 from django.core.cache import cache
+from rest_framework.parsers import MultiPartParser, FormParser
+
 from .models import Room, Device, Floor
 
 # Create your views here.
@@ -78,10 +80,40 @@ class UserLogout(APIView):
 
 class OneUserData(APIView):
     permission_classes = (permissions.IsAuthenticated,)  # Only authenticated users can log out
+    parser_classes = (MultiPartParser, FormParser)
 
     def get(self, request):
         serializer = UserSerializer(request.user)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        user = request.user
+        profile_picture = request.FILES.get('profile_picture')  # Use 'avatar' as the field name for the image
+        if profile_picture:
+            user.profile_picture = profile_picture  # Assuming 'avatar' is a field on your User model
+            print(profile_picture)
+            print(user.profile_picture)
+            user.save()
+            serializer = UserSerializer(user)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response({'error': 'No avatar image provided'}, status=status.HTTP_400_BAD_REQUEST)
+
+    def put(self, request):
+        user = request.user
+        user.email = request.data.get("email")
+        user.name = request.data.get("name")
+        user.username = request.data.get("username")
+        user.telephone = request.data.get("phone")
+        user.address = request.data.get("address")
+        user.surname = request.data.get("surname")
+        user.save()
+        serializer = UserSerializer(request.user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def delete(self, request):
+        user = request.user
+        user.delete()
+        return Response({'message': 'User deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
 
 
 class UserHomesData(APIView):
@@ -115,6 +147,14 @@ class DevicesData(APIView):
         serializer = DeviceSerializer(devices, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    def post(self, request):
+
+        print(request.data)
+        # devices = Device.objects.create()
+        # device =
+        # serializer = DeviceSerializer(device, many=True)
+        return Response(status=status.HTTP_200_OK)
+
 
 class RoomsData(APIView):
     permission_classes = (permissions.IsAuthenticated,)
@@ -122,6 +162,15 @@ class RoomsData(APIView):
     def get(self, request):
         rooms = Room.objects.filter(home__owner=request.user)
         serializer = RoomSerializer(rooms, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class RoomData(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get(self, request, room_id):
+        room = Room.objects.get(room_id=room_id)
+        serializer = RoomSerializer(room, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -153,7 +202,11 @@ class LayoutHandler(APIView):
                 new = Room.objects.create(name=name, position=pos, home=f.home, floor=f, parent=parent)
                 if "temp" in str(v['room_id']):
                     d[v['room_id']] = new.room_id
-
+            else:
+                old_r = Room.objects.get(floor=f, position=pos)
+                if old_r.name != name:
+                    old_r.name = name
+                    old_r.save()
         return Response(status=status.HTTP_200_OK)
 
 

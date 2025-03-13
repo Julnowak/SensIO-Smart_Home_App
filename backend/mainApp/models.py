@@ -87,6 +87,7 @@ class Room(models.Model):
     warning = models.BooleanField(default=False)
     parent = models.IntegerField(null=True, blank=True)
     position = models.JSONField()
+    color = models.CharField(max_length=20, null=True, blank=True)
 
     def __str__(self):
         return "Pokój " + str(self.room_id)
@@ -96,9 +97,12 @@ class Device(models.Model):
     device_id = models.AutoField(primary_key=True)
     room = models.ForeignKey(Room, on_delete=models.CASCADE, blank=True, null=True)
     name = models.CharField(max_length=200)
+    serial_number = models.CharField(max_length=200, blank=True, null=True)
+    topic = models.CharField(max_length=200, blank=True, null=True)
+    info = models.TextField(max_length=1000, blank=True, null=True)
 
     def __str__(self):
-        return "Czujnik " + str(self.device_id)
+        return "Urządzenie " + str(self.device_id)
 
 
 class Measurement(models.Model):

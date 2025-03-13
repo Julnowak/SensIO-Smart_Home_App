@@ -73,7 +73,7 @@ const EditableCanvas = ({layout, floor_id}) => {
 
     useEffect(() => {
         console.log(layout)
-        if (layout.length>0) {
+        if (layout && layout?.length>0) {
             setBlocks(layout);
         }
         else{
@@ -187,7 +187,7 @@ const handleAddBlock = (room_id, direction) => {
                     />
                 ))}
             </div>
-            <button onClick={handleSaveLayout} className="save-button">Save Layout</button>
+            <button onClick={handleSaveLayout} className="save-button">Zapisz</button>
         </div>
     );
 };

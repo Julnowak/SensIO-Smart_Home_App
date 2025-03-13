@@ -17,5 +17,6 @@ urlpatterns = [
     path('home/<int:home_id>', views.HomeData.as_view(), name='home'),
 
     path("room/<int:room_id>/light/", get_light_status, name="get_light_status"),
+    path("room/<int:room_id>/", views.RoomData.as_view(), name="room"),
     path("layout_handler/", views.LayoutHandler.as_view(), name="layout_handler"),
 ]

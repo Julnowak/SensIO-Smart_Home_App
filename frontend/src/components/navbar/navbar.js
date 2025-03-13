@@ -16,6 +16,20 @@ const CustomNavbar = () => {
     const token = localStorage.getItem("access");
     const image_set = localStorage.getItem("image_set")
     let flag = false;
+    const [isSmallScreen, setIsSmallScreen] = useState(false);
+
+      useEffect(() => {
+        const handleResize = () => {
+          setIsSmallScreen(window.innerWidth < 450); // You can adjust the threshold as needed
+        };
+
+        window.addEventListener('resize', handleResize);
+        handleResize(); // Set initial state
+
+        return () => {
+          window.removeEventListener('resize', handleResize);
+        };
+      }, []);
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -25,8 +39,8 @@ const CustomNavbar = () => {
                         Authorization: `Bearer ${token}`,
                     },
                 });
-                setImage(response.data.profile_picture.slice(15));
-                localStorage.setItem("image_set", response.data.profile_picture.slice(15))
+                setImage(response.data.profile_picture.toString().slice(15));
+                localStorage.setItem("image_set", response.data.profile_picture.toString().slice(15))
             } catch (error) {
                 console.log("Nie udało się zalogować");
             }
@@ -110,9 +124,18 @@ const CustomNavbar = () => {
                                 </Nav.Link>
                             }
 
-                            {!isAuthenticated ?
-                                <Nav.Link href="/login" className="text-white"><LoginRoundedIcon/></Nav.Link> :
-                                <Nav.Link href="/logout" className="text-white"><LogoutRounded/></Nav.Link>}
+                            {!isSmallScreen ? (
+                                // For small screens, show login/logout icon
+                                <Nav.Link href={isAuthenticated ? '/logout' : '/login'} className="text-white">
+                                  {isAuthenticated ? <LogoutRounded /> : <LoginRoundedIcon />}
+                                </Nav.Link>
+                              ) : (
+                                // For larger screens, show full text (Login / Logout)
+                                <Nav.Link href={isAuthenticated ? '/logout' : '/login'} className="text-white">
+                                    {isAuthenticated ? <div><span style={{marginRight: 10}}>Wyloguj</span><LogoutRounded /></div> :
+                                        <div><LoginRoundedIcon /><span style={{marginLeft: 10}}> Zaloguj</span></div>}
+                                </Nav.Link>
+                              )}
 
                         </Nav>
                     </Navbar.Collapse>

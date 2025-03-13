@@ -1,10 +1,10 @@
 import React, {useState, useEffect} from "react";
-import client from "../../client";
-import {API_BASE_URL} from "../../config";
+import client from "../../../client";
+import {API_BASE_URL} from "../../../config";
 import {useParams} from "react-router-dom";
-import LayoutViewer from "../layoutViewer/layoutViewer";
-import editableCanvas from "../editableCanvas/editableCanvas";
-import EditableCanvas from "../editableCanvas/editableCanvas";
+import LayoutViewer from "../../layoutViewer/layoutViewer";
+import editableCanvas from "../../editableCanvas/editableCanvas";
+import EditableCanvas from "../../editableCanvas/editableCanvas";
 import {Add, Edit, EditOff} from "@mui/icons-material";
 
 const BuildingPage = () => {

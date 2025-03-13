@@ -1,23 +1,16 @@
 import React, {useState, useEffect} from "react";
 import {Add} from "@mui/icons-material";
-import "../userDevicesPage/UserDevicesPage.css"
-import client from "../../client";
-import {API_BASE_URL} from "../../config";
-import Paginator from "../../paginator/paginator";
+import "./UserDevicesPage.css"
+import client from "../../../client";
+import {API_BASE_URL} from "../../../config";
+import Paginator from "../../../paginator/paginator";
 
-const UserRoomsPage = () => {
-    const exampleDevices = [
-        {id: 1, name: "Smart TV", description: "Telewizor 4K", room: "Salon", color: "#ff5733"},
-        {id: 2, name: "Laptop", description: "Dell XPS 15", room: "Biuro", color: "#33ff57"},
-        {id: 3, name: "Smartphone", description: "iPhone 13 Pro", room: "Sypialnia", color: "#3357ff"},
-        {id: 4, name: "Głośnik Bluetooth", description: "JBL Charge 5", room: "Kuchnia", color: "#ff33a8"},
-        {id: 5, name: "Konsola", description: "PlayStation 5", room: "Salon", color: "#ffa533"},
-        {id: 6, name: "Tablet", description: "iPad Air", room: "Sypialnia", color: "#a533ff"}
-    ];
+const UserDevicesPage = () => {
 
 
-    const [devices, setDevices] = useState(exampleDevices);
-    const [filteredDevices, setFilteredDevices] = useState(exampleDevices);
+
+    const [devices, setDevices] = useState([]);
+    const [filteredDevices, setFilteredDevices] = useState([]);
     const [search, setSearch] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
@@ -28,7 +21,7 @@ const UserRoomsPage = () => {
     useEffect(() => {
         const fetchDevices = async () => {
             try {
-                const response = await client.get(API_BASE_URL + "myRooms/", {
+                const response = await client.get(API_BASE_URL + "myDevices/", {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
@@ -69,10 +62,10 @@ const UserRoomsPage = () => {
                     alignItems: "center",
                 }}>
                     <h1 style={{textAlign: "left", margin: "20px 0"}}>
-                        Moje pokoje
+                        Moje urządzenia
                     </h1>
 
-                    <a href={"/addDevice"}>
+                    <a href={"/newDevice"}>
                         <button className="btn btn-dark" style={{marginLeft: "auto"}}>
                             <Add fontSize={"large"}/>
                             <span className="button-text">Nowe urządzenie</span>
@@ -88,8 +81,8 @@ const UserRoomsPage = () => {
                 />
                 <ul className="list-group mb-3">
                     {currentItems.map((device) => (
-                        <a href={`/device/${device.id}`} style={{textDecoration: "none"}}>
-                            <li key={device.id} className="list-group-item d-flex align-items-center">
+                        <a href={`/device/${device.device_id}`} style={{textDecoration: "none"}}>
+                            <li key={device.device_id} className="list-group-item d-flex align-items-center">
                                 <div style={{
                                     width: "20px",
                                     height: "20px",
@@ -98,8 +91,7 @@ const UserRoomsPage = () => {
                                 }}></div>
                                 <div>
                                     <h5>{device.name}</h5>
-                                    <p>{device.description}</p>
-                                    <small>{device.room}</small>
+                                    <p>{device.room}</p>
                                 </div>
                             </li>
                         </a>
@@ -111,4 +103,4 @@ const UserRoomsPage = () => {
     );
 };
 
-export default UserRoomsPage;
+export default UserDevicesPage;

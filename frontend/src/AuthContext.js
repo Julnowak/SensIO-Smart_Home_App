@@ -1,5 +1,5 @@
 import { createContext, useState, useEffect } from "react";
-import { getUser, login, logout } from "./api";
+import { getUser, login, logout, register } from "./api";
 
 export const AuthContext = createContext();
 
@@ -21,6 +21,13 @@ export const AuthProvider = ({ children }) => {
 
     const loginUser = async (username, password) => {
         await login(username, password);
+        const userData = await getUser();
+        setUser(userData);
+        setIsAuthenticated(true);
+    };
+
+    const registerUser = async (username, password) => {
+        await register(username, password);
         const userData = await getUser();
         setUser(userData);
         setIsAuthenticated(true);
