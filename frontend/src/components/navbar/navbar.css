@@ -18,3 +18,29 @@
     border: 2px solid var(--text-primary);
     cursor: pointer;
 }
+
+.theme-toggle-button {
+  width: 70px;
+  height: 40px;
+  border: none;
+  border-radius: 20px;
+  background-color: darkblue;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.3s ease-in-out;
+}
+
+.icon {
+  font-size: 20px;
+  color: #61dafb;
+}
+
+.sun {
+  color: #fdd835; /* Yellow */
+}
+
+.moon {
+  color: #90a4ae; /* Grey */
+}

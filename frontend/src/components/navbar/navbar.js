@@ -5,7 +5,7 @@ import "./navbar.css"
 import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
 import LoginRoundedIcon from '@mui/icons-material/LoginRounded';
 import {AuthContext} from "../../AuthContext";
-import {LogoutRounded} from "@mui/icons-material";
+import {DarkModeRounded, LightModeRounded, LogoutRounded} from "@mui/icons-material";
 import client from "../../client";
 import {API_BASE_URL} from "../../config";
 
@@ -39,8 +39,15 @@ const CustomNavbar = () => {
                         Authorization: `Bearer ${token}`,
                     },
                 });
-                setImage(response.data.profile_picture.toString().slice(15));
-                localStorage.setItem("image_set", response.data.profile_picture.toString().slice(15))
+                if (response.data.profile_picture){
+                    setImage(response.data.profile_picture.toString().slice(15));
+                    localStorage.setItem(response.data.profile_picture.toString().slice(15));
+                }
+                else {
+                    setImage("/images/basic/user_no_picture.png");
+                    localStorage.setItem("/images/basic/user_no_picture.png");
+                }
+
             } catch (error) {
                 console.log("Nie udało się zalogować");
             }
@@ -66,7 +73,7 @@ const CustomNavbar = () => {
                 <Container>
                     <Navbar.Brand className="text-primary fw-bold">
                         <Nav.Link href="/">
-                            <img style={{display: "inline", marginRight: 10}} width={50} src={"/images/doggo_big.png"}/>
+                            <img style={{display: "inline", marginRight: 10}} width={50} src={theme=="dark"?"/images/basic/doggo_big_white.png":"/images/basic/doggo_big.png"}/>
                             <div style={{display: "inline"}}>
                                 Dwello
                             </div>
@@ -81,7 +88,9 @@ const CustomNavbar = () => {
                                 <Nav.Link href="/main" className="text-white"><HomeRoundedIcon/></Nav.Link>
                             }
                             <div className="header-toggle-buttons">
-                                <button style={{width: 70, height: 40}} onClick={() => toggleTheme()} >{theme}</button>
+                              <button className="theme-toggle-button" onClick={toggleTheme}>
+                                {theme === "white" ? <LightModeRounded /> : <DarkModeRounded />}
+                              </button>
                             </div>
 
                             {!isAuthenticated ?

@@ -43,6 +43,13 @@ def on_message(client, userdata, msg):
 
         # Update Room model
         # Room.objects.filter(room_id=room_id).update(light=light_state)
+        ls = True
+        if light_state == 0:
+            ls = False
+
+        room = Room.objects.get(room_id=room_id)
+        room.light = ls
+        room.save()
 
         # Store in cache for quick access
         cache.set(f"room_{room_id}_light", light_state, timeout=30)

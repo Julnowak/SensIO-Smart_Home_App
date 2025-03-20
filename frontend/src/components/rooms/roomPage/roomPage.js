@@ -14,7 +14,7 @@ const RoomPage = () => {
     useEffect(() => {
         const fetchRoom = async () => {
             try {
-                const response = await client.get(API_BASE_URL + "myRooms/", {
+                const response = await client.get(API_BASE_URL + `room/${params.id}`, {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
@@ -33,15 +33,34 @@ const RoomPage = () => {
         }
     }, [token]); // Fetch data only when token changes
 
+    const ws = new WebSocket(`ws://127.0.0.1:8000/ws/room_updates/${params.id}/`);
+    useEffect(() => {
+
+
+        ws.onopen = () => {
+            console.log("WebSocket connected");
+        };
+
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+
+            console.log(data)
+
+        };
+
+        return () => ws.close();
+    }, [ws]);
+
     const handleLightToggle = () => {
-        // Zmiana statusu światła
-        client.put(`http://127.0.0.1:8000/api/room/${params.id}/`, {light: !light})
-            .then(response => {
-                setLight(!light);
-            })
-            .catch(error => {
-                console.error('Błąd podczas zmiany statusu światła:', error);
-            });
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+                type: "toggle_light",
+                room_id: params.id,
+                light: !light,  // True or False
+            }));
+        } else {
+            console.error("WebSocket is not open");
+        }
     };
 
     const handleWarningToggle = () => {
@@ -59,7 +78,7 @@ const RoomPage = () => {
         <div className="card mb-4">
             <div className="card-body">
                 <h5 className="card-title">{room.name}</h5>
-                <p className="card-text">Piętro: {room.floor ? room.floor.name : 'Brak'}</p>
+                <p className="card-text">Piętro: {room.floor_number ? room.floor_number : 'Brak'}</p>
                 <p className="card-text">Lokalizacja: {room.position ? JSON.stringify(room.position) : 'Nie podano'}</p>
 
                 <div className="form-group">

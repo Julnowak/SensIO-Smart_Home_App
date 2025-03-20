@@ -15,7 +15,7 @@ const Register = () => {
 
     async function submitRegistration(event) {
         event.preventDefault();
-        await registerUser(email, password);
+        await registerUser(username, email, password, passwordSecond);
         navigate("/main")
     }
 
@@ -27,7 +27,7 @@ const Register = () => {
                 <Form onSubmit={submitRegistration}>
                     <Form.Group className="mb-3" controlId="username">
                         <Form.Label>Nazwa użytkownika</Form.Label>
-                        <Form.Control value={username} onChange={e => setUsername(e.target.value)} type="email" placeholder="Wprowadź email"/>
+                        <Form.Control value={username} onChange={e => setUsername(e.target.value)} type="text" placeholder="Wprowadź email"/>
                     </Form.Group>
                     <Form.Group className="mb-3" controlId="email">
                         <Form.Label>Email</Form.Label>

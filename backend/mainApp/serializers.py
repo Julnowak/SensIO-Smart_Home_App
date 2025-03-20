@@ -57,6 +57,8 @@ class DeviceSerializer(serializers.ModelSerializer):
 
 
 class RoomSerializer(serializers.ModelSerializer):
+    floor_number = serializers.IntegerField(source='room.floor.floor_number', read_only=True)
+
     class Meta:
         model = Room
-        fields = '__all__'
+        fields = [field.name for field in Room._meta.fields] + ['floor_number']

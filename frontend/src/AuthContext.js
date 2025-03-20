@@ -19,15 +19,16 @@ export const AuthProvider = ({ children }) => {
         fetchUser();
     }, []);
 
-    const loginUser = async (username, password) => {
-        await login(username, password);
+    const loginUser = async (email, password) => {
+        await login(email, password);
         const userData = await getUser();
         setUser(userData);
         setIsAuthenticated(true);
     };
 
-    const registerUser = async (username, password) => {
-        await register(username, password);
+    const registerUser = async (username, email, password, passwordSecond) => {
+        await register(username, email, password, passwordSecond);
+        await login(email, password);
         const userData = await getUser();
         setUser(userData);
         setIsAuthenticated(true);
@@ -45,7 +46,7 @@ export const AuthProvider = ({ children }) => {
     );
 
     return (
-        <AuthContext.Provider value={{ isAuthenticated, user, loginUser, logoutUser }}>
+        <AuthContext.Provider value={{ isAuthenticated, user, loginUser, logoutUser, registerUser }}>
             {children}
         </AuthContext.Provider>
     );

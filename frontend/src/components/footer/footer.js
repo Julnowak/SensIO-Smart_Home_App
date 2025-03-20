@@ -40,7 +40,7 @@ const Footer = () => {
 
       {/* Stopka z prawami autorskimi */}
       <div className="text-center mt-3 border-top pt-3">
-        &copy; {new Date().getFullYear()} TwojaFirma. Wszelkie prawa zastrzeżone.
+        &copy; {new Date().getFullYear()} Dwello. Wszelkie prawa zastrzeżone.
       </div>
     </footer>
   );

@@ -51,6 +51,20 @@ const UserHomesPage = () => {
         setTotalPages(Math.ceil(filtered.length / itemsPerPage));
     }, [search, locations]); // Runs when search or locations change
 
+     const handleChange = async (e) => {
+         try {
+             const response = await client.put(API_BASE_URL + "myHomes/", {
+                 location_id: e
+             },{
+                 headers: {
+                     Authorization: `Bearer ${token}`,
+                 },
+             });
+             console.log(response.data);
+         } catch (error) {
+             console.error("Failed to fetch locations", error);
+         }
+     };
 
     return (<div style={{maxWidth: 1000, margin: "auto"}}>
         <div style={{maxWidth: 1000, padding: "20px"}}>
@@ -78,9 +92,9 @@ const UserHomesPage = () => {
                 >
 
                     {currentItems.map((location: Home) => (
-                        location.current ? <option selected>
+                        location.current ? <option onChange={handleChange} selected>
                             {location.name}
-                        </option> : <option>
+                        </option> : <option onChange={handleChange}>
                             {location.name}
                         </option>
 

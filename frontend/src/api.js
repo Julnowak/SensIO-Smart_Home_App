@@ -1,8 +1,8 @@
 import client from "./client";
 import {API_BASE_URL} from "./config";
 
-export const register = async (username, password) => {
-    return client.post(API_BASE_URL + "register/", { username, password });
+export const register = async (username, email, password, passwordSecond) => {
+    return client.post(API_BASE_URL + "register/", { username, email, password, passwordSecond });
 };
 
 export const login = async (username, password) => {
@@ -19,6 +19,7 @@ export const logout = async () => {
         const response = await client.post(API_BASE_URL + "logout/", {});
         localStorage.removeItem("access");
         localStorage.removeItem("refresh");
+        localStorage.removeItem("image_set")
     } catch (err){
         console.log(err)
     }

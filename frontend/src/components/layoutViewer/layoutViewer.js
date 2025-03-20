@@ -69,7 +69,7 @@ const LayoutViewer = ({layout}) => {
     return (
         <div>
 
-            {layout.length > 0 ?
+            {layout?.length > 0 ?
                 <div className="canvas-container"
                      ref={canvasRef}
                      onMouseDown={handleMouseDown}

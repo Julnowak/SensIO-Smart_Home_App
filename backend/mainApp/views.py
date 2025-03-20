@@ -24,21 +24,19 @@ class UserRegister(APIView):
     permission_classes = (permissions.AllowAny,)
 
     def post(self, request):
-        validated_data = request.data
 
-        if AppUser.objects.filter(username=validated_data['username'].lower()):
+        if AppUser.objects.filter(username=request.data['username'].lower()):
             return Response({"error": "Wybrana nazwa użytkownika już istnieje."}, status=status.HTTP_401_UNAUTHORIZED)
-        if AppUser.objects.filter(email=validated_data['email']):
+        if AppUser.objects.filter(email=request.data['email']):
             return Response({"error": "Istnieje już konto powiązane z tym adresem email."},status.HTTP_401_UNAUTHORIZED)
-        if len(validated_data['password']) < 8:
+        if len(request.data['password']) < 8:
             return Response({"error": "Hasło powinno mieć minimum 8 znaków."}, status=status.HTTP_401_UNAUTHORIZED)
-        if validated_data['password'] != validated_data['confirmPassword']:
+        if request.data['password'] != request.data['passwordSecond']:
             return Response({"error": "Hasła nie są ze sobą zgodne."}, status=status.HTTP_401_UNAUTHORIZED)
 
-        serializer = UserRegisterSerializer(data=validated_data)
+        serializer = UserRegisterSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
-            user = serializer.create(validated_data)
-            user.user_type = validated_data['user_type']
+            user = serializer.create(request.data)
             user.save()
 
             if user:
@@ -74,6 +72,7 @@ class UserLogin(APIView):
 
 
 class UserLogout(APIView):
+
     def post(self, request):
         return Response(status=status.HTTP_200_OK)
 
@@ -124,6 +123,18 @@ class UserHomesData(APIView):
         serializer = HomeSerializer(homes, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    def put(self,request):
+        loc = request.data['location_id']
+        location_current = Home.objects.get(current=True)
+        location_current.current = False
+        location_current.save()
+        print(location_current)
+
+        loc_new = Home.objects.get(home_id=loc)
+        loc_new.current = True
+        loc_new.save()
+        return Response(status=status.HTTP_200_OK)
+
 
 class HomeData(APIView):
     permission_classes = (permissions.IsAuthenticated,)
@@ -170,7 +181,7 @@ class RoomData(APIView):
 
     def get(self, request, room_id):
         room = Room.objects.get(room_id=room_id)
-        serializer = RoomSerializer(room, many=True)
+        serializer = RoomSerializer(room)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 

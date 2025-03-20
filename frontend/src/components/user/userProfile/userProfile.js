@@ -142,9 +142,6 @@ export default function UserProfile() {
         <div style={{maxWidth: 1000, margin: "auto"}}>
             <div style={{maxWidth: 1000, padding: 20}}>
                 <h1 style={{textAlign: "left"}}>Profil użytkownika</h1>
-                <Button onClick={() => setIsEditing(!isEditing)} className="mb-3">
-                    {isEditing ? "Wyłącz edycję" : "Włącz edycję"}
-                </Button>
                 <div className="position-relative d-flex align-items-center bg-light p-4" style={{
                     minHeight: "150px",
                     borderBottomLeftRadius: 100, borderTopLeftRadius: 100
@@ -220,10 +217,32 @@ export default function UserProfile() {
                         <Form.Control type="text" name="lastName" value={user.surname} onChange={handleChange}
                                       disabled={!isEditing}/>
                     </Form.Group>
-                    <Button variant="primary" className="w-100 mb-2" disabled={!isEditing}>Zapisz zmiany</Button>
-                    <Button variant="danger" className="w-100" onClick={handleDeleteAccount}>Usuń konto</Button>
+                    <Form.Group className="mb-3">
+                        <Form.Label>Numer telefonu</Form.Label>
+                        <Form.Control type="text" name="telephone" value={user.telephone} onChange={handleChange}
+                                      disabled={!isEditing}/>
+                    </Form.Group>
+                    <Form.Group className="mb-3">
+                        <Form.Label>Adres</Form.Label>
+                        <Form.Control type="text" name="address" value={user.address} onChange={handleChange}
+                                      disabled={!isEditing}/>
+                    </Form.Group>
+                    <Button variant="primary" onClick={() => setIsEditing(!isEditing)} className="w-100 mb-2" >{isEditing?"Zapisz zmiany": "Edytuj"}</Button>
+
                 </Form>
             </div>
+            <h3>
+                Usuwanie konta
+            </h3>
+            <p>
+                Lorejkjkfnasknfaksfnsknkanfksfnask
+            </p>
+                <Button variant="danger" style={{maxWidth: 200}} onClick={handleDeleteAccount}>Usuń konto</Button>
+            <div>
+
+            </div>
+
+
             {/* Crop Modal */}
             <Modal show={showCropModal} onHide={() => setShowCropModal(false)} centered>
                 <Modal.Header closeButton>
