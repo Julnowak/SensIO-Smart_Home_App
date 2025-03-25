@@ -87,7 +87,7 @@ class Room(models.Model):
     warning = models.BooleanField(default=False)
     parent = models.IntegerField(null=True, blank=True)
     position = models.JSONField()
-    color = models.CharField(max_length=20, null=True, blank=True)
+    color = models.CharField(max_length=20, default="#42adf5")
 
     def __str__(self):
         return "Pokój " + str(self.room_id)
@@ -100,15 +100,26 @@ class Device(models.Model):
     serial_number = models.CharField(max_length=200, blank=True, null=True)
     topic = models.CharField(max_length=200, blank=True, null=True)
     info = models.TextField(max_length=1000, blank=True, null=True)
+    brand = models.CharField(max_length=200, blank=True, null=True)
 
     def __str__(self):
         return "Urządzenie " + str(self.device_id)
 
 
+class Sensor(models.Model):
+    sensor_id = models.AutoField(primary_key=True)
+    room = models.ForeignKey(Room, on_delete=models.CASCADE, blank=True, null=True)
+    name = models.CharField(max_length=200)
+    device = models.ForeignKey(Device, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return "Czujnik " + str(self.sensor_id)
+
+
 class Measurement(models.Model):
     measurement_id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=200, default="Pomiar " + str(measurement_id))
-    sensor = models.ForeignKey(Device, on_delete=models.CASCADE)
+    sensor = models.ForeignKey(Sensor, on_delete=models.CASCADE)
     value = models.DecimalField(default=0.00, decimal_places=10, max_digits=20)
     # type = models.
     created_at = models.DateField()

@@ -1,12 +1,11 @@
 import React, {useState, useEffect} from "react";
 import {Add} from "@mui/icons-material";
-import "./UserDevicesPage.css"
+import "./userDevicesPage.css"
 import client from "../../../client";
 import {API_BASE_URL} from "../../../config";
 import Paginator from "../../../paginator/paginator";
 
 const UserDevicesPage = () => {
-
 
 
     const [devices, setDevices] = useState([]);
@@ -81,22 +80,33 @@ const UserDevicesPage = () => {
                 />
                 <ul className="list-group mb-3">
                     {currentItems.map((device) => (
-                        <a href={`/device/${device.device_id}`} style={{textDecoration: "none"}}>
-                            <li key={device.device_id} className="list-group-item d-flex align-items-center">
-                                <div style={{
-                                    width: "20px",
-                                    height: "20px",
-                                    backgroundColor: "red",
-                                    marginRight: "10px"
-                                }}></div>
-                                <div>
-                                    <h5>{device.name}</h5>
-                                    <p>{device.room}</p>
+                        <li
+                            key={device.device_id}
+                            className="list-group-item d-flex align-items-center"
+                            style={{transition: "0.3s", cursor: "pointer", borderRadius: "8px"}}
+                        >
+                            <a
+                                href={`/device/${device.device_id}`}
+                                className="d-flex align-items-center text-decoration-none w-100"
+                            >
+                                <div
+                                    className="rounded-circle me-3"
+                                    style={{
+                                        width: "24px",
+                                        height: "24px",
+                                        backgroundColor: device.color,
+                                    }}
+                                ></div>
+                                <div className="flex-grow-1" style={{ textAlign: "left", marginLeft: 20}}>
+                                    <h4 className="mb-1 text-dark">{device.name}</h4>
+                                    <p className="mb-1 text-muted">{device.brand}, Nr. seryjny: {device.serial_number}</p>
+                                    <p className="mb-0 text-muted">{device.room}</p>
                                 </div>
-                            </li>
-                        </a>
+                            </a>
+                        </li>
                     ))}
                 </ul>
+
                 <Paginator totalPages={totalPages} currentPage={currentPage} setCurrentPage={setCurrentPage}/>
             </div>
         </div>

@@ -185,6 +185,15 @@ class RoomData(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+class DeviceData(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get(self, request, device_id):
+        device = Device.objects.get(device_id=device_id)
+        serializer = DeviceSerializer(device)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
 class LayoutHandler(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 

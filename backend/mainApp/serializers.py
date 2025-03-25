@@ -50,10 +50,11 @@ class HomeSerializer(serializers.ModelSerializer):
 class DeviceSerializer(serializers.ModelSerializer):
     room = serializers.CharField(source='room.name', read_only=True)
     room_id = serializers.IntegerField(source='room.room_id', read_only=True)
+    color = serializers.CharField(source='room.color', read_only=True)
 
     class Meta:
         model = Device
-        fields = [field.name for field in Device._meta.fields] + ['room', 'room_id']
+        fields = [field.name for field in Device._meta.fields] + ['room', 'room_id', "color"]
 
 
 class RoomSerializer(serializers.ModelSerializer):

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Add } from "@mui/icons-material";
-import "../../devices/userDevicesPage/UserDevicesPage.css";
+import "../../devices/userDevicesPage/userDevicesPage.css";
 import client from "../../../client";
 import { API_BASE_URL } from "../../../config";
 import Paginator from "../../../paginator/paginator";
