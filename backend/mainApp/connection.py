@@ -1,10 +1,11 @@
+import datetime
 import json
 
 import paho.mqtt.client as paho
 from django.core.cache import cache
 from paho import mqtt
 
-from mainApp.models import Room
+from mainApp.models import Room, Measurement, Device, Sensor
 
 client = paho.Client(client_id="", userdata=None, protocol=paho.MQTTv5)
 client.tls_set(tls_version=mqtt.client.ssl.PROTOCOL_TLS)
@@ -13,7 +14,8 @@ USERNAME = "hivemq.webclient.1741361005809"
 PASSWORD = "Dtf>&v4?XW8pb39BE:xC"
 URL = "66159fe671ed443f94b00666425069a3.s1.eu.hivemq.cloud"
 PORT = 8883
-TOPIC = "home/room/light"
+# TOPIC = "home/room/light"
+TOPIC = "ESP32_3B7H4J2K9LQ1"
 CLIENT_ID = "python-client"
 
 import time
@@ -36,6 +38,19 @@ def on_subscribe(client, userdata, mid, granted_qos, properties=None):
 # print message, useful for checking if it was successful
 def on_message(client, userdata, msg):
     print(msg.topic + " " + str(msg.qos) + " " + str(msg.payload))
+    payload = json.loads(msg.payload.decode("utf-8"))
+    device = Device.objects.get(serial_number=payload["device_data"]["SN"])
+    sensors = Sensor.objects.filter(device=device)
+
+    for k, v in payload.items():
+        if k != "device_data" and k != "created_at":
+            if not sensors.filter(serial_number=v["SN"]).exists():
+                Sensor.objects.create(serial_number=v["SN"], device=device, name=k)
+
+            Measurement.objects.create(value=payload[k]["value"],
+                                       saved_at=datetime.datetime.now(),
+                                       created_at=payload['created_at'], sensor=sensors.get(serial_number=v["SN"]))
+
     try:
         payload = json.loads(msg.payload.decode("utf-8"))  # Assuming JSON payload
         room_id = 1  # Extract room_id

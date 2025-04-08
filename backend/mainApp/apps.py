@@ -7,4 +7,4 @@ class MainappConfig(AppConfig):
 
     def ready(self):
         import mainApp.signals  # Upewnij się, że sygnał się załadował
-        # from . import connection  # Start MQTT client when Django starts
+        from . import connection  # Start MQTT client when Django starts

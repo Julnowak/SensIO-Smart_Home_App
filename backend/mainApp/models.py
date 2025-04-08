@@ -110,6 +110,7 @@ class Sensor(models.Model):
     sensor_id = models.AutoField(primary_key=True)
     room = models.ForeignKey(Room, on_delete=models.CASCADE, blank=True, null=True)
     name = models.CharField(max_length=200)
+    serial_number = models.CharField(max_length=200, blank=True, null=True)
     device = models.ForeignKey(Device, on_delete=models.CASCADE)
 
     def __str__(self):
@@ -118,12 +119,10 @@ class Sensor(models.Model):
 
 class Measurement(models.Model):
     measurement_id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=200, default="Pomiar " + str(measurement_id))
     sensor = models.ForeignKey(Sensor, on_delete=models.CASCADE)
     value = models.DecimalField(default=0.00, decimal_places=10, max_digits=20)
-    # type = models.
-    created_at = models.DateField()
-    saved_at = models.DateField()
+    created_at = models.DateTimeField()
+    saved_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return "Pomiar " + str(self.measurement_id)
