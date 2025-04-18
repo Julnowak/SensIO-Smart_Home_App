@@ -5,7 +5,7 @@ import Login from "./components/user/login/login";
 import CustomNavbar from "./components/navbar/navbar";
 import Footer from "./components/footer/footer";
 import { ThemeContext } from "./Theme";
-import React, {useContext, useEffect, useState} from "react";
+import React, {useContext} from "react";
 import UserProfile from "./components/user/userProfile/userProfile";
 import Main from "./components/main/main";
 import {AuthProvider} from "./AuthContext";
@@ -21,12 +21,16 @@ import UserRoomsPage from "./components/rooms/userRoomsPage/userRoomsPage";
 import NewDevice from "./components/devices/newDevice/newDevice";
 import RoomPage from "./components/rooms/roomPage/roomPage";
 import Register from "./components/user/register/register";
+import Notifications from "./components/notifications/notifications";
+import ThemeLoader from "./themeLoader";
+import ForgotPasswordPage from "./components/forgotPassword/forgotPassword";
 
 function App() {
-    const { theme } = useContext(ThemeContext);
+    const { mode } = useContext(ThemeContext);
 
     return (
-        <div className={`App ${theme}`}>
+        <ThemeLoader>
+        <div data-theme={mode}>
             <BrowserRouter>
                 <AuthProvider>
                 {/* Navbar */}
@@ -39,6 +43,7 @@ function App() {
                         <Route path="/login" element={<Login/>}/>
                         <Route path="/register" element={<Register/>}/>
                         <Route path="/logout" element={<Logout/>}/>
+                        <Route path="/forgot-password" element={<ForgotPasswordPage/>}/>
                         <Route path="/main" element={<Main/>}/>
                         <Route path="/history" element={<History/>}/>
                         <Route path="/myDevices" element={<UserDevicesPage/>}/>
@@ -50,6 +55,7 @@ function App() {
                         <Route path="/device/:id" element={<DevicePage/>}/>
                         <Route path="/home/:id" element={<BuildingPage/>}/>
                         <Route path="/room/:id" element={<RoomPage/>}/>
+                        <Route path="/notifications" element={<Notifications/>}/>
                     </Routes>
                 </div>
                 {/* Routes */}
@@ -60,6 +66,7 @@ function App() {
                 </AuthProvider>
             </BrowserRouter>
         </div>
+        </ThemeLoader>
     );
 }
 

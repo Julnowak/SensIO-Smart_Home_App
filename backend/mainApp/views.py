@@ -6,7 +6,7 @@ from django.http import JsonResponse
 from django.core.cache import cache
 from rest_framework.parsers import MultiPartParser, FormParser
 
-from .models import Room, Device, Floor
+from .models import Room, Device, Floor, Notification
 
 # Create your views here.
 from rest_framework import permissions, status
@@ -15,7 +15,8 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from mainApp.models import AppUser, Home
-from mainApp.serializers import UserRegisterSerializer, HomeSerializer, DeviceSerializer, UserSerializer, RoomSerializer
+from mainApp.serializers import UserRegisterSerializer, HomeSerializer, DeviceSerializer, UserSerializer, \
+    RoomSerializer, NotificationSerializer
 
 UserModel = get_user_model()
 
@@ -241,3 +242,49 @@ def get_light_status(request, room_id):
             return JsonResponse({"error": "Room not found"}, status=404)
 
     return JsonResponse({"room_id": room_id, "light": light_status})
+
+
+class NotificationsAPI(APIView):
+    permission_classes = (permissions.IsAuthenticated,)  # Only authenticated users can log out
+
+    def get(self, request):
+        notifications = Notification.objects.filter(user=request.user)
+        serializer = NotificationSerializer(notifications, many=True)
+        num = len(notifications.filter(isRead=False))
+        print(num)
+        return Response({"notifications": serializer.data, "num": num}, status=status.HTTP_200_OK)
+
+    def patch(self, request, pk=None):
+        try:
+            notification = Notification.objects.get(pk=pk, user=request.user)
+        except Notification.DoesNotExist:
+            return Response(
+                {"error": "Notification not found or you don't have permission"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = NotificationSerializer(
+            notification,
+            data={'isRead': True},
+            partial=True
+        )
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk=None):
+        try:
+            notification = Notification.objects.get(pk=pk, user=request.user)
+        except Notification.DoesNotExist:
+            return Response(
+                {"error": "Notification not found or you don't have permission"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        notification.delete()
+        return Response(
+            {"message": "Notification deleted successfully"},
+            status=status.HTTP_204_NO_CONTENT
+        )

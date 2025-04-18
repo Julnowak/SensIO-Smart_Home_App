@@ -1,44 +1,252 @@
-import React, {useContext, useState} from 'react';
-import {Link} from "react-router-dom";
-import {Container, Button, Form, Card} from "react-bootstrap";
-import {useNavigate} from "react-router-dom";
+import React, { useContext, useState } from 'react';
+import { Link, useNavigate } from "react-router-dom";
+import {
+  Container,
+  Box,
+  Typography,
+  TextField,
+  Button,
+  Divider,
+  IconButton,
+  Alert,
+  Stack
+} from '@mui/material';
+import {
+  Facebook,
+  Google,
+  GitHub,
+  Visibility,
+  VisibilityOff
+} from '@mui/icons-material';
 import { AuthContext } from "../../../AuthContext";
+import { useTheme } from '@mui/material/styles';
 
 const Login = () => {
-    const { loginUser } = useContext(AuthContext);
-    const [errmess, setErrmess] = useState(null);
-    const navigate = useNavigate()
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
+  const theme = useTheme();
+  const { loginUser } = useContext(AuthContext);
+  const [errmess, setErrmess] = useState(null);
+  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-    async function submitLogin(event) {
-        event.preventDefault();
-        await loginUser(email, password);
-        navigate("/main")
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setIsLoading(true);
+    try {
+      await loginUser(email, password);
+      navigate("/main");
+    } catch (error) {
+      setErrmess(error.message || "Login failed. Please check your credentials.");
+    } finally {
+      setIsLoading(false);
     }
+  };
 
+  const handleSocialLogin = (provider) => {
+    // Implement social auth logic
+    console.log(`Login with ${provider}`);
+  };
 
-    return (
-        <Container className="d-flex justify-content-center align-items-center min-vh-100">
-            <Card className="p-4 shadow" style={{width: "350px"}}>
-                <h3 className="text-center text-primary">Logowanie</h3>
-                <Form onSubmit={submitLogin}>
-                    <Form.Group className="mb-3" controlId="email">
-                        <Form.Label>Email</Form.Label>
-                        <Form.Control value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="Wprowadź email"/>
-                    </Form.Group>
-                    <Form.Group className="mb-3" controlId="password">
-                        <Form.Label>Hasło</Form.Label>
-                        <Form.Control value={password} onChange={e => setPassword(e.target.value)} type="password" placeholder="Wprowadź hasło"/>
-                    </Form.Group>
-                    <Button variant="primary" type={"submit"} className="w-100">Zaloguj się</Button>
-                </Form>
-                <p className="text-center mt-3">
-                    Nie masz konta? <Link to="/register">Zarejestruj się</Link>
-                </p>
-            </Card>
-        </Container>
-    );
+  return (
+    <Container maxWidth="lg" sx={{
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      py: 8
+    }}>
+      <Box sx={{
+        display: 'flex',
+        borderRadius: 4,
+        boxShadow: 3,
+        overflow: 'hidden',
+        width: '100%',
+        backgroundColor: 'background.paper',
+        [theme.breakpoints.down('md')]: {
+          flexDirection: 'column'
+        }
+      }}>
+        {/* Graphic Section */}
+        <Box sx={{
+          width: '40%',
+          background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          p: 4,
+          [theme.breakpoints.down('md')]: {
+            width: '100%',
+            py: 8
+          }
+        }}>
+          <img
+            src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRKhJ9vY-WJviH34cgDfbG2Hn_cBf0t5BBmaWrmH--NzBO3pjGP6hjV7pb8s958ug9K7p6iR-3vz6nlw7c4i5ZdMw"
+            alt="Login Illustration"
+            style={{ width: '100%', maxWidth: 300 }}
+          />
+          <Typography variant="h5" sx={{
+            mt: 4,
+            color: 'common.white',
+            textAlign: 'center',
+            fontWeight: 500
+          }}>
+            Welcome Back to Our Platform
+          </Typography>
+        </Box>
+
+        {/* Form Section */}
+        <Box sx={{
+          width: '60%',
+          p: 6,
+          [theme.breakpoints.down('md')]: {
+            width: '100%',
+            px: 4,
+            py: 6
+          }
+        }}>
+          <Typography variant="h4" component="h1" sx={{
+            mb: 4,
+            fontWeight: 700,
+            color: 'text.primary'
+          }}>
+            Sign In
+          </Typography>
+
+          {errmess && (
+            <Alert severity="error" sx={{ mb: 3 }}>
+              {errmess}
+            </Alert>
+          )}
+
+          <Stack component="form" onSubmit={handleSubmit} spacing={3}>
+            <TextField
+              fullWidth
+              label="Email Address"
+              variant="outlined"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              type="email"
+              required
+              InputProps={{
+                autoComplete: 'email'
+              }}
+            />
+
+            <TextField
+              fullWidth
+              label="Password"
+              variant="outlined"
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              InputProps={{
+                endAdornment: (
+                  <IconButton
+                    onClick={() => setShowPassword(!showPassword)}
+                    edge="end"
+                  >
+                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                )
+              }}
+            />
+
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              size="large"
+              disabled={isLoading}
+              sx={{
+                py: 1.5,
+                borderRadius: 2,
+                fontWeight: 600,
+                '&:hover': {
+                  transform: 'translateY(-1px)',
+                  boxShadow: 3
+                }
+              }}
+            >
+              {isLoading ? 'Signing In...' : 'Sign In'}
+            </Button>
+
+            <Box sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <Button
+                component={Link}
+                to="/register"
+                color="primary"
+                sx={{ textTransform: 'none' }}
+              >
+                Create new account
+              </Button>
+              <Button
+                component={Link}
+                to="/forgot-password"
+                color="primary"
+                sx={{ textTransform: 'none' }}
+              >
+                Forgot password?
+              </Button>
+            </Box>
+
+            <Divider sx={{ my: 2 }}>
+              <Typography variant="body2" color="text.secondary">
+                OR CONTINUE WITH
+              </Typography>
+            </Divider>
+
+            <Stack direction="row" spacing={2} justifyContent="center">
+              <IconButton
+                onClick={() => handleSocialLogin('facebook')}
+                sx={{
+                  border: `1px solid ${theme.palette.divider}`,
+                  '&:hover': {
+                    backgroundColor: '#1877f2',
+                    color: 'common.white'
+                  }
+                }}
+              >
+                <Facebook fontSize="large" />
+              </IconButton>
+
+              <IconButton
+                onClick={() => handleSocialLogin('google')}
+                sx={{
+                  border: `1px solid ${theme.palette.divider}`,
+                  '&:hover': {
+                    backgroundColor: '#db4437',
+                    color: 'common.white'
+                  }
+                }}
+              >
+                <Google fontSize="large" />
+              </IconButton>
+
+              <IconButton
+                onClick={() => handleSocialLogin('github')}
+                sx={{
+                  border: `1px solid ${theme.palette.divider}`,
+                  '&:hover': {
+                    backgroundColor: '#333',
+                    color: 'common.white'
+                  }
+                }}
+              >
+                <GitHub fontSize="large" />
+              </IconButton>
+            </Stack>
+          </Stack>
+        </Box>
+      </Box>
+    </Container>
+  );
 };
 
 export default Login;

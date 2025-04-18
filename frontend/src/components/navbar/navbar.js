@@ -1,156 +1,542 @@
 import React, {useContext, useEffect, useState} from 'react';
-import {Container, Nav, Navbar, NavDropdown} from "react-bootstrap";
+import {
+    AppBar,
+    Toolbar,
+    Container,
+    IconButton,
+    Menu,
+    MenuItem,
+    Avatar,
+    Badge,
+    Divider,
+    Typography,
+    Box,
+    useMediaQuery,
+    styled, ListItemIcon, Button, ListItemText, ListItemButton, Collapse, List, Drawer, ListItem
+} from '@mui/material';
+import {
+    HomeRounded,
+    LoginRounded,
+    LogoutRounded,
+    DarkModeRounded,
+    LightModeRounded,
+    NotificationsRounded,
+    MenuRounded,
+    Person,
+    DonutSmall,
+    CameraIndoor,
+    History,
+    Rule,
+    DoorBack,
+    Devices,
+    Home,
+    ExpandMore,
+    ChevronRight,
+    CloseRounded,
+    ExpandLess,
+} from '@mui/icons-material';
 import {ThemeContext} from "../../Theme";
-import "./navbar.css"
-import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
-import LoginRoundedIcon from '@mui/icons-material/LoginRounded';
 import {AuthContext} from "../../AuthContext";
-import {DarkModeRounded, LightModeRounded, LogoutRounded} from "@mui/icons-material";
 import client from "../../client";
 import {API_BASE_URL} from "../../config";
+import {useTheme} from '@mui/material/styles';
+
+const StyledAppBar = styled(AppBar)(({theme}) => ({
+    backdropFilter: 'blur(8px)',
+    backgroundColor: theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.8)' : 'rgba(213,213,213,0.52)',
+    transition: theme.transitions.create(['background-color', 'box-shadow']),
+}));
 
 const CustomNavbar = () => {
-    const {theme, toggleTheme} = useContext(ThemeContext);
+    const theme = useTheme();
+    const {toggleTheme} = useContext(ThemeContext);
     const {isAuthenticated} = useContext(AuthContext);
     const [image, setImage] = useState(null);
+    const [anchorEl, setAnchorEl] = useState(null);
+    const [mobileAnchorEl, setMobileAnchorEl] = useState(null);
+    const [num, setNum] = useState(0);
+    const isSmallScreen = useMediaQuery(theme.breakpoints.down('md'));
     const token = localStorage.getItem("access");
-    const image_set = localStorage.getItem("image_set")
-    let flag = false;
-    const [isSmallScreen, setIsSmallScreen] = useState(false);
+    const image_set = localStorage.getItem("image_set");
 
-      useEffect(() => {
-        const handleResize = () => {
-          setIsSmallScreen(window.innerWidth < 450); // You can adjust the threshold as needed
-        };
+    const [managementAnchorEl, setManagementAnchorEl] = useState(null);
 
-        window.addEventListener('resize', handleResize);
-        handleResize(); // Set initial state
-
-        return () => {
-          window.removeEventListener('resize', handleResize);
-        };
-      }, []);
+    // Menu handlers
+    const handleMenuOpen = (event) => setAnchorEl(event.currentTarget);
+    const handleMobileMenuOpen = (event) => setMobileAnchorEl(event.currentTarget);
+    const handleManagementMenuOpen = (event) => setManagementAnchorEl(event.currentTarget);
+    const handleClose = () => {
+        setAnchorEl(null);
+        setMobileAnchorEl(null);
+        setManagementAnchorEl(null);
+    };
 
     useEffect(() => {
         const fetchUserData = async () => {
             try {
                 const response = await client.get(API_BASE_URL + "user/", {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
+                    headers: {Authorization: `Bearer ${token}`},
                 });
-                if (response.data.profile_picture){
-                    setImage(response.data.profile_picture.toString().slice(15));
-                    localStorage.setItem(response.data.profile_picture.toString().slice(15));
-                }
-                else {
-                    setImage("/images/basic/user_no_picture.png");
-                    localStorage.setItem("/images/basic/user_no_picture.png");
-                }
+                const img = response.data.profile_picture
+                    ? response.data.profile_picture.toString().slice(15)
+                    : "/images/basic/user_no_picture.png";
+                setImage(img);
+                localStorage.setItem("image_set", img);
+
 
             } catch (error) {
-                console.log("Nie udało się zalogować");
+                console.error("Error fetching data:", error);
             }
         };
 
-        if (!flag){
-            if (token && !image_set) {
-                fetchUserData();
+
+        const fetchNotifications = async () => {
+            try {
+                const notifications = await client.get(API_BASE_URL + "notifications/", {
+                    headers: {Authorization: `Bearer ${token}`},
+                });
+                setNum(notifications.data.num);
+                console.log(notifications)
+            } catch (error) {
+                console.error("Error fetching data:", error);
             }
-            else {
-                setImage(image_set)
-            }
-            flag = true;
+        };
+
+        if (token && !image_set) {
+            fetchUserData();
+        } else {
+            setImage(image_set);
         }
 
+        if (token) {
+            fetchNotifications()
+        }
+    }, [image_set, token]);
 
-    }, [image, image_set, token]);
+    const renderDesktopMenu = () => (
+        <>
+            {isAuthenticated && (
+                <>
+
+                    <Box sx={{display: 'flex', alignItems: 'center', ml: 2}}>
+                        <IconButton href="/main">
+                            <HomeRounded/>
+                        </IconButton>
+
+                        <IconButton
+                            onClick={handleManagementMenuOpen}
+                            sx={{
+                                color: 'text.primary',
+                                p: 1.5,
+                                borderRadius: 1,
+                                transition: 'all 0.2s ease',
+                                '&:hover': {
+                                    bgcolor: 'action.hover',
+                                    transform: 'translateY(-2px)'
+                                },
+                                '&.Mui-focusVisible': {
+                                    bgcolor: 'action.selected'
+                                }
+                            }}
+                        >
+                            <Typography
+                                variant="subtitle1"
+                                sx={{
+                                    fontWeight: 600,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 0.5
+                                }}
+                            >
+                                Zarządzaj
+                                <ExpandMore sx={{
+                                    fontSize: 18,
+                                    transition: 'transform 0.2s',
+                                    transform: Boolean(managementAnchorEl) ? 'rotate(180deg)' : 'none'
+                                }}/>
+                            </Typography>
+                        </IconButton>
+
+                        <Menu
+                            anchorEl={managementAnchorEl}
+                            open={Boolean(managementAnchorEl)}
+                            onClose={handleClose}
+                            elevation={2}
+                            sx={{
+                                '& .MuiPaper-root': {
+                                    minWidth: 220,
+                                    borderRadius: 2,
+                                    boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.1)',
+                                    mt: 1.5
+                                }
+                            }}
+                            transformOrigin={{horizontal: 'right', vertical: 'top'}}
+                            anchorOrigin={{horizontal: 'right', vertical: 'bottom'}}
+                            MenuListProps={{
+                                sx: {py: 0.5}
+                            }}
+                        >
+                            <MenuItem
+                                href="/myHomes"
+                                component="a"
+                                sx={{
+                                    py: 1.5,
+                                    '&:hover': {
+                                        bgcolor: 'primary.light',
+                                        color: 'primary.main'
+                                    }
+                                }}
+                            >
+                                <Home sx={{fontSize: 20, mr: 1.5}}/>
+                                Moje lokacje
+                            </MenuItem>
+
+                            <MenuItem
+                                href="/myDevices"
+                                component="a"
+                                sx={{
+                                    py: 1.5,
+                                    '&:hover': {
+                                        bgcolor: 'primary.light',
+                                        color: 'primary.main'
+                                    }
+                                }}
+                            >
+                                <Devices sx={{fontSize: 20, mr: 1.5}}/>
+                                Moje urządzenia
+                            </MenuItem>
+
+                            <MenuItem
+                                href="/myRooms"
+                                component="a"
+                                sx={{
+                                    py: 1.5,
+                                    '&:hover': {
+                                        bgcolor: 'primary.light',
+                                        color: 'primary.main'
+                                    }
+                                }}
+                            >
+                                <DoorBack sx={{fontSize: 20, mr: 1.5}}/>
+                                Moje pomieszczenia
+                            </MenuItem>
+
+                            <Divider sx={{my: 0.5}}/>
+
+                            <MenuItem
+                                href="/rules"
+                                component="a"
+                                sx={{
+                                    py: 1.5,
+                                    '&:hover': {
+                                        bgcolor: 'primary.light',
+                                        color: 'primary.main'
+                                    }
+                                }}
+                            >
+                                <Rule sx={{fontSize: 20, mr: 1.5}}/>
+                                Reguły
+                            </MenuItem>
+                        </Menu>
+                    </Box>
+
+                    <IconButton href="/dashboard" sx={{"&:hover": {borderRadius: 2}}}>
+                        <Typography variant="body1">Wykresy</Typography>
+                    </IconButton>
+
+                    <IconButton
+                        href="/history"
+                        sx={{
+                            position: 'relative',
+                            borderRadius: '50%', // Start circular
+                            minWidth: 0,
+                            padding: '8px',
+                            transition: theme => theme.transitions.create(['all'], {
+                                duration: theme.transitions.duration.standard,
+                                easing: theme.transitions.easing.easeInOut,
+                            }),
+
+                            // Initial oval state (hidden)
+                            '&::before': {
+                                content: '""',
+                                position: 'absolute',
+                                top: 0,
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                width: '40%',
+                                height: '100%',
+                                borderRadius: '24px',
+                                backgroundColor: 'rgba(0, 0, 0, 0.08)',
+                                opacity: 0,
+                                transition: theme => theme.transitions.create(['all'], {
+                                    duration: theme.transitions.duration.standard,
+                                }),
+                                zIndex: -1,
+                            },
+
+                            // Hover state
+                            '&:hover': {
+                                borderRadius: 2,
+                                '&::before': {
+                                    width: '100%',
+                                    borderRadius: 2,
+                                    opacity: 1,
+                                },
+                            },
+
+                        }}
+                    >
+                        <Typography variant="body1">Historia</Typography>
+                    </IconButton>
+
+                    <IconButton href="/notifications">
+                        <Badge badgeContent={num} color="error">
+                            <NotificationsRounded sx={{fontSize: '22px'}}/>
+                        </Badge>
+                    </IconButton>
+                </>
+            )}
+        </>
+    );
+
+const [mobileOpen, setMobileOpen] = useState(false);
+const [expandedSection, setExpandedSection] = useState(null);
+
+const handleDrawerToggle = () => {
+    setMobileOpen(!mobileOpen);
+  };
+
+const toggleSection = (section) => {
+    setExpandedSection(expandedSection === section ? null : section);
+};
+
+const renderSidebarContent = () => (
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        p: 2
+      }}
+    >
+      <Box sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        mb: 2,
+        p: 1
+      }}>
+        <Typography variant="h6" fontWeight="bold">
+          Menu
+        </Typography>
+        <IconButton onClick={handleDrawerToggle}>
+          <CloseRounded />
+        </IconButton>
+      </Box>
+
+      <Divider sx={{ mb: 2 }} />
+
+      <List component="nav" sx={{ flexGrow: 1 }}>
+        {isAuthenticated && (
+          <>
+            <ListItem button href="/main" component="a">
+              <ListItemIcon>
+                <HomeRounded />
+              </ListItemIcon>
+              <ListItemText sx={{color: theme.palette.mode === 'dark' ? 'white' : 'black'}} primary="Strona główna" />
+            </ListItem>
+
+            <ListItem button onClick={() => toggleSection('manage')}>
+              <ListItemIcon>
+                <CameraIndoor />
+              </ListItemIcon>
+              <ListItemText primary="Zarządzaj" />
+              {expandedSection === 'manage' ? <ExpandLess /> : <ExpandMore />}
+            </ListItem>
+
+            <Collapse in={expandedSection === 'manage'} timeout="auto" unmountOnExit>
+              <List component="div" disablePadding>
+                <ListItem button href="/myHomes" component="a" sx={{ pl: 4 }}>
+                  <ListItemIcon>
+                    <Home />
+                  </ListItemIcon>
+                  <ListItemText sx={{color: theme.palette.mode === 'dark' ? 'white' : 'black'}} primary="Moje lokacje" />
+                </ListItem>
+
+                <ListItem button href="/myDevices" component="a" sx={{ pl: 4 }}>
+                  <ListItemIcon>
+                    <Devices />
+                  </ListItemIcon>
+                  <ListItemText sx={{color: theme.palette.mode === 'dark' ? 'white' : 'black'}} primary="Moje urządzenia" />
+                </ListItem>
+
+                <ListItem button href="/myRooms" component="a" sx={{ pl: 4 }}>
+                  <ListItemIcon>
+                    <DoorBack />
+                  </ListItemIcon>
+                  <ListItemText sx={{color: theme.palette.mode === 'dark' ? 'white' : 'black'}} primary="Moje pomieszczenia" />
+                </ListItem>
+
+                <ListItem button href="/rules" component="a" sx={{ pl: 4 }}>
+                  <ListItemIcon>
+                    <Rule />
+                  </ListItemIcon>
+                  <ListItemText sx={{color: theme.palette.mode === 'dark' ? 'white' : 'black'}} primary="Reguły" />
+                </ListItem>
+              </List>
+            </Collapse>
+
+            <ListItem button href="/dashboard" component="a">
+              <ListItemIcon>
+                <DonutSmall />
+              </ListItemIcon>
+              <ListItemText sx={{color: theme.palette.mode === 'dark' ? 'white' : 'black'}} primary="Wykresy" />
+            </ListItem>
+
+            <ListItem button href="/history" component="a">
+              <ListItemIcon>
+                <History />
+              </ListItemIcon>
+              <ListItemText sx={{color: theme.palette.mode === 'dark' ? 'white' : 'black'}} primary="Historia" />
+            </ListItem>
+
+            <ListItem button href="/notifications" component="a">
+              <ListItemIcon>
+                <Badge badgeContent={num} color="error">
+                  <NotificationsRounded />
+                </Badge>
+              </ListItemIcon>
+              <ListItemText sx={{color: theme.palette.mode === 'dark' ? 'white' : 'black'}} primary="Powiadomienia" />
+            </ListItem>
+          </>
+        )}
+      </List>
+
+      <Box sx={{ mt: 'auto', p: 1 }}>
+        <Button
+          fullWidth
+          href={isAuthenticated ? '/logout' : '/login'}
+          component="a"
+          startIcon={isAuthenticated ? <LogoutRounded /> : <LoginRounded />}
+          sx={{
+            py: 1.5,
+            borderRadius: 1,
+            color: isAuthenticated ? 'error.main' : 'success.main',
+            '&:hover': {
+              bgcolor: isAuthenticated ? 'error.light' : 'success.light',
+              color: 'black',
+            }
+          }}
+        >
+          {isAuthenticated ? 'Wyloguj się' : 'Zaloguj się'}
+        </Button>
+      </Box>
+    </Box>
+  );
 
     return (
-        <div>
-            {/* Navbar */}
-            <Navbar expand="md" className="shadow-sm">
-                <Container>
-                    <Navbar.Brand className="text-primary fw-bold">
-                        <Nav.Link href="/">
-                            <img style={{display: "inline", marginRight: 10}} width={50} src={theme=="dark"?"/images/basic/doggo_big_white.png":"/images/basic/doggo_big.png"}/>
-                            <div style={{display: "inline"}}>
-                                Dwello
-                            </div>
-                        </Nav.Link>
-                    </Navbar.Brand>
-                    <Navbar.Toggle aria-controls=" basic-navbar-nav"/>
-                    <Navbar.Collapse id="basic-navbar-nav">
-                        <Nav className="ms-auto" style={{alignItems: "center"}}>
-                            {!isAuthenticated ?
-                                null
-                                :
-                                <Nav.Link href="/main" className="text-white"><HomeRoundedIcon/></Nav.Link>
+        <StyledAppBar position="sticky" elevation={0}>
+            <Container maxWidth="xl">
+                <Toolbar disableGutters>
+                    <Box href="/" component="a" sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        textDecoration: 'none',
+                        mr: 3
+                    }}>
+                        <img
+                            width={30}
+                            style={{margin: 10}}
+                            src={theme.palette.mode === 'dark'
+                                ? "/images/basic/sensIO_white.png"
+                                : "/images/basic/sensIO_black.png"
                             }
-                            <div className="header-toggle-buttons">
-                              <button className="theme-toggle-button" onClick={toggleTheme}>
-                                {theme === "white" ? <LightModeRounded /> : <DarkModeRounded />}
-                              </button>
-                            </div>
+                            alt="Logo"
+                        />
 
-                            {!isAuthenticated ?
-                                null
-                                :
-                                <NavDropdown title="Zarządzaj" id="basic-nav-dropdown">
-                                    <NavDropdown.Item href="/myHomes">
-                                        Moje lokacje
-                                    </NavDropdown.Item>
-                                    <NavDropdown.Item href="/myDevices">
-                                        Moje urządzenia
-                                    </NavDropdown.Item>
-                                    <NavDropdown.Item href="/myRooms">
-                                        Moje pomieszczenia
-                                    </NavDropdown.Item>
-                                    <NavDropdown.Divider/>
-                                    <NavDropdown.Item href="/rules">
-                                        Reguły
-                                    </NavDropdown.Item>
-                                </NavDropdown>
+                        <img
+                            height={15}
+                            style={{margin: "10px 0 10px 0px"}}
+                            src={theme.palette.mode === 'dark'
+                                ? "/images/basic/sense_IO_text_white.png"
+                                : "/images/basic/sense_IO_text_black.png"
                             }
+                            alt="Logo"
+                        />
 
+                    </Box>
 
-                            {/*<Nav.Link as={Link} to="/manage" className="text-white">Zarządzaj</Nav.Link>*/}
+                    {!isSmallScreen && renderDesktopMenu()}
 
-                            {!isAuthenticated ?
-                                null
-                                :
-                                <>
-                                    <Nav.Link href="/dashboard" className="text-white">Wykresy</Nav.Link>
-                                    <Nav.Link href="/history" className="text-white">Historia</Nav.Link>
-                                </>
-                            }
+                    <Box sx={{flexGrow: 1}}/>
 
-                            {!isAuthenticated ?
-                                null
-                                :
-                                <Nav.Link href="/userProfile" className="text-white">
-                                    <img width={35} style={{borderRadius: 17}} src={image}/>
-                                </Nav.Link>
-                            }
+                    <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
+                        <IconButton onClick={toggleTheme}>
+                            {theme.palette.mode === 'dark' ? <LightModeRounded/> : <DarkModeRounded/>}
+                        </IconButton>
 
-                            {!isSmallScreen ? (
-                                // For small screens, show login/logout icon
-                                <Nav.Link href={isAuthenticated ? '/logout' : '/login'} className="text-white">
-                                  {isAuthenticated ? <LogoutRounded /> : <LoginRoundedIcon />}
-                                </Nav.Link>
-                              ) : (
-                                // For larger screens, show full text (Login / Logout)
-                                <Nav.Link href={isAuthenticated ? '/logout' : '/login'} className="text-white">
-                                    {isAuthenticated ? <div><span style={{marginRight: 10}}>Wyloguj</span><LogoutRounded /></div> :
-                                        <div><LoginRoundedIcon /><span style={{marginLeft: 10}}> Zaloguj</span></div>}
-                                </Nav.Link>
-                              )}
+                        {isAuthenticated && (
+                            <IconButton href="/userProfile">
+                                <Avatar
+                                    src={image}
+                                    sx={{width: 36, height: 36}}
+                                >
+                                    <Person/>
+                                </Avatar>
+                            </IconButton>
+                        )}
 
-                        </Nav>
-                    </Navbar.Collapse>
-                </Container>
-            </Navbar>
-        </div>
+                        {isSmallScreen ? (
+                            <>
+                                <IconButton
+                                edge="start"
+
+                                aria-label="menu"
+                                onClick={handleDrawerToggle}
+                                sx={{ ml: 1 }}
+                              >
+                                <MenuRounded />
+                              </IconButton>
+                                <Drawer
+                                    variant="temporary"
+                                    anchor="left"
+                                    open={mobileOpen}
+                                    onClose={handleDrawerToggle}
+                                    ModalProps={{
+                                      keepMounted: true, // Better open performance on mobile
+                                    }}
+                                    sx={{
+                                      '& .MuiDrawer-paper': {
+                                        width: 280,
+                                        boxSizing: 'border-box',
+                                      },
+                                    }}
+                                  >
+                                    {renderSidebarContent()}
+                                  </Drawer>
+                            </>
+                        ) : (
+                            <IconButton
+                                href={isAuthenticated ? '/logout' : '/login'}
+                                sx={{
+                                    borderRadius: 2,
+                                    px: 2,
+                                    bgcolor: theme.palette.action.selected,
+                                    '&:hover': {
+                                        bgcolor: theme.palette.action.hover
+                                    }
+                                }}
+                            >
+                                {isAuthenticated ? <LogoutRounded/> : <LoginRounded/>}
+                                <Typography sx={{ml: 1}}>
+                                    {isAuthenticated ? 'Wyloguj' : 'Zaloguj'}
+                                </Typography>
+                            </IconButton>
+                        )}
+                    </Box>
+                </Toolbar>
+            </Container>
+        </StyledAppBar>
     );
 };
 

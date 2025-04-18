@@ -2,7 +2,7 @@ from . import views
 from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
 
-from .views import get_light_status
+from .views import get_light_status, NotificationsAPI
 
 urlpatterns = [
     path('register/', views.UserRegister.as_view(), name='register'),
@@ -15,6 +15,8 @@ urlpatterns = [
     path('myDevices/', views.DevicesData.as_view(), name='my-devices'),
     path('myRooms/', views.RoomsData.as_view(), name='my-rooms'),
     path('home/<int:home_id>', views.HomeData.as_view(), name='home'),
+    path('notifications/', views.NotificationsAPI.as_view(), name='notifications'),
+    path('notifications/<int:pk>/', NotificationsAPI.as_view(), name='notification-detail'),
 
     path("room/<int:room_id>/light/", get_light_status, name="get_light_status"),
     path("room/<int:room_id>/", views.RoomData.as_view(), name="room"),

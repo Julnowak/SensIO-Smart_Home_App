@@ -1,145 +1,270 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import client from "../../../client"; // Import the configured Axios instance
+import client from "../../../client";
 import { API_BASE_URL } from "../../../config";
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Divider,
+  Grid,
+  TextField,
+  Typography,
+  Alert,
+  CircularProgress,
+  Snackbar,
+  InputAdornment,
+  IconButton,
+  Paper,
+  MenuItem
+} from "@mui/material";
+import {
+  Save as SaveIcon,
+  Cancel as CancelIcon,
+  Info as InfoIcon,
+  Devices as DevicesIcon,
+  QrCode as QrCodeIcon,
+  Room as RoomIcon,
+  BrandingWatermark as BrandIcon, CheckCircle
+} from "@mui/icons-material";
 
 const NewDevice = () => {
-    const navigate = useNavigate();
-    const token = localStorage.getItem("access");
-    const [deviceData, setDeviceData] = useState({
-        name: "",
-        serial_number: "",
-        topic: "",
-        info: "",
-        brand: "",
-        room: "",
-    });
+  const navigate = useNavigate();
+  const token = localStorage.getItem("access");
+  const [deviceData, setDeviceData] = useState({
+    name: "",
+    serial_number: "",
+    topic: "",
+    info: "",
+    brand: "",
+    room: "",
+  });
 
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
-    const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(false);
 
-    const handleChange = (e) => {
-        setDeviceData({ ...deviceData, [e.target.name]: e.target.value });
-    };
+  const deviceTypes = [
+    "Light",
+    "Thermostat",
+    "Sensor",
+    "Camera",
+    "Speaker",
+    "Other"
+  ];
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        setError(null);
-        setSuccess(false);
+  const handleChange = (e) => {
+    setDeviceData({ ...deviceData, [e.target.name]: e.target.value });
+  };
 
-        try {
-            const response = await client.post(
-                API_BASE_URL + "device/",
-                deviceData,
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": "application/json",
-                    },
-                }
-            );
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
 
-            console.log("Device added:", response.data);
-            setSuccess(true);
-            setTimeout(() => navigate("/devices"), 1500); // Redirect after success
-        } catch (err) {
-            console.error("Error adding device:", err);
-            setError("Failed to add device. Please try again.");
-        } finally {
-            setLoading(false);
+    try {
+      const response = await client.post(
+        API_BASE_URL + "device/",
+        deviceData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         }
-    };
+      );
 
-    return (
-        <div className="container d-flex justify-content-center align-items-center mt-5">
-            <div className="card shadow-lg p-4" style={{ maxWidth: "600px", borderRadius: "12px" }}>
-                <div className="card-body">
-                    <h2 className="card-title text-center mb-4">Add New Device</h2>
+      setSuccess(true);
+      setTimeout(() => navigate("/devices"), 2000);
+    } catch (err) {
+      console.error("Error adding device:", err);
+      setError(err.response?.data?.message || "Failed to add device. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-                    {success && <div className="alert alert-success text-center">Device added successfully!</div>}
-                    {error && <div className="alert alert-danger text-center">{error}</div>}
+  const handleCloseSnackbar = () => {
+    setSuccess(false);
+  };
 
-                    <form onSubmit={handleSubmit}>
-                        <div className="mb-3">
-                            <label className="form-label">Device Name</label>
-                            <input
-                                type="text"
-                                className="form-control"
-                                name="name"
-                                value={deviceData.name}
-                                onChange={handleChange}
-                                required
-                            />
-                        </div>
+  return (
+    <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
+      <Card sx={{
+        width: "100%",
+        maxWidth: 800,
+        borderRadius: 3,
+        boxShadow: 3
+      }}>
+        <CardContent>
+          <Box sx={{
+            display: "flex",
+            alignItems: "center",
+            mb: 2,
+            gap: 2
+          }}>
+            <DevicesIcon color="primary" sx={{ fontSize: 40 }} />
+            <Typography variant="h4" component="h1">
+              Add New Device
+            </Typography>
+          </Box>
+          <Divider sx={{ mb: 4 }} />
 
-                        <div className="mb-3">
-                            <label className="form-label">Serial Number</label>
-                            <input
-                                type="text"
-                                className="form-control"
-                                name="serial_number"
-                                value={deviceData.serial_number}
-                                onChange={handleChange}
-                            />
-                        </div>
+          {error && (
+            <Alert severity="error" sx={{ mb: 3 }}>
+              {error}
+            </Alert>
+          )}
 
-                        <div className="mb-3">
-                            <label className="form-label">Topic</label>
-                            <input
-                                type="text"
-                                className="form-control"
-                                name="topic"
-                                value={deviceData.topic}
-                                onChange={handleChange}
-                            />
-                        </div>
+          <form onSubmit={handleSubmit}>
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Device Name *"
+                  name="name"
+                  value={deviceData.name}
+                  onChange={handleChange}
+                  required
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <DevicesIcon color="action" />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Grid>
 
-                        <div className="mb-3">
-                            <label className="form-label">Info</label>
-                            <textarea
-                                className="form-control"
-                                name="info"
-                                value={deviceData.info}
-                                onChange={handleChange}
-                                rows="3"
-                            ></textarea>
-                        </div>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Serial Number"
+                  name="serial_number"
+                  value={deviceData.serial_number}
+                  onChange={handleChange}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <QrCodeIcon color="action" />
+                      </InputAdornment>
+                    ),
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton size="small">
+                          <InfoIcon fontSize="small" />
+                        </IconButton>
+                      </InputAdornment>
+                    )
+                  }}
+                />
+              </Grid>
 
-                        <div className="mb-3">
-                            <label className="form-label">Brand</label>
-                            <input
-                                type="text"
-                                className="form-control"
-                                name="brand"
-                                value={deviceData.brand}
-                                onChange={handleChange}
-                            />
-                        </div>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Topic"
+                  name="topic"
+                  value={deviceData.topic}
+                  onChange={handleChange}
+                  helperText="MQTT topic for device communication"
+                />
+              </Grid>
 
-                        <div className="mb-3">
-                            <label className="form-label">Room</label>
-                            <input
-                                type="text"
-                                className="form-control"
-                                name="room"
-                                value={deviceData.room}
-                                onChange={handleChange}
-                            />
-                        </div>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Brand"
+                  name="brand"
+                  value={deviceData.brand}
+                  onChange={handleChange}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <BrandIcon color="action" />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Grid>
 
-                        <div className="text-center">
-                            <button type="submit" className="btn btn-primary" disabled={loading}>
-                                {loading ? "Adding..." : "Add Device"}
-                            </button>
-                            <a href="/myDevices" className="btn btn-outline-secondary ms-3">Cancel</a>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    );
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Room"
+                  name="room"
+                  value={deviceData.room}
+                  onChange={handleChange}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <RoomIcon color="action" />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Additional Info"
+                  name="info"
+                  value={deviceData.info}
+                  onChange={handleChange}
+                  multiline
+                  rows={4}
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <Box sx={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: 2,
+                  mt: 2
+                }}>
+                  <Button
+                    variant="outlined"
+                    startIcon={<CancelIcon />}
+                    onClick={() => navigate("/devices")}
+                    color="secondary"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
+                    disabled={loading}
+                  >
+                    {loading ? "Saving..." : "Save Device"}
+                  </Button>
+                </Box>
+              </Grid>
+            </Grid>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Snackbar
+        open={success}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity="success"
+          sx={{ width: "100%" }}
+          icon={<CheckCircle fontSize="inherit" />}
+        >
+          Device added successfully! Redirecting...
+        </Alert>
+      </Snackbar>
+    </Box>
+  );
 };
 
 export default NewDevice;

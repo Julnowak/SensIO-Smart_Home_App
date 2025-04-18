@@ -1,48 +1,217 @@
 import React from 'react';
-import { FaFacebook, FaTwitter, FaInstagram, FaLinkedin } from "react-icons/fa";
-import { Link } from "react-router-dom"; // Użyj jeśli masz routing w aplikacji
-
+import {
+  Box,
+  Container,
+  Grid,
+  Typography,
+  Link as MUILink,
+  IconButton,
+  Divider,
+  useTheme
+} from '@mui/material';
+import {
+  FaFacebook,
+  FaTwitter,
+  FaInstagram,
+  FaLinkedin,
+  FaMapMarkerAlt,
+  FaPhone,
+  FaEnvelope
+} from 'react-icons/fa';
+import { Link as RouterLink } from 'react-router-dom';
 
 const Footer = () => {
+  const theme = useTheme();
+
   return (
-    <footer className="footer bg-dark text-white py-4">
-      <div className="container text-center text-md-start">
-        <div className="row">
-          {/* Sekcja linków */}
-          <div className="col-md-4 mb-3">
-            <h5>Szybkie linki</h5>
-            <ul className="list-unstyled">
-              <li><Link to="/about" className="text-white text-decoration-none">O nas</Link></li>
-              <li><Link to="/contact" className="text-white text-decoration-none">Kontakt</Link></li>
-              <li><Link to="/privacy-policy" className="text-white text-decoration-none">Polityka prywatności</Link></li>
-            </ul>
-          </div>
+    <Box sx={{
+      backgroundColor: theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.8)' : 'rgba(213,213,213,0.52)',
+      pt: 8,
+      mt: 'auto'
+    }}>
+      <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
+        <Grid
+          container
+          spacing={{ xs: 4, md: 8 }}
+          justifyContent="space-between"
+          sx={{ textAlign: { xs: 'center', md: 'left' } }}
+        >
+          {/* Szybkie linki */}
+          <Grid item xs={12} md={3} sx={{ display: 'flex', flexDirection: 'column' }}>
+            <Typography
+              variant="h6"
+              gutterBottom
+              sx={{
+                fontWeight: 600,
+                color: theme.palette.secondary.main,
+                alignSelf: { xs: 'center', md: 'flex-start' }
+              }}
+            >
+              Szybkie linki
+            </Typography>
+            <Box sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 1.5,
+              '& a': {
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  color: theme.palette.secondary.main,
+                  transform: 'translateX(5px)'
+                }
+              }
+            }}>
+              <MUILink
+                component={RouterLink}
+                to="/about"
+                color="inherit"
+                underline="none"
+                sx={{ mx: { xs: 'auto', md: 0 } }}
+              >
+                O nas
+              </MUILink>
+              <MUILink
+                component={RouterLink}
+                to="/contact"
+                color="inherit"
+                underline="none"
+                sx={{ mx: { xs: 'auto', md: 0 } }}
+              >
+                Kontakt
+              </MUILink>
+              <MUILink
+                component={RouterLink}
+                to="/privacy-policy"
+                color="inherit"
+                underline="none"
+                sx={{ mx: { xs: 'auto', md: 0 } }}
+              >
+                Polityka prywatności
+              </MUILink>
+            </Box>
+          </Grid>
 
-          {/* Sekcja kontaktu */}
-          <div className="col-md-4 mb-3">
-            <h5>Kontakt</h5>
-            <p>Email: <a href="mailto:kontakt@example.com" className="text-white">kontakt@example.com</a></p>
-            <p>Telefon: +48 123 456 789</p>
-          </div>
+          {/* Kontakt */}
+          <Grid item xs={12} md={4} sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: { xs: 'center', md: 'flex-start' }
+          }}>
+            <Typography
+              variant="h6"
+              gutterBottom
+              sx={{
+                fontWeight: 600,
+                color: theme.palette.secondary.main
+              }}
+            >
+              Kontakt
+            </Typography>
+            <Box sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 2,
+              alignItems: { xs: 'center', md: 'flex-start' }
+            }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <FaMapMarkerAlt style={{ flexShrink: 0 }} />
+                <Typography variant="body2">
+                  ul. Przykładowa 123<br/>
+                  00-001 Warszawa
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <FaPhone style={{ flexShrink: 0 }} />
+                <MUILink href="tel:+48123456789" color="inherit" underline="hover">
+                  +48 123 456 789
+                </MUILink>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <FaEnvelope style={{ flexShrink: 0 }} />
+                <MUILink href="mailto:kontakt@example.com" color="inherit" underline="hover">
+                  kontakt@example.com
+                </MUILink>
+              </Box>
+            </Box>
+          </Grid>
 
-          {/* Sekcja social media */}
-          <div className="col-md-4 mb-3">
-            <h5>Śledź nas</h5>
-            <div className="d-flex gap-3">
-              <a href="#" className="text-white fs-4"><FaFacebook /></a>
-              <a href="#" className="text-white fs-4"><FaTwitter /></a>
-              <a href="#" className="text-white fs-4"><FaInstagram /></a>
-              <a href="#" className="text-white fs-4"><FaLinkedin /></a>
-            </div>
-          </div>
-        </div>
-      </div>
+          {/* Social Media */}
+          <Grid item xs={12} md={3} sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: { xs: 'center', md: 'flex-start' }
+          }}>
+            <Typography
+              variant="h6"
+              gutterBottom
+              sx={{
+                fontWeight: 600,
+                color: theme.palette.secondary.main
+              }}
+            >
+              Śledź nas
+            </Typography>
+            <Box sx={{
+              display: 'flex',
+              gap: 1,
+              justifyContent: { xs: 'center', md: 'flex-start' },
+              '& .MuiIconButton-root': {
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  color: theme.palette.secondary.main,
+                  transform: 'translateY(-3px)'
+                }
+              }
+            }}>
+              <IconButton href="#" color="inherit" aria-label="Facebook">
+                <FaFacebook fontSize="1.5rem" />
+              </IconButton>
+              <IconButton href="#" color="inherit" aria-label="Twitter">
+                <FaTwitter fontSize="1.5rem" />
+              </IconButton>
+              <IconButton href="#" color="inherit" aria-label="Instagram">
+                <FaInstagram fontSize="1.5rem" />
+              </IconButton>
+              <IconButton href="#" color="inherit" aria-label="LinkedIn">
+                <FaLinkedin fontSize="1.5rem" />
+              </IconButton>
+            </Box>
+          </Grid>
+        </Grid>
 
-      {/* Stopka z prawami autorskimi */}
-      <div className="text-center mt-3 border-top pt-3">
-        &copy; {new Date().getFullYear()} Dwello. Wszelkie prawa zastrzeżone.
-      </div>
-    </footer>
+        <Divider sx={{
+          my: 6,
+          backgroundColor: theme.palette.divider,
+          opacity: 0.2
+        }} />
+
+        <Typography
+          variant="body2"
+          sx={{
+            opacity: 0.8,
+            fontSize: '0.875rem',
+            textAlign: { xs: 'center', md: 'center' },
+            '& a': {
+              color: 'inherit',
+              textDecoration: 'underline',
+              '&:hover': {
+                color: theme.palette.secondary.main
+              }
+            }
+          }}
+        >
+          &copy; {new Date().getFullYear()} SensIO. Wszelkie prawa zastrzeżone. |
+          <MUILink
+            component={RouterLink}
+            to="/terms"
+            color="inherit"
+            sx={{ ml: 1 }}
+          >
+            Regulamin
+          </MUILink>
+        </Typography>
+      </Container>
+    </Box>
   );
 };
 
