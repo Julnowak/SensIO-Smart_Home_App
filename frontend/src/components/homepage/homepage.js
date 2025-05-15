@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useContext} from 'react';
 import { Link } from 'react-router-dom';
 import {
   Button,
@@ -23,9 +23,11 @@ import {
   Forum,
   YouTube
 } from '@mui/icons-material';
+import {AuthContext} from "../../AuthContext";
 
 const Homepage = () => {
   const theme = useTheme();
+  const {isAuthenticated} = useContext(AuthContext);
 
   const features = [
     { icon: <Devices sx={{ fontSize: 40 }} />, title: "Integracja Urządzeń", text: "Łącz dowolne inteligentne urządzenia poprzez naszą uniwersalną platformę" },
@@ -56,7 +58,7 @@ const Homepage = () => {
             <Stack direction="row" spacing={3} justifyContent="center">
               <Button
                 component={Link}
-                to="/get-started"
+                to={isAuthenticated? "/main":"/register"}
                 variant="contained"
                 color="secondary"
                 size="large"
@@ -186,7 +188,7 @@ const Homepage = () => {
           </Typography>
           <Button
             component={Link}
-            to="/get-started"
+            to={isAuthenticated? "/main":"/register"}
             variant="contained"
             color="inherit"
             size="large"

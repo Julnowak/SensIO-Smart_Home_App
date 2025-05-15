@@ -1,214 +1,250 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import {
   Box,
   Button,
-  Card,
-  CardContent,
-  Divider,
-  Grid,
-  IconButton,
   TextField,
   Typography,
-  Stepper,
-  Step,
-  StepLabel,
-  Alert,
-  Snackbar
-} from "@mui/material";
-import {
-  Add as AddIcon,
-  Delete as DeleteIcon,
-  CheckCircle as CheckCircleIcon
-} from "@mui/icons-material";
-import EditableCanvas from "../../editableCanvas/editableCanvas";
+  Paper,
+  Grid,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel,
+  Checkbox,
+  FormControlLabel,
+} from '@mui/material';
 
-const AddHome = () => {
-  const [name, setName] = useState("");
-  const [address, setAddress] = useState("");
-  const [notes, setNotes] = useState("");
-  const [floors, setFloors] = useState(1);
-  const [activeStep, setActiveStep] = useState(0);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import { styled } from '@mui/material/styles';
 
-  const steps = ["Podstawowe informacje", "Konfiguracja pięter"];
+const VisuallyHiddenInput = styled('input')({
+  clip: 'rect(0 0 0 0)',
+  clipPath: 'inset(50%)',
+  height: 1,
+  overflow: 'hidden',
+  position: 'absolute',
+  bottom: 0,
+  left: 0,
+  whiteSpace: 'nowrap',
+  width: 1,
+});
 
-  const handleNext = () => {
-    if (!name.trim()) {
-      setError("Nazwa lokacji jest wymagana");
-      return;
+const AddHome = ({ onSave, users }) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    address: '',
+    regards: '',
+    owner: null,
+    floor_num: 1,
+    building_type: 'residual',
+    year_of_construction: new Date().getFullYear(),
+    building_area: 0,
+    current: false,
+    image: null,
+  });
+
+  const [imagePreview, setImagePreview] = useState(null);
+
+  const buildingTypes = [
+    { value: 'residual', label: 'Mieszkalne' },
+    { value: 'public', label: 'Publiczne' },
+    { value: 'industrial', label: 'Przemysłowe' },
+    { value: 'commercial', label: 'Komercyjne/handlowo-usługowe' },
+  ];
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData({
+      ...formData,
+      [name]: type === 'checkbox' ? checked : value,
+    });
+  };
+
+  const handleDateChange = (date) => {
+    setFormData({
+      ...formData,
+      year_of_construction: date ? date.getFullYear() : new Date().getFullYear(),
+    });
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setFormData({
+        ...formData,
+        image: file,
+      });
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
     }
-    setActiveStep((prevActiveStep) => prevActiveStep + 1);
-    setError("");
   };
 
-  const handleBack = () => {
-    setActiveStep((prevActiveStep) => prevActiveStep - 1);
-  };
-
-  const handleAddFloor = () => {
-    setFloors(floors + 1);
-  };
-
-  const handleRemoveFloor = (index) => {
-    if (floors > 1) {
-      setFloors(floors - 1);
-    }
-  };
-
-  const handleSubmit = () => {
-    // Here you would typically send data to your API
-    console.log({ name, address, notes, floors });
-    setSuccess(true);
-  };
-
-  const handleCloseSnackbar = () => {
-    setSuccess(false);
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSave(formData);
   };
 
   return (
-    <Box sx={{ maxWidth: 800, mx: "auto", p: 3 }}>
-      <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
-        {steps.map((label) => (
-          <Step key={label}>
-            <StepLabel>{label}</StepLabel>
-          </Step>
-        ))}
-      </Stepper>
-
-      {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
-          {error}
-        </Alert>
-      )}
-
-      {activeStep === 0 && (
-        <Card sx={{ mb: 3 }}>
-          <CardContent>
-            <Typography variant="h5" gutterBottom>
-              Nowa lokacja
-            </Typography>
-            <Divider sx={{ mb: 3 }} />
-
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Nazwa lokacji"
-                  variant="outlined"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Adres"
-                  variant="outlined"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Uwagi"
-                  variant="outlined"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  multiline
-                  rows={4}
-                />
-              </Grid>
+    <LocalizationProvider dateAdapter={AdapterDateFns}>
+      <Paper elevation={3} sx={{ p: 3, maxWidth: 800, margin: 'auto' }}>
+        <Typography variant="h5" gutterBottom>
+          Dodaj nowy budynek
+        </Typography>
+        <form onSubmit={handleSubmit}>
+          <Grid container spacing={3}>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Nazwa budynku"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                required
+              />
             </Grid>
-          </CardContent>
-        </Card>
-      )}
-
-      {activeStep === 1 && (
-        <Box>
-          <Typography variant="h6" gutterBottom>
-            Konfiguracja pięter
-          </Typography>
-
-          {Array.from({ length: floors }, (_, floorIndex) => (
-            <Card key={floorIndex} sx={{ mb: 3 }}>
-              <CardContent>
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    mb: 2
-                  }}
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Adres"
+                name="address"
+                value={formData.address}
+                onChange={handleChange}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Uwagi"
+                name="regards"
+                value={formData.regards}
+                onChange={handleChange}
+                multiline
+                rows={3}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel id="owner-label">Właściciel</InputLabel>
+                <Select
+                  labelId="owner-label"
+                  name="owner"
+                  value={formData.owner || ''}
+                  onChange={handleChange}
                 >
-                  <Typography variant="h6">
-                    Piętro {floorIndex + 1}
-                  </Typography>
-                  {floors > 1 && (
-                    <IconButton
-                      color="error"
-                      onClick={() => handleRemoveFloor(floorIndex)}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  )}
+                  {users?.map((user) => (
+                    <MenuItem key={user.id} value={user.id}>
+                      {user.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Liczba pięter"
+                name="floor_num"
+                type="number"
+                value={formData.floor_num}
+                onChange={handleChange}
+                inputProps={{ min: 1 }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel id="building-type-label">Typ budynku</InputLabel>
+                <Select
+                  labelId="building-type-label"
+                  name="building_type"
+                  value={formData.building_type}
+                  onChange={handleChange}
+                >
+                  {buildingTypes.map((type) => (
+                    <MenuItem key={type.value} value={type.value}>
+                      {type.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <DatePicker
+                views={['year']}
+                label="Rok budowy"
+                value={new Date(formData.year_of_construction, 0, 1)}
+                onChange={handleDateChange}
+                renderInput={(params) => (
+                  <TextField {...params} fullWidth />
+                )}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Powierzchnia budynku (m²)"
+                name="building_area"
+                type="number"
+                value={formData.building_area}
+                onChange={handleChange}
+                inputProps={{ min: 0 }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    name="current"
+                    checked={formData.current}
+                    onChange={handleChange}
+                    color="primary"
+                  />
+                }
+                label="Bieżący budynek"
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <Button
+                component="label"
+                variant="outlined"
+                startIcon={<CloudUploadIcon />}
+              >
+                Dodaj zdjęcie budynku
+                <VisuallyHiddenInput
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                />
+              </Button>
+              {imagePreview && (
+                <Box mt={2}>
+                  <img
+                    src={imagePreview}
+                    alt="Podgląd zdjęcia budynku"
+                    style={{ maxWidth: '100%', maxHeight: 200 }}
+                  />
                 </Box>
-                <EditableCanvas floorNumber={floorIndex + 1} />
-              </CardContent>
-            </Card>
-          ))}
-
-          <Button
-            variant="outlined"
-            startIcon={<AddIcon />}
-            onClick={handleAddFloor}
-            sx={{ mb: 3 }}
-          >
-            Dodaj piętro
-          </Button>
-        </Box>
-      )}
-
-      <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-        <Button
-          disabled={activeStep === 0}
-          onClick={handleBack}
-          sx={{ mr: 1 }}
-        >
-          Wstecz
-        </Button>
-
-        {activeStep === steps.length - 1 ? (
-          <Button
-            variant="contained"
-            onClick={handleSubmit}
-            endIcon={<CheckCircleIcon />}
-          >
-            Zakończ i zapisz
-          </Button>
-        ) : (
-          <Button variant="contained" onClick={handleNext}>
-            Dalej
-          </Button>
-        )}
-      </Box>
-
-      <Snackbar
-        open={success}
-        autoHideDuration={6000}
-        onClose={handleCloseSnackbar}
-      >
-        <Alert
-          onClose={handleCloseSnackbar}
-          severity="success"
-          sx={{ width: "100%" }}
-        >
-          Lokacja została pomyślnie dodana!
-        </Alert>
-      </Snackbar>
-    </Box>
+              )}
+            </Grid>
+            <Grid item xs={12}>
+              <Box display="flex" justifyContent="flex-end">
+                <Button
+                  type="submit"
+                  variant="contained"
+                  color="primary"
+                  size="large"
+                >
+                  Zapisz budynek
+                </Button>
+              </Box>
+            </Grid>
+          </Grid>
+        </form>
+      </Paper>
+    </LocalizationProvider>
   );
 };
 

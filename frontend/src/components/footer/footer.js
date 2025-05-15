@@ -203,7 +203,7 @@ const Footer = () => {
           &copy; {new Date().getFullYear()} SensIO. Wszelkie prawa zastrzeżone. |
           <MUILink
             component={RouterLink}
-            to="/terms"
+            to="/terms-of-service"
             color="inherit"
             sx={{ ml: 1 }}
           >

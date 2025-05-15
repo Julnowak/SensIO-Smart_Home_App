@@ -127,7 +127,6 @@ const CustomNavbar = () => {
                             onClick={handleManagementMenuOpen}
                             sx={{
                                 color: 'text.primary',
-                                p: 1.5,
                                 borderRadius: 1,
                                 transition: 'all 0.2s ease',
                                 '&:hover': {
@@ -142,7 +141,6 @@ const CustomNavbar = () => {
                             <Typography
                                 variant="subtitle1"
                                 sx={{
-                                    fontWeight: 600,
                                     display: 'flex',
                                     alignItems: 'center',
                                     gap: 0.5
@@ -277,6 +275,7 @@ const CustomNavbar = () => {
                             // Hover state
                             '&:hover': {
                                 borderRadius: 2,
+                                transform: 'translateY(-2px)',
                                 '&::before': {
                                     width: '100%',
                                     borderRadius: 2,

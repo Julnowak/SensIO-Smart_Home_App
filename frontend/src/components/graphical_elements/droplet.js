@@ -1,94 +1,99 @@
-import React, { useState, useEffect } from "react";
-import WaterDropIcon from "@mui/icons-material/WaterDrop";
-import { keyframes, styled } from "@mui/system";
+import React, { useEffect, useRef } from 'react';
+import styled, { keyframes } from 'styled-components';
 
-const fillAnimation = keyframes`
-  0% { clip-path: inset(100% 0 0 0); }
-  100% { clip-path: inset(var(--fill-percentage) 0 0 0); }
+const waveAnimation = keyframes`
+  0% {
+    transform: translateX(0) translateY(0);
+  }
+  25% {
+    transform: translateX(-25%) translateY(-3%);
+  }
+  50% {
+    transform: translateX(-50%) translateY(0);
+  }
+  75% {
+    transform: translateX(-75%) translateY(3%);
+  }
+  100% {
+    transform: translateX(-100%) translateY(0);
+  }
 `;
 
-const rippleAnimation = keyframes`
-  0% { transform: scale(0.8); opacity: 0.5; }
-  100% { transform: scale(1.2); opacity: 0; }
+const DropletContainer = styled.div`
+  position: relative;
+  width: 150px;
+  height: 150px;
+  margin: 20px;
 `;
 
-const DropletContainer = styled("div")({
-  position: "relative",
-  width: 60,
-  height: 60,
-});
+const DropletShape = styled.div`
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #e0f7fa;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  overflow: hidden;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.1);
+`;
 
-const DropletBackground = styled(WaterDropIcon)({
-  fontSize: 60,
-  color: "#e0e0e0",
-  position: "absolute",
-});
+const WaterFill = styled.div`
+  position: absolute;
+  bottom: 0;
+  width: 200%;
+  height: ${props => props.fillPercentage}%;
+  background: rgb(79, 195, 247);
+  transform: scale(1, -1);
+  transition: height 0.8s cubic-bezier(0.33, 1, 0.68, 1);
+`;
 
-const DropletFill = styled("div")(({ fillpercentage }) => ({
-  position: "absolute",
-  width: "100%",
-  height: "100%",
-  overflow: "hidden",
-  "--fill-percentage": `${100 - fillpercentage}%`,
-  animation: `${fillAnimation} 1s ease-out forwards`,
-}));
+const WaterWave = styled.div`
+  position: absolute;
+  bottom: -170px;
+  width: 200%;
+  height: 200%;
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 1200 120' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z' fill='%234fc3f7' opacity='0.25'/%3E%3Cpath d='M0,0V15.81C13,36.92,27.64,56.86,47.69,72.05,99.41,111.27,165,111,224.58,91.58c31.15-10.15,60.09-26.07,89.67-39.8,40.92-19,84.73-46,130.83-49.67,36.26-2.85,70.9,9.42,98.6,31.56,31.77,25.39,62.32,62,103.63,73,40.44,10.79,81.35-6.69,119.13-24.28s75.16-39,116.92-43.05c59.73-5.85,113.28,22.88,168.9,38.84,30.2,8.66,59,6.17,87.09-7.5,22.43-10.89,48-26.93,60.65-49.24V0Z' fill='%234fc3f7' opacity='0.25'/%3E%3Cpath d='M0,0V5.63C149.93,59,314.09,71.32,475.83,42.57c43-7.64,84.23-20.12,127.61-26.46,59-8.63,112.48,12.24,165.56,35.4C827.93,77.22,886,95.24,951.2,90c86.53-7,172.46-45.71,248.8-84.81V0Z' fill='%234fc3f7'/%3E%3C/svg%3E") repeat-x;
+  animation: ${waveAnimation} 8s cubic-bezier(0.36, 0.45, 0.63, 0.53) infinite;
+  will-change: transform;
+  opacity: 0.8;
+`;
 
-const ColoredDroplet = styled(WaterDropIcon)(({ fillpercentage }) => ({
-  fontSize: 60,
-  color: `hsl(${210 - fillpercentage * 0.5}, 80%, 50%)`, // Color changes with fill level
-  filter: `drop-shadow(0 0 ${fillpercentage * 0.1}px rgba(33, 150, 243, 0.5))`,
-}));
+const PercentageText = styled.div`
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #0077b6;
+  font-size: 24px;
+  font-weight: bold;
+  z-index: 10;
+  text-shadow: 0 1px 3px rgba(255, 255, 255, 0.8);
+`;
 
-const RippleEffect = styled("div")({
-  position: "absolute",
-  width: "100%",
-  height: "100%",
-  borderRadius: "50%",
-  backgroundColor: "rgba(33, 150, 243, 0.3)",
-  animation: `${rippleAnimation} 1.5s infinite`,
-});
-
-const Droplet = ({ fillPercentage }) => {
-  const [prevFill, setPrevFill] = useState(0);
-  const [rippleKey, setRippleKey] = useState(0);
-  const validFill = Math.max(0, Math.min(100, fillPercentage));
+const Droplet = ({ fillPercentage = 50 }) => {
+  const waveRef = useRef(null);
 
   useEffect(() => {
-    if (prevFill !== validFill) {
-      setRippleKey((k) => k + 1); // Trigger ripple effect on change
-      setPrevFill(validFill);
-    }
-  }, [validFill, prevFill]);
+    const resetAnimation = () => {
+      if (waveRef.current) {
+        const wave = waveRef.current;
+        wave.style.animation = 'none';
+        setTimeout(() => {
+          wave.style.animation = '';
+        }, 10);
+      }
+    };
+
+    resetAnimation();
+  }, [fillPercentage]);
 
   return (
     <DropletContainer>
-      {/* Background Drop */}
-      <DropletBackground />
-
-      {/* Filled Portion */}
-      <DropletFill fillpercentage={validFill}>
-        <ColoredDroplet fillpercentage={validFill} />
-      </DropletFill>
-
-      {/* Animated Ripple Effect */}
-      {validFill > 0 && validFill < 100 && (
-        <RippleEffect key={rippleKey} style={{ animationDelay: "0.3s" }} />
-      )}
-
-      {/* Percentage Text */}
-      <div style={{
-        position: "absolute",
-        width: "100%",
-        textAlign: "center",
-        top: "50%",
-        transform: "translateY(-50%)",
-        color: validFill > 50 ? "white" : "#666",
-        fontSize: "0.8rem",
-        fontWeight: "bold",
-        pointerEvents: "none",
-      }}>
-        {validFill}%
-      </div>
+      <DropletShape>
+        <WaterFill fillPercentage={Math.min(100, Math.max(0, fillPercentage))}>
+          <WaterWave ref={waveRef} />
+        </WaterFill>
+        <PercentageText>{fillPercentage}%</PercentageText>
+      </DropletShape>
     </DropletContainer>
   );
 };

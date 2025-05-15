@@ -116,7 +116,7 @@ const Register = () => {
             fontWeight: 700,
             color: 'text.primary'
           }}>
-            Zarejestruj się
+            Rejestracja
           </Typography>
 
           {errmess && (
@@ -137,7 +137,7 @@ const Register = () => {
 
             <TextField
               fullWidth
-              label="Adres email"
+              label="E-mail"
               variant="outlined"
               value={email}
               onChange={(e) => setEmail(e.target.value)}

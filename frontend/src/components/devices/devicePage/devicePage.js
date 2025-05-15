@@ -3,20 +3,20 @@ import { API_BASE_URL } from "../../../config";
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
-    Box,
-    Card,
-    CardContent,
-    Typography,
-    Divider,
-    Chip,
-    Button,
-    Avatar,
-    List,
-    ListItem,
-    ListItemAvatar,
-    ListItemText,
-    Paper,
-    useTheme, Grid, CircularProgress, Container
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Divider,
+  Chip,
+  Button,
+  Avatar,
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemText,
+  Paper,
+  useTheme, Grid, CircularProgress, Container, Switch, FormControlLabel
 } from "@mui/material";
 import {
   Memory as MemoryIcon,
@@ -25,7 +25,7 @@ import {
   Info as InfoIcon,
   Factory as FactoryIcon,
   ArrowBack as ArrowBackIcon,
-  Settings as SettingsIcon
+  Settings as SettingsIcon, RestartAlt
 } from "@mui/icons-material";
 import { styled } from "@mui/material/styles";
 
@@ -107,22 +107,19 @@ const DevicePage = () => {
           variant="outlined"
           sx={{ borderRadius: 2 }}
         >
-          Back to Devices
+          Powrót
         </Button>
-        <Button
-          component={Link}
-          to={`/device/${params.id}/edit`}
-          startIcon={<SettingsIcon />}
-          variant="contained"
-          sx={{ borderRadius: 2 }}
-        >
-          Edit Device
-        </Button>
+        <Box sx={{ display: 'flex', textAlign: 'right', gap: 2,}}>
+          <FormControlLabel control={<Switch defaultChecked color="success"/>} label="Aktywne" />
+        </Box>
       </Box>
 
-      <DeviceCard>
+      <DeviceCard sx={{margin: "auto"}}>
         <CardContent sx={{ p: 4 }}>
           <Box sx={{ textAlign: 'center', mb: 4 }}>
+            <Box sx={{ display: 'flex', justifyContent: "right", textAlign: 'right', gap: 2,}}>
+              <Typography><b>Ostatnio aktywny:</b><br/> 5 minut temu</Typography>
+            </Box>
             <Avatar
               sx={{
                 width: 80,
@@ -137,15 +134,25 @@ const DevicePage = () => {
             <Typography variant="h4" component="h1" gutterBottom>
               {device.name}
             </Typography>
-            <Chip
-              label={device.room || "Not assigned"}
-              color="primary"
-              sx={{
-                backgroundColor: getRoomColor(device.room),
-                color: theme.palette.getContrastText(getRoomColor(device.room)),
-                fontWeight: 'bold'
-              }}
-            />
+            <Box>
+              <Chip
+                label={device.room || "Not assigned"}
+                color="primary"
+                sx={{
+                  backgroundColor: getRoomColor(device.room),
+                  color: theme.palette.getContrastText(getRoomColor(device.room)),
+                  fontWeight: 'bold',
+                  mr: 0.5
+                }}
+              />
+              <Chip label="Online"
+                    sx={{
+                      color: theme.palette.getContrastText(getRoomColor(device.room)),
+                      fontWeight: 'bold',
+                      ml: 0.5
+                    }}
+                    color="success" />
+            </Box>
           </Box>
 
           <Divider sx={{ my: 3 }} />
@@ -153,58 +160,100 @@ const DevicePage = () => {
           <List>
             <InfoListItem>
               <ListItemAvatar>
-                <Avatar sx={{ bgcolor: theme.palette.primary.light }}>
+                <Avatar sx={{ bgcolor: theme.palette.primary.light, mr: 2 }}>
                   <MemoryIcon sx={{ color: theme.palette.primary.contrastText }} />
                 </Avatar>
               </ListItemAvatar>
               <ListItemText
-                primary="Topic"
+                primary="Temat"
                 secondary={device.topic || "N/A"}
                 secondaryTypographyProps={{ variant: "body1" }}
               />
             </InfoListItem>
 
-            <InfoListItem>
-              <ListItemAvatar>
-                <Avatar sx={{ bgcolor: theme.palette.secondary.light }}>
-                  <QrCodeIcon sx={{ color: theme.palette.secondary.contrastText }} />
-                </Avatar>
-              </ListItemAvatar>
-              <ListItemText
-                primary="Serial Number"
-                secondary={device.serial_number || "Unknown"}
-                secondaryTypographyProps={{ variant: "body1" }}
-              />
-            </InfoListItem>
+            <Grid container spacing={3}>
+              <Grid item xs={12} sm={6}>
+                <InfoListItem>
+                  <ListItemAvatar>
+                    <Avatar sx={{ bgcolor: theme.palette.warning.light, mr: 2 }}>
+                      <FactoryIcon sx={{ color: theme.palette.warning.contrastText }} />
+                    </Avatar>
+                  </ListItemAvatar>
+                  <ListItemText
+                    primary="Marka"
+                    secondary={device.brand || "Nieznana"}
+                    secondaryTypographyProps={{ variant: "body1" }}
+                  />
+                </InfoListItem>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <InfoListItem>
+                  <ListItemAvatar>
+                    <Avatar sx={{ bgcolor: theme.palette.secondary.light, mr: 2 }}>
+                      <QrCodeIcon sx={{ color: theme.palette.secondary.contrastText }} />
+                    </Avatar>
+                  </ListItemAvatar>
+                  <ListItemText
+                    primary="Nr. seryjny"
+                    secondary={device.serial_number || "Nieznana"}
+                    secondaryTypographyProps={{ variant: "body1" }}
+                  />
+                </InfoListItem>
+              </Grid>
+            </Grid>
+
+            <Grid container spacing={3}>
+              <Grid item xs={12} sm={6}>
+                <InfoListItem>
+                  <ListItemAvatar>
+                    <Avatar sx={{ bgcolor: theme.palette.warning.light, mr: 2 }}>
+                      <FactoryIcon sx={{ color: theme.palette.warning.contrastText }} />
+                    </Avatar>
+                  </ListItemAvatar>
+                  <ListItemText
+                    primary="Marka"
+                    secondary={device.brand || "Nieznana"}
+                    secondaryTypographyProps={{ variant: "body1" }}
+                  />
+                </InfoListItem>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <InfoListItem>
+                  <ListItemAvatar>
+                    <Avatar sx={{ bgcolor: theme.palette.secondary.light, mr: 2 }}>
+                      <QrCodeIcon sx={{ color: theme.palette.secondary.contrastText }} />
+                    </Avatar>
+                  </ListItemAvatar>
+                  <ListItemText
+                    primary="Nr. seryjny"
+                    secondary={device.serial_number || "Nieznana"}
+                    secondaryTypographyProps={{ variant: "body1" }}
+                  />
+                </InfoListItem>
+              </Grid>
+            </Grid>
 
             <InfoListItem>
               <ListItemAvatar>
-                <Avatar sx={{ bgcolor: theme.palette.warning.light }}>
-                  <FactoryIcon sx={{ color: theme.palette.warning.contrastText }} />
-                </Avatar>
-              </ListItemAvatar>
-              <ListItemText
-                primary="Brand"
-                secondary={device.brand || "Unknown"}
-                secondaryTypographyProps={{ variant: "body1" }}
-              />
-            </InfoListItem>
-
-            <InfoListItem>
-              <ListItemAvatar>
-                <Avatar sx={{ bgcolor: theme.palette.info.light }}>
+                <Avatar sx={{ bgcolor: theme.palette.info.light, mr: 2 }}>
                   <InfoIcon sx={{ color: theme.palette.info.contrastText }} />
                 </Avatar>
               </ListItemAvatar>
               <ListItemText
-                primary="Additional Info"
-                secondary={device.info || "No additional information available"}
+                primary="Szczegóły"
+                secondary={device.info || "Nie dodano żadnych dodatkowych informacji."}
                 secondaryTypographyProps={{ variant: "body1", sx: { whiteSpace: 'pre-line' } }}
               />
             </InfoListItem>
           </List>
 
           <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end' }}>
+            <Button variant="outlined" startIcon={<RestartAlt />}
+                    sx={{ borderRadius: 2, mx: 1 }}
+            >
+              Restart
+            </Button>
+
             <Button
               component={Link}
               to={`/device/${params.id}/settings`}
@@ -213,18 +262,17 @@ const DevicePage = () => {
               startIcon={<SettingsIcon />}
               sx={{ borderRadius: 2 }}
             >
-              Device Settings
+              Edytuj
             </Button>
           </Box>
         </CardContent>
       </DeviceCard>
 
-      {/* Status and Statistics Section */}
       <Grid container spacing={3} sx={{ mt: 2 }}>
         <Grid item xs={12} md={6}>
           <Paper elevation={2} sx={{ p: 3, borderRadius: 3 }}>
             <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
-              Device Status
+              Logi urządzenia
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <Chip label="Online" color="success" />
@@ -232,20 +280,8 @@ const DevicePage = () => {
             </Box>
           </Paper>
         </Grid>
-        <Grid item xs={12} md={6}>
-          <Paper elevation={2} sx={{ p: 3, borderRadius: 3 }}>
-            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
-              Quick Actions
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <Button variant="outlined">Restart</Button>
-              <Button variant="outlined" color="error">
-                Disable
-              </Button>
-            </Box>
-          </Paper>
-        </Grid>
       </Grid>
+
     </Container>
   );
 };

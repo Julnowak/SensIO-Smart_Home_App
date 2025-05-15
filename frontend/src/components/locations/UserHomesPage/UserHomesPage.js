@@ -202,22 +202,9 @@ const UserHomesPage = () => {
           }}
           secondaryAction={
             <Box sx={{ display: 'flex', gap: 1 }}>
+
               <IconButton
-                edge="end"
-                href={`/home/${location.home_id}/edit`}
-                onClick={(e) => e.stopPropagation()}
-                sx={{
-                  color: 'text.secondary',
-                  '&:hover': {
-                    color: 'primary.main',
-                    backgroundColor: 'rgba(25, 118, 210, 0.08)'
-                  }
-                }}
-              >
-                <Edit fontSize="small" />
-              </IconButton>
-              <IconButton
-                edge="end"
+                edge="start"
                 onClick={(e) => {
                   e.stopPropagation();
                   handleDelete(location.home_id);
@@ -263,9 +250,9 @@ const UserHomesPage = () => {
                   {location.name}
                   {location.current && (
                     <Chip
-                      label="Current"
+                      label="Wybrane"
                       size="small"
-                      color="success"
+                      color="primary"
                       icon={<CheckCircle fontSize="small" />}
                       sx={{
                         height: 20,

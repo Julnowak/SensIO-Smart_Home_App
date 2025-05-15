@@ -100,7 +100,7 @@ const BuildingPage = () => {
 
   const handleSave = () => {
     setIsEditing(false);
-    // Add API call to save changes here
+    // Add API c/all to save changes here
   };
 
   if (!location) {

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, {useEffect, useState} from "react";
 import {
   Box,
   Button,
@@ -15,29 +15,48 @@ import {
   MenuItem,
   IconButton,
   Typography,
-  TablePagination
+  TablePagination, Chip
 } from "@mui/material";
 import {
   Delete as DeleteIcon,
   Edit as EditIcon,
   Search as SearchIcon
 } from "@mui/icons-material";
-
-const exampleLogs = [
-  {id: 1, time: "2025-03-05T14:30:00", name: "Otwarto okno", type: "manual", device_id: 101},
-  {id: 2, time: "2025-03-05T15:00:00", name: "Zamknięto drzwi", type: "automatic", device_id: 102},
-  {id: 3, time: "2025-03-05T16:15:00", name: "Włączono światło", type: "manual", device_id: 103},
-];
+import client from "../../client";
+import {API_BASE_URL} from "../../config";
 
 function History() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
-  const [filters, setFilters] = useState({ name: "", type: "", time: "" });
+  const [filters, setFilters] = useState({ description: "", type: "", created_at: "" });
+  const [logs, setLogs] = useState([]);
 
-  const filteredLogs = exampleLogs.filter((log) =>
-    (filters.name === "" || log.name.toLowerCase().includes(filters.name.toLowerCase())) &&
+  const token = localStorage.getItem("access");
+
+  useEffect(() => {
+      const fetchData = async () => {
+          try {
+              const response = await client.get(API_BASE_URL + "actions", {
+                  headers: {
+                      Authorization: `Bearer ${token}`,
+                  },
+              });
+              setLogs(response.data);
+              console.log(response.data)
+          } catch (error) {
+              console.error("Failed to fetch logs", error);
+          }
+      };
+
+      if (token) {
+          fetchData();
+      }
+  }, [token]);
+
+  const filteredLogs = logs.filter((log) =>
+    (filters.description === "" || log.description.toLowerCase().includes(filters.name.toLowerCase())) &&
     (filters.type === "" || log.type === filters.type) &&
-    (filters.time === "" || log.time.startsWith(filters.time))
+    (filters.created_at === "" || log.created_at.startsWith(filters.time))
   );
 
   const handleChangePage = (event, newPage) => {
@@ -53,7 +72,7 @@ function History() {
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Paper elevation={3} sx={{ p: 3 }}>
         <Typography variant="h4" gutterBottom sx={{ mb: 3 }}>
-          Logi systemu Smart Home
+          Logi systemowe
         </Typography>
 
         <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
@@ -73,8 +92,8 @@ function History() {
             sx={{ minWidth: 150 }}
           >
             <MenuItem value="">Wszystkie typy</MenuItem>
-            <MenuItem value="manual">Ręczne</MenuItem>
-            <MenuItem value="automatic">Automatyczne</MenuItem>
+            <MenuItem value="MANUAL">Ręczne</MenuItem>
+            <MenuItem value="AUTO">Automatyczne</MenuItem>
           </Select>
 
           <TextField
@@ -99,10 +118,10 @@ function History() {
             <TableHead sx={{ bgcolor: 'background.default' }}>
               <TableRow>
                 <TableCell>Czas</TableCell>
-                <TableCell>ID Urządzenia</TableCell>
-                <TableCell>Akcja</TableCell>
-                <TableCell>Typ</TableCell>
-                <TableCell align="right">Akcje</TableCell>
+                <TableCell>Urządzenie</TableCell>
+                <TableCell>Opis</TableCell>
+                <TableCell>Wartość</TableCell>
+                <TableCell align="center">Info</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -115,31 +134,20 @@ function History() {
                     sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
                   >
                     <TableCell>
-                      {new Date(log.time).toLocaleString()}
+                      {new Date(log.created_at).toLocaleString()}
                     </TableCell>
-                    <TableCell>#{log.device_id}</TableCell>
-                    <TableCell>{log.name}</TableCell>
+                    <TableCell>#{log.device.brand}_{log.device.serial_number}<br/>"{log.device.name}"</TableCell>
+                    <TableCell>{log.description}</TableCell>
+
                     <TableCell>
-                      <Typography
-                        variant="caption"
-                        sx={{
-                          px: 1.5,
-                          py: 0.5,
-                          borderRadius: 1,
-                          bgcolor: log.type === 'manual' ? 'info.light' : 'success.light',
-                          color: log.type === 'manual' ? 'info.dark' : 'success.dark'
-                        }}
-                      >
-                        {log.type === "manual" ? "Ręczne" : "Automatyczne"}
-                      </Typography>
+                      {log.measurement?.value? log.measurement.value: "-----"}
                     </TableCell>
+
                     <TableCell align="right">
-                      <IconButton aria-label="edit" color="primary">
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton aria-label="delete" color="error">
-                        <DeleteIcon />
-                      </IconButton>
+                      <Chip sx={{m:0.5}} label={`${log.device.room.home.name}`} color="primary" />
+                      <Chip sx={{m:0.5}} label={`${log.device.room.name}`} color="secondary" />
+                      <Chip sx={{m:0.5}} label={`${log.device.data_type}`} color="success" />
+                      <Chip sx={{m:0.5}} label={log.type === "manual" ? "Ręczne" : "Automatyczne"} color="success" />
                     </TableCell>
                   </TableRow>
                 ))}

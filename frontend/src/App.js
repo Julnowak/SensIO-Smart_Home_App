@@ -24,6 +24,10 @@ import Register from "./components/user/register/register";
 import Notifications from "./components/notifications/notifications";
 import ThemeLoader from "./themeLoader";
 import ForgotPasswordPage from "./components/forgotPassword/forgotPassword";
+import TermsOfService from "./components/termsOfService/termsOfService";
+import PrivacyPolicy from "./components/termsOfService/privacyPolicy";
+import Contact from "./components/termsOfService/contact";
+import About from "./components/termsOfService/about";
 
 function App() {
     const { mode } = useContext(ThemeContext);
@@ -56,6 +60,11 @@ function App() {
                         <Route path="/home/:id" element={<BuildingPage/>}/>
                         <Route path="/room/:id" element={<RoomPage/>}/>
                         <Route path="/notifications" element={<Notifications/>}/>
+
+                        <Route path="/terms-of-service" element={<TermsOfService/>}/>
+                        <Route path="/privacy-policy" element={<PrivacyPolicy/>}/>
+                        <Route path="/contact" element={<Contact/>}/>
+                        <Route path="/about" element={<About/>}/>
                     </Routes>
                 </div>
                 {/* Routes */}

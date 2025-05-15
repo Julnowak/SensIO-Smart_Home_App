@@ -82,7 +82,7 @@ const Login = () => {
           }
         }}>
           <img
-            src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRKhJ9vY-WJviH34cgDfbG2Hn_cBf0t5BBmaWrmH--NzBO3pjGP6hjV7pb8s958ug9K7p6iR-3vz6nlw7c4i5ZdMw"
+            src="https://cdni.iconscout.com/illustration/premium/thumb/boy-using-wireless-technology-illustration-download-in-svg-png-gif-file-formats--wifi-logo-connection-smarthome-smartphone-pack-e-commerce-shopping-illustrations-3443561.png"
             alt="Login Illustration"
             style={{ width: '100%', maxWidth: 300 }}
           />
@@ -92,7 +92,7 @@ const Login = () => {
             textAlign: 'center',
             fontWeight: 500
           }}>
-            Welcome Back to Our Platform
+            Witaj na naszej platformie!
           </Typography>
         </Box>
 
@@ -111,7 +111,7 @@ const Login = () => {
             fontWeight: 700,
             color: 'text.primary'
           }}>
-            Sign In
+            Logowanie
           </Typography>
 
           {errmess && (
@@ -123,7 +123,7 @@ const Login = () => {
           <Stack component="form" onSubmit={handleSubmit} spacing={3}>
             <TextField
               fullWidth
-              label="Email Address"
+              label="E-mail"
               variant="outlined"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -136,7 +136,7 @@ const Login = () => {
 
             <TextField
               fullWidth
-              label="Password"
+              label="Hasło"
               variant="outlined"
               type={showPassword ? 'text' : 'password'}
               value={password}
@@ -170,7 +170,7 @@ const Login = () => {
                 }
               }}
             >
-              {isLoading ? 'Signing In...' : 'Sign In'}
+              {isLoading ? 'Logowanie...' : 'Zaloguj się'}
             </Button>
 
             <Box sx={{
@@ -184,7 +184,7 @@ const Login = () => {
                 color="primary"
                 sx={{ textTransform: 'none' }}
               >
-                Create new account
+                Utwórz konto
               </Button>
               <Button
                 component={Link}
@@ -192,13 +192,13 @@ const Login = () => {
                 color="primary"
                 sx={{ textTransform: 'none' }}
               >
-                Forgot password?
+                Zapomniałeś hasła?
               </Button>
             </Box>
 
             <Divider sx={{ my: 2 }}>
               <Typography variant="body2" color="text.secondary">
-                OR CONTINUE WITH
+                LUB ZALOGUJ PRZEZ
               </Typography>
             </Divider>
 

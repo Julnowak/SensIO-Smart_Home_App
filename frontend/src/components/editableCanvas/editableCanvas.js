@@ -34,7 +34,8 @@ const RoomBlock = ({
   onDelete,
   isPositionOccupied,
   selectedBlock,
-  setSelectedBlock
+  setSelectedBlock,
+  hasChildren,
 }) => {
   const isSelected = selectedBlock === room_id;
 
@@ -189,27 +190,36 @@ const RoomBlock = ({
         </Box>
       </Box>
 
-      {isSelected && (
-        <Tooltip title="Delete room" TransitionComponent={Zoom}>
-          <IconButton
-            size="small"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(room_id);
-            }}
-            sx={{
-              position: "absolute",
-              top: -12,
-              right: -12,
-              bgcolor: "error.main",
-              color: "error.contrastText",
-              "&:hover": { bgcolor: "error.dark" }
-            }}
-          >
-            <DeleteIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
-      )}
+    {isSelected && (
+  <Tooltip
+    title={hasChildren ? "Nie można usunąć pokoju z podłączonymi elementami" : "Usuń pokój"}
+    TransitionComponent={Zoom}
+  >
+    <span>
+      <IconButton
+        size="small"
+        onClick={(e) => {
+          e.stopPropagation();
+          onDelete(room_id);
+        }}
+        disabled={hasChildren}
+        sx={{
+          position: "absolute",
+          top: -12,
+          right: -12,
+          bgcolor: "error.main",
+          color: "error.contrastText",
+          "&:hover": { bgcolor: "error.dark" },
+          display: hasChildren ? 'none' : 'inline-flex',
+          transition: 'opacity 0.2s',
+          opacity: hasChildren ? 0 : 1
+        }}
+      >
+        <DeleteIcon fontSize="small" />
+      </IconButton>
+    </span>
+  </Tooltip>
+)}
     </Box>
   );
 };
@@ -259,21 +269,22 @@ const EditableCanvas = ({ layout, floor_id }) => {
   };
 
   useEffect(() => {
-    if (layout && layout.length > 0) {
-      setBlocks(layout);
-    } else {
-      setBlocks([{
-        room_id: uuidv4(),
-        name: "Main Room",
-        position: { x: 0, y: 0 },
-        floor: floor_id
-      }]);
-    }
-
-    const canvas = canvasRef.current;
-    canvas.addEventListener("wheel", handleWheel, { passive: false });
-    return () => canvas.removeEventListener("wheel", handleWheel);
-  }, [floor_id, layout]);
+  if (layout && layout.length > 0) {
+    const convertedLayout = layout.map(room => ({
+      ...room,
+      room_id: room.room_id.toString(), // Konwersja do stringa
+      parent: room.parent ? room.parent.toString() : null
+    }));
+    setBlocks(convertedLayout);
+  } else {
+    setBlocks([{
+      room_id: uuidv4(),
+      name: "Main Room",
+      position: { x: 0, y: 0 },
+      floor: floor_id || 1
+    }]);
+  }
+}, [floor_id, layout]);
 
   const isPositionOccupied = (newPosition) => {
     return blocks.some(block =>
@@ -308,11 +319,11 @@ const EditableCanvas = ({ layout, floor_id }) => {
 
     if (!isPositionOccupied(newPosition)) {
       const newBlock = {
-        room_id: uuidv4(),
+        room_id: `temp-${uuidv4()}`,  // Add temp- prefix
         name: `Room ${blocks.length + 1}`,
         position: newPosition,
         parent: room_id,
-        floor: floor_id
+        floor: floor_id || 1
       };
 
       setBlocks(prevBlocks => [...prevBlocks, newBlock]);
@@ -328,18 +339,24 @@ const EditableCanvas = ({ layout, floor_id }) => {
     );
   };
 
-  const handleDeleteBlock = (room_id) => {
-    setBlocks(prevBlocks => prevBlocks.filter(b => b.room_id !== room_id));
-    setSelectedBlock(null);
-  };
+    const handleDeleteBlock = (room_id) => {
+      // Usuń wszystkie dzieci
+      const children = blocks.filter(b => b.parent === room_id);
+      if(children.length > 0) return;
+
+      setBlocks(prevBlocks =>
+        prevBlocks.filter(b => b.room_id !== room_id)
+      );
+      setSelectedBlock(null);
+    };
 
   const handleAddInitialBlock = () => {
-    const newBlock = {
-      room_id: uuidv4(),
-      name: `Room ${blocks.length + 1}`,
-      position: { x: 0, y: 0 },
-      floor: floor_id
-    };
+      const newBlock = {
+        room_id: `temp-${uuidv4()}`,  // Add temp- prefix
+        name: `Room ${blocks.length + 1}`,
+        position: { x: 0, y: 0 },
+        floor: floor_id || 1
+      };
     setBlocks([...blocks, newBlock]);
     setSelectedBlock(newBlock.room_id);
   };
@@ -349,21 +366,27 @@ const EditableCanvas = ({ layout, floor_id }) => {
     setOffset({ x: 0, y: 0 });
   };
 
-  const token = localStorage.getItem("access");
-  const handleSaveLayout = () => {
-    client.post(API_BASE_URL + "layout_handler/",
-      {
-        layout: JSON.stringify(blocks),
-      }, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-      .then((response) => {
-        console.log("Layout saved successfully:", response);
-      })
-      .catch((error) => console.error("Error saving layout:", error));
-  };
+const token = localStorage.getItem("access");
+const handleSaveLayout = () => {
+  const layoutToSave = blocks.map(block => ({
+    ...block,
+    room_id: block.room_id, // Backend i tak nadpisze to AutoField
+    parent: block.parent ? Number(block.parent) : null // Konwersja do liczby
+  }));
+
+  client.post(API_BASE_URL + "layout_handler/",
+    { layout: JSON.stringify(layoutToSave) },
+    { headers: { Authorization: `Bearer ${token}` } }
+  )
+  .then(response => {
+    // Aktualizacja ID po zapisie
+    const updatedBlocks = blocks.map(block => ({
+      ...block,
+      room_id: response.data[block.room_id] || block.room_id
+    }));
+    setBlocks(updatedBlocks);
+  });
+};
 
   return (
     <Box
@@ -402,8 +425,9 @@ const EditableCanvas = ({ layout, floor_id }) => {
             willChange: "transform"
           }}
         >
-          {blocks.map((block) => (
-            <RoomBlock
+          {blocks.map((block) => {
+          const hasChildren = blocks.some(b => b.parent === block.room_id);
+          return (<RoomBlock
               key={block.room_id}
               room_id={block.room_id}
               name={block.name}
@@ -415,8 +439,9 @@ const EditableCanvas = ({ layout, floor_id }) => {
               isPositionOccupied={isPositionOccupied}
               selectedBlock={selectedBlock}
               setSelectedBlock={setSelectedBlock}
-            />
-          ))}
+              hasChildren={hasChildren}
+            />);
+        })}
         </Box>
       </Box>
 

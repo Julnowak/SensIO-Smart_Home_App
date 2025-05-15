@@ -22,7 +22,7 @@ import {
   LocalCafe as CoffeeIcon,
   AttachMoney as DonateIcon,
   Close as CloseIcon,
-  Save as SaveIcon
+  Save as SaveIcon, Close
 } from "@mui/icons-material";
 import Cropper from "react-easy-crop";
 import client from "../../../client";
@@ -189,6 +189,27 @@ export default function UserProfile() {
     });
   };
 
+  const handleEdit = async (e) => {
+
+    if (isEditing) {
+      try {
+        const response = await client.put(API_BASE_URL + "user/", {
+          email: user.email,
+          surname: user.surname,
+          name: user.name,
+          telephone: user.telephone,
+          address: user.address,
+        }, {
+          headers: {Authorization: `Bearer ${token}`},
+        });
+        setUser(response.data);
+      } catch (error) {
+        console.error("Failed to fetch user data:", error);
+      }
+    }
+    setIsEditing(!isEditing)
+  };
+
   const handleCropSave = async () => {
     if (!imageSrc || !croppedAreaPixels) {
       console.error("Brak obrazu lub danych przycięcia.");
@@ -298,24 +319,31 @@ export default function UserProfile() {
         <CardHeader
           title="Informacje osobiste"
           action={
-            <Button
-              startIcon={isEditing ? <SaveIcon /> : <EditIcon />}
-              variant={isEditing ? "contained" : "outlined"}
-              color={isEditing ? "success" : "primary"}
-              onClick={() => setIsEditing(!isEditing)}
-            >
-              {isEditing ? "Zapisz" : "Edytuj"}
-            </Button>
+            <>
+              {!isEditing? null:<Close sx={{mr:2, cursor: "pointer"}} onClick={() => {
+                setIsEditing(!isEditing)
+              }}/>}
+
+              <Button
+                startIcon={isEditing ? <SaveIcon /> : <EditIcon />}
+                variant={isEditing ? "contained" : "outlined"}
+                color={isEditing ? "success" : "primary"}
+                onClick={handleEdit}
+              >
+                {isEditing ? "Zapisz" : "Edytuj"}
+              </Button>
+            </>
           }
         />
         <Divider />
+
         <CardContent>
           <Grid container spacing={3}>
             <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
                 label="Imię"
-                name="firstName"
+                name="name"
                 value={user.name || ''}
                 onChange={handleChange}
                 disabled={!isEditing}
@@ -326,7 +354,7 @@ export default function UserProfile() {
               <TextField
                 fullWidth
                 label="Nazwisko"
-                name="lastName"
+                name="surname"
                 value={user.surname || ''}
                 onChange={handleChange}
                 disabled={!isEditing}
@@ -380,7 +408,7 @@ export default function UserProfile() {
                 Wesprzyj nas
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Jeśli podoba Ci się nasza platforma, rozważ postawienie nam kawy lub dokonanie dotacji.
+                Jeśli podoba Ci się nasza platforma, rozważ wpłacenie datku, który pomoże nam się rozwijać! Chętnie przyjmiemy również każdy feedback, którym chciałbyś się z nami podzielić! :)
               </Typography>
             </Box>
           </Box>
@@ -390,11 +418,11 @@ export default function UserProfile() {
               color="primary"
               startIcon={<CoffeeIcon />}
             >
-              Postaw kawę
+              Feedback
             </Button>
             <Button
-              variant="outlined"
-              color="success"
+              variant="contained"
+              color="primary"
               startIcon={<DonateIcon />}
             >
               Dotacja
