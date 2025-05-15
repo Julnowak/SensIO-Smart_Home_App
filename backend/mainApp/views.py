@@ -4,9 +4,9 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth import get_user_model
 from django.http import JsonResponse
 from django.core.cache import cache
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 
-from .models import Room, Device, Floor, Notification
+from .models import Room, Device, Floor, Notification, Action
 
 # Create your views here.
 from rest_framework import permissions, status
@@ -16,7 +16,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from mainApp.models import AppUser, Home
 from mainApp.serializers import UserRegisterSerializer, HomeSerializer, DeviceSerializer, UserSerializer, \
-    RoomSerializer, NotificationSerializer
+    RoomSerializer, NotificationSerializer, ActionSerializer
 
 UserModel = get_user_model()
 
@@ -80,7 +80,7 @@ class UserLogout(APIView):
 
 class OneUserData(APIView):
     permission_classes = (permissions.IsAuthenticated,)  # Only authenticated users can log out
-    parser_classes = (MultiPartParser, FormParser)
+    parser_classes = (MultiPartParser, FormParser, JSONParser)
 
     def get(self, request):
         serializer = UserSerializer(request.user)
@@ -100,10 +100,10 @@ class OneUserData(APIView):
 
     def put(self, request):
         user = request.user
+        print(request.data)
         user.email = request.data.get("email")
         user.name = request.data.get("name")
-        user.username = request.data.get("username")
-        user.telephone = request.data.get("phone")
+        user.telephone = request.data.get("telephone")
         user.address = request.data.get("address")
         user.surname = request.data.get("surname")
         user.save()
@@ -122,6 +122,13 @@ class UserHomesData(APIView):
     def get(self, request):
         homes = Home.objects.filter(owner=request.user)
         serializer = HomeSerializer(homes, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        name = request.POST.get("name")
+        address = request.POST.get("address")
+        home = Home.objects.create(name=name, address=address, owner=request.user)
+        serializer = HomeSerializer(home)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def put(self,request):
@@ -192,6 +199,16 @@ class DeviceData(APIView):
     def get(self, request, device_id):
         device = Device.objects.get(device_id=device_id)
         serializer = DeviceSerializer(device)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class ActionData(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get(self, request):
+
+        actions = Action.objects.filter(device__owner=request.user).order_by("-created_at")
+        serializer = ActionSerializer(actions, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 

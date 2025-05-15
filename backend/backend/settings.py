@@ -172,3 +172,6 @@ SIMPLE_JWT = {
 import os
 MEDIA_URL = '../frontend/public/images/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, '../frontend/public/images/media/')
+
+USE_TZ = True
+TIME_ZONE = 'Europe/Warsaw'

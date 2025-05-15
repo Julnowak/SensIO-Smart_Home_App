@@ -4,7 +4,7 @@ from rest_framework import serializers
 # from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, get_user_model
 
-from mainApp.models import Home, Device, Room, Notification
+from mainApp.models import Home, Device, Room, Notification, Action
 
 UserModel = get_user_model()
 
@@ -45,12 +45,22 @@ class HomeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Home
         fields = '__all__'
+        depth = 2
 
 
 class NotificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Notification
         fields = '__all__'
+
+
+class ActionSerializer(serializers.ModelSerializer):
+    # device_id = serializers.IntegerField(source='device.device_id', read_only=True)
+
+    class Meta:
+        model = Action
+        fields = '__all__'
+        depth = 4
 
 
 class DeviceSerializer(serializers.ModelSerializer):

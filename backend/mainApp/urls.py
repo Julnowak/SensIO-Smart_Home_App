@@ -21,5 +21,6 @@ urlpatterns = [
     path("room/<int:room_id>/light/", get_light_status, name="get_light_status"),
     path("room/<int:room_id>/", views.RoomData.as_view(), name="room"),
     path("device/<int:device_id>/", views.DeviceData.as_view(), name="device"),
+    path("actions/", views.ActionData.as_view(), name="actions"),
     path("layout_handler/", views.LayoutHandler.as_view(), name="layout_handler"),
 ]

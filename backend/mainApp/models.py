@@ -4,7 +4,7 @@ from django.db import models
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.utils.crypto import get_random_string
-from django.utils.timezone import now
+from django.utils import timezone
 
 # Create your models here.
 class AppUserManager(BaseUserManager):
@@ -54,19 +54,39 @@ class AppUser(AbstractBaseUser, PermissionsMixin):
         return self.username
 
 
+from django.db import models
+import datetime
+
+
 class Home(models.Model):
+    BUILDING_TYPES = [
+        ("residual", "mieszkalne"),
+        ("public", "publiczne"),
+        ("industrial", "przemysłowe"),
+        ("commercial", "komercyjne/handlowo-usługowe"),
+    ]
+
     home_id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=200)
     address = models.CharField(max_length=500, null=True, blank=True)
-    regards = models.TextField(max_length=1000, default=None, null=True, blank=True)
-    owner = models.ForeignKey(AppUser, on_delete=models.CASCADE, blank=True, null=True)
+    regards = models.TextField(max_length=1000, null=True, blank=True)
+    owner = models.ForeignKey('AppUser', on_delete=models.CASCADE, blank=True, null=True)
     floor_num = models.IntegerField(default=1)
     code = models.CharField(max_length=100, default=get_random_string(length=20))
+    buildinq_type = models.CharField(
+        max_length=20,
+        choices=BUILDING_TYPES,
+        default="residual"
+    )
+    year_of_construction = models.IntegerField(default=datetime.date.today().year, null=True, blank=True)
+    image = models.ImageField(blank=True, null=True)
+    building_area = models.IntegerField(default=0, null=True, blank=True)
     current = models.BooleanField(default=False)
-    created_at = models.DateField(default=now)
+    created_at = models.DateField(default=datetime.date.today)
 
     def __str__(self):
         return "Dom " + str(self.home_id)
+
 
 
 class Floor(models.Model):
@@ -94,24 +114,45 @@ class Room(models.Model):
 
 
 class Device(models.Model):
+    DATA_TYPES = [
+        ("LIGHT", "światło"),
+        ("HUMIDITY", "wilgotność"),
+        ("CONTINUOUS", "inne ciągłe"),
+        ("DISCRETE", "inne dyskretne"),
+        ("FUNCTIONAL", "inne funkcyjne"),
+        ("OTHER", "inne/różne"),
+    ]
+
     device_id = models.AutoField(primary_key=True)
+    owner = models.ForeignKey(AppUser, on_delete=models.CASCADE, blank=True, null=True)
     room = models.ForeignKey(Room, on_delete=models.CASCADE, blank=True, null=True)
     name = models.CharField(max_length=200)
     serial_number = models.CharField(max_length=200, blank=True, null=True)
     topic = models.CharField(max_length=200, blank=True, null=True)
     info = models.TextField(max_length=1000, blank=True, null=True)
     brand = models.CharField(max_length=200, blank=True, null=True)
+    data_type = models.CharField(max_length=20, choices=DATA_TYPES, default="CONTINUOUS", blank=True, null=True)
 
     def __str__(self):
         return "Urządzenie " + str(self.device_id)
 
 
 class Sensor(models.Model):
+    DATA_TYPES = [
+        ("LIGHT", "światło"),
+        ("HUMIDITY", "wilgotność"),
+        ("CONTINUOUS", "inne ciągłe"),
+        ("DISCRETE", "inne dyskretne"),
+        ("FUNCTIONAL", "inne funkcyjne"),
+        ("OTHER", "inne/różne"),
+    ]
     sensor_id = models.AutoField(primary_key=True)
     room = models.ForeignKey(Room, on_delete=models.CASCADE, blank=True, null=True)
     name = models.CharField(max_length=200)
     serial_number = models.CharField(max_length=200, blank=True, null=True)
     device = models.ForeignKey(Device, on_delete=models.CASCADE)
+    data_type = models.CharField(max_length=20, choices=DATA_TYPES, default="CONTINUOUS")
+    unit = models.CharField(max_length=200, blank=True, null=True)
 
     def __str__(self):
         return "Czujnik " + str(self.sensor_id)
@@ -126,6 +167,23 @@ class Measurement(models.Model):
 
     def __str__(self):
         return "Pomiar " + str(self.measurement_id)
+
+
+class Action(models.Model):
+    ACTION_TYPES = [
+        ("AUTO", "automatycznie"),
+        ("MANUAL", "ręcznie"),
+    ]
+
+    action_id = models.AutoField(primary_key=True)
+    description = models.CharField(max_length=1000)
+    device = models.ForeignKey(Device, on_delete=models.CASCADE)
+    measurement = models.ForeignKey(Measurement, on_delete=models.CASCADE, blank=True, null=True)
+    type = models.CharField(max_length=20, choices=ACTION_TYPES, default="AUTO")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return "Akcja " + str(self.action_id)
 
 
 class Notification(models.Model):
