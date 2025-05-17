@@ -1,35 +1,78 @@
 import React, { useState, useEffect } from "react";
 import {
-    Box,
-    Button,
-    Card,
-    Container,
-    Grid,
-    InputAdornment,
-    List,
-    ListItem,
-    ListItemAvatar,
-    ListItemText,
-    MenuItem,
-    Pagination,
-    Paper,
-    Select,
-    TextField,
-    Typography,
-    Avatar,
-    Divider,
-    Chip, Badge, Stack
+  Box,
+  Button,
+  Card,
+  Container,
+  Grid,
+  InputAdornment,
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemText,
+  MenuItem,
+  Pagination,
+  Paper,
+  Select,
+  TextField,
+  Typography,
+  Avatar,
+  Divider,
+  Chip,
+  Badge,
+  Stack,
+  Tabs,
+  Tab,
+  LinearProgress,
+  IconButton,
+  Tooltip, styled
 } from "@mui/material";
 import {
-    Add,
-    Search,
-    MeetingRoom,
-    LocationOn,
-    Layers,
-    ArrowForward, Sensors, Star
+  Add,
+  Search,
+  MeetingRoom,
+  LocationOn,
+  Layers,
+  ArrowForward,
+  Sensors,
+  Star,
+  FilterList,
+  Refresh,
+  ViewModule,
+  ViewList,
+  MoreVert,
+  Thermostat,
+  Lightbulb,
+  Security,
+  People
 } from "@mui/icons-material";
 import client from "../../../client";
 import { API_BASE_URL } from "../../../config";
+
+const RoomCard = styled(Paper)(({ theme }) => ({
+  padding: theme.spacing(2),
+  borderRadius: theme.shape.borderRadius * 2,
+  transition: 'all 0.3s ease',
+  '&:hover': {
+    transform: 'translateY(-2px)',
+    boxShadow: theme.shadows[4],
+    borderLeft: `4px solid ${theme.palette.primary.main}`
+  }
+}));
+
+const StatusBadge = styled(Chip)(({ theme, status }) => ({
+  fontWeight: 600,
+  fontSize: '0.7rem',
+  textTransform: 'uppercase',
+  backgroundColor:
+    status === 'active' ? theme.palette.success.light :
+    status === 'warning' ? theme.palette.warning.light :
+    theme.palette.error.light,
+  color:
+    status === 'active' ? theme.palette.success.dark :
+    status === 'warning' ? theme.palette.warning.dark :
+    theme.palette.error.dark
+}));
 
 const UserRoomsPage = () => {
   const [rooms, setRooms] = useState([]);
@@ -40,12 +83,16 @@ const UserRoomsPage = () => {
   const [selectedFloor, setSelectedFloor] = useState("");
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
+  const [viewMode, setViewMode] = useState('list');
+  const [activeTab, setActiveTab] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const itemsPerPage = 6;
 
   const token = localStorage.getItem("access");
 
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true);
       try {
         const [roomsResponse, locationsResponse] = await Promise.all([
           client.get(API_BASE_URL + "myRooms/", {
@@ -56,11 +103,20 @@ const UserRoomsPage = () => {
           })
         ]);
 
-        setRooms(roomsResponse.data);
-        setFilteredRooms(roomsResponse.data);
+        // Add mock status for demo purposes
+        const roomsWithStatus = roomsResponse.data.map(room => ({
+          ...room,
+          status: Math.random() > 0.3 ? 'active' : Math.random() > 0.5 ? 'warning' : 'error',
+          last_activity: new Date(Date.now() - Math.floor(Math.random() * 7 * 24 * 60 * 60 * 1000))
+        }));
+
+        setRooms(roomsWithStatus);
+        setFilteredRooms(roomsWithStatus);
         setLocations(locationsResponse.data);
       } catch (error) {
         console.error("Failed to fetch data", error);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -79,41 +135,83 @@ const UserRoomsPage = () => {
     let filtered = rooms.filter(room =>
       room.name.toLowerCase().includes(search.toLowerCase()) &&
       (!selectedLocation || room.location === selectedLocation) &&
-      (!selectedFloor || room.floor === selectedFloor)
+      (!selectedFloor || room.floor === selectedFloor) &&
+      (activeTab === 0 ||
+       (activeTab === 1 && room.is_favorite) ||
+       (activeTab === 2 && room.status === 'active') ||
+       (activeTab === 3 && room.status === 'warning') ||
+       (activeTab === 4 && room.status === 'error'))
     );
     setFilteredRooms(filtered);
     setCurrentPage(1);
-  }, [search, selectedLocation, selectedFloor, rooms]);
+  }, [search, selectedLocation, selectedFloor, rooms, activeTab]);
 
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = filteredRooms.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(filteredRooms.length / itemsPerPage);
 
+  const handleRefresh = async () => {
+    setLoading(true);
+    try {
+      const response = await client.get(API_BASE_URL + "myRooms/", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setRooms(response.data);
+      setFilteredRooms(response.data);
+    } catch (error) {
+      console.error("Failed to refresh rooms", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
+    <Container maxWidth="xl" sx={{ py: 4 }}>
+      <Paper elevation={0} sx={{ p: 3, borderRadius: 3, mb: 3 }}>
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
           <Typography variant="h4" component="h1" sx={{ fontWeight: 700 }}>
             <MeetingRoom sx={{ verticalAlign: 'middle', mr: 1 }} />
-            Moje Pokoje
+            Room Management
           </Typography>
-          <Button
-            variant="contained"
-            startIcon={<Add />}
-            href="/add-room"
-            sx={{ minWidth: 200 }}
-          >
-            Dodaj Pokój
-          </Button>
+
+          <Box display="flex" alignItems="center" gap={2}>
+            <Tooltip title="Refresh">
+              <IconButton onClick={handleRefresh}>
+                <Refresh />
+              </IconButton>
+            </Tooltip>
+            <Button
+              variant="contained"
+              startIcon={<Add />}
+              href="/add-room"
+              sx={{ minWidth: 200 }}
+            >
+              Add New Room
+            </Button>
+          </Box>
         </Box>
 
+        <Tabs
+          value={activeTab}
+          onChange={(e, newValue) => setActiveTab(newValue)}
+          sx={{ mb: 3 }}
+          variant="scrollable"
+          scrollButtons="auto"
+        >
+          <Tab label="All Rooms" />
+          <Tab label="Favorites" icon={<Star fontSize="small" />} />
+          <Tab label="Active" />
+          <Tab label="Warnings" />
+          <Tab label="Issues" />
+        </Tabs>
+
         <Grid container spacing={3} mb={4}>
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12} md={4}>
             <TextField
               fullWidth
               variant="outlined"
-              placeholder="Szukaj pokoju..."
+              placeholder="Search rooms..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               InputProps={{
@@ -125,7 +223,7 @@ const UserRoomsPage = () => {
               }}
             />
           </Grid>
-          <Grid item xs={12} md={3}>
+          <Grid item xs={12} md={4}>
             <Select
               fullWidth
               value={selectedLocation}
@@ -138,7 +236,7 @@ const UserRoomsPage = () => {
               }
             >
               <MenuItem value="">
-                <em>Wszystkie lokacje</em>
+                <em>All Locations</em>
               </MenuItem>
               {locations.map(loc => (
                 <MenuItem key={loc.id} value={loc.name}>
@@ -147,107 +245,244 @@ const UserRoomsPage = () => {
               ))}
             </Select>
           </Grid>
-          <Grid item xs={12} md={3}>
-            <Select
-              fullWidth
-              value={selectedFloor}
-              onChange={(e) => setSelectedFloor(e.target.value)}
-              disabled={!selectedLocation}
-              displayEmpty
-              startAdornment={
-                <InputAdornment position="start">
-                  <Layers color="action" />
-                </InputAdornment>
-              }
-            >
-              <MenuItem value="">
-                <em>Wszystkie piętra</em>
-              </MenuItem>
-              {floors.map(floor => (
-                <MenuItem key={floor} value={floor}>
-                  Piętro {floor}
+          <Grid item xs={12} md={4}>
+            <Box display="flex" gap={2}>
+              <Select
+                fullWidth
+                value={selectedFloor}
+                onChange={(e) => setSelectedFloor(e.target.value)}
+                disabled={!selectedLocation}
+                displayEmpty
+                startAdornment={
+                  <InputAdornment position="start">
+                    <Layers color="action" />
+                  </InputAdornment>
+                }
+              >
+                <MenuItem value="">
+                  <em>All Floors</em>
                 </MenuItem>
-              ))}
-            </Select>
+                {floors.map(floor => (
+                  <MenuItem key={floor} value={floor}>
+                    Floor {floor}
+                  </MenuItem>
+                ))}
+              </Select>
+              <Tooltip title="View Mode">
+                <Button
+                  variant="outlined"
+                  onClick={() => setViewMode(viewMode === 'list' ? 'grid' : 'list')}
+                >
+                  {viewMode === 'list' ? <ViewModule /> : <ViewList />}
+                </Button>
+              </Tooltip>
+            </Box>
           </Grid>
         </Grid>
+      </Paper>
 
-            <List sx={{ mb: 4, width: '100%' }}>
-          {currentItems.length > 0 ? (
-            <Stack spacing={2}>
-              {currentItems.map((room) => (
-                <Card
-                  key={room.room_id}
-                  component={Button}
-                  href={`/room/${room.room_id}`}
-                  sx={{
-                    p: 0,
-                    width: '100%',
-                    textAlign: 'left',
-                    textTransform: 'none',
-                    transition: 'all 0.3s ease',
-                    '&:hover': {
-                      transform: 'translateX(5px)',
-                      boxShadow: 3
-                    }
-                  }}
-                >
-                  <ListItem sx={{ width: '100%' }}>
-                    <ListItemAvatar>
+      {loading && <LinearProgress sx={{ mb: 2 }} />}
+
+      {viewMode === 'list' ? (
+        <Paper elevation={0} sx={{ p: 2, borderRadius: 3, mb: 3 }}>
+          <List sx={{ width: '100%' }}>
+            {currentItems.length > 0 ? (
+              <Stack spacing={2}>
+                {currentItems.map((room) => (
+                  <Card
+                    key={room.room_id}
+                    component={Button}
+                    href={`/room/${room.room_id}`}
+                    sx={{
+                      p: 0,
+                      width: '100%',
+                      textAlign: 'left',
+                      textTransform: 'none',
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        transform: 'translateY(-2px)',
+                        boxShadow: 3
+                      }
+                    }}
+                  >
+                    <ListItem sx={{ width: '100%' }}>
+                      <ListItemAvatar>
+                        <Badge
+                          overlap="circular"
+                          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                          badgeContent={
+                            <StatusBadge
+                              status={room.status}
+                              size="small"
+                              label={room.status.toUpperCase()}
+                            />
+                          }
+                        >
+                          <Avatar sx={{
+                            bgcolor: room.is_favorite ? 'warning.light' : 'primary.light',
+                            color: room.is_favorite ? 'warning.dark' : 'primary.dark',
+                            mr: 2
+                          }}>
+                            {room.is_favorite ? <Star /> : <MeetingRoom />}
+                          </Avatar>
+                        </Badge>
+                      </ListItemAvatar>
+                      <ListItemText
+                        primary={
+                          <Box display="flex" alignItems="center">
+                            <Typography variant="h6" component="span" sx={{ flexGrow: 1 }}>
+                              {room.name}
+                            </Typography>
+                            <Box display="flex" alignItems="center" gap={2}>
+                              <Box display="flex" alignItems="center" gap={1}>
+                                <People fontSize="small" color="action" />
+                                <Typography variant="body2">
+                                  {Math.floor(Math.random() * 10)}/10
+                                </Typography>
+                              </Box>
+                              <Badge
+                                badgeContent={room.device_count}
+                                color="primary"
+                                sx={{ mr: 2 }}
+                              >
+                                <Sensors color="action" />
+                              </Badge>
+                            </Box>
+                          </Box>
+                        }
+                        secondary={
+                          <>
+                            <Box display="flex" gap={2} alignItems="center">
+                              <Typography variant="body2" color="text.secondary">
+                                {room.location}
+                              </Typography>
+                              <Chip
+                                label={`Floor ${room.floor}`}
+                                size="small"
+                                color="info"
+                                icon={<Layers fontSize="small" />}
+                              />
+                            </Box>
+                            {room.last_activity && (
+                              <Typography variant="caption" color="text.secondary">
+                                Last activity: {new Date(room.last_activity).toLocaleDateString()}
+                              </Typography>
+                            )}
+                          </>
+                        }
+                      />
+                      <ArrowForward color="action" />
+                    </ListItem>
+                  </Card>
+                ))}
+              </Stack>
+            ) : (
+              <Typography variant="body1" color="text.secondary" textAlign="center" py={4}>
+                No rooms matching search criteria
+              </Typography>
+            )}
+          </List>
+        </Paper>
+      ) : (
+        <Grid container spacing={3}>
+          {currentItems.map((room) => (
+            <Grid item xs={12} sm={6} md={4} key={room.room_id}>
+              <RoomCard
+                elevation={2}
+                component={Button}
+                href={`/room/${room.room_id}`}
+                sx={{
+                  textAlign: 'left',
+                  textTransform: 'none',
+                  p: 3
+                }}
+              >
+                <Box display="flex" flexDirection="column" height="100%">
+                  <Box display="flex" justifyContent="space-between" mb={2}>
+                    <Badge
+                      overlap="circular"
+                      anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                      badgeContent={
+                        <StatusBadge
+                          status={room.status}
+                          size="small"
+                          label={room.status.toUpperCase()}
+                        />
+                      }
+                    >
                       <Avatar sx={{
-                        bgcolor: room.is_favorite ? 'warning.light' : 'primary.main',
-                        mr: 2
+                        bgcolor: room.is_favorite ? 'warning.light' : 'primary.light',
+                        color: room.is_favorite ? 'warning.dark' : 'primary.dark',
+                        width: 56,
+                        height: 56
                       }}>
                         {room.is_favorite ? <Star /> : <MeetingRoom />}
                       </Avatar>
-                    </ListItemAvatar>
-                    <ListItemText
-                      primary={
-                        <Box display="flex" alignItems="center">
-                          <Typography variant="h6" component="span" sx={{ flexGrow: 1 }}>
-                            {room.name}
-                          </Typography>
-                          <Badge
-                            badgeContent={room.device_count}
-                            color="primary"
-                            sx={{ mr: 2 }}
-                          >
-                            <Sensors color="action" />
-                          </Badge>
-                          <Chip
-                            label={`Piętro ${room.floor}`}
-                            size="small"
-                            color="info"
-                            icon={<Layers fontSize="small" />}
-                          />
-                        </Box>
-                      }
-                      secondary={
-                        <>
-                          <Typography variant="body2" color="text.secondary">
-                            {room.location}
-                          </Typography>
-                          {room.last_activity && (
-                            <Typography variant="caption" color="text.secondary">
-                              Ostatnia aktywność: {new Date(room.last_activity).toLocaleString()}
-                            </Typography>
-                          )}
-                        </>
-                      }
-                    />
-                    <ArrowForward color="action" />
-                  </ListItem>
-                </Card>
-              ))}
-            </Stack>
-          ) : (
-            <Typography variant="body1" color="text.secondary" textAlign="center" py={4}>
-              Brak pokoi spełniających kryteria wyszukiwania
-            </Typography>
-          )}
-        </List>
+                    </Badge>
+                    <IconButton size="small">
+                      <MoreVert />
+                    </IconButton>
+                  </Box>
 
-        <Box display="flex" justifyContent="center">
+                  <Typography variant="h6" gutterBottom>
+                    {room.name}
+                  </Typography>
+
+                  <Box display="flex" alignItems="center" gap={1} mb={1}>
+                    <LocationOn color="action" fontSize="small" />
+                    <Typography variant="body2" color="text.secondary">
+                      {room.location}
+                    </Typography>
+                  </Box>
+
+                  <Box display="flex" alignItems="center" gap={1} mb={2}>
+                    <Layers color="action" fontSize="small" />
+                    <Typography variant="body2" color="text.secondary">
+                      Floor {room.floor}
+                    </Typography>
+                  </Box>
+
+                  <Divider sx={{ my: 2 }} />
+
+                  <Grid container spacing={1} mb={2}>
+                    <Grid item xs={4}>
+                      <Box textAlign="center">
+                        <Thermostat color="primary" fontSize="small" />
+                        <Typography variant="caption" display="block">
+                          {Math.floor(Math.random() * 10)}°C
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={4}>
+                      <Box textAlign="center">
+                        <Lightbulb color="primary" fontSize="small" />
+                        <Typography variant="caption" display="block">
+                          {room.device_count} devices
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={4}>
+                      <Box textAlign="center">
+                        <People color="primary" fontSize="small" />
+                        <Typography variant="caption" display="block">
+                          {Math.floor(Math.random() * 10)}/10
+                        </Typography>
+                      </Box>
+                    </Grid>
+                  </Grid>
+
+                  <Typography variant="caption" color="text.secondary" mt="auto">
+                    Last updated: {new Date(room.last_activity).toLocaleDateString()}
+                  </Typography>
+                </Box>
+              </RoomCard>
+            </Grid>
+          ))}
+        </Grid>
+      )}
+
+      {filteredRooms.length > 0 && (
+        <Box display="flex" justifyContent="center" mt={4}>
           <Pagination
             count={totalPages}
             page={currentPage}
@@ -257,7 +492,7 @@ const UserRoomsPage = () => {
             size="large"
           />
         </Box>
-      </Paper>
+      )}
     </Container>
   );
 };

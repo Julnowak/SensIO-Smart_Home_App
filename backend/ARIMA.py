@@ -1,106 +1,187 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from statsmodels.tsa.arima.model import ARIMA
 from statsmodels.tsa.statespace.sarimax import SARIMAX
-from sklearn.metrics import mean_squared_error
-import warnings
+from statsmodels.tsa.arima.model import ARIMA
+from statsmodels.tsa.stattools import adfuller
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+from sklearn.metrics import mean_squared_error, mean_absolute_error
+from math import sqrt
 
-# Suppress warnings for cleaner output
-warnings.filterwarnings('ignore')
-
-# 1. Generate better synthetic energy production data with clear seasonality
+# Generowanie przykładowych danych zużycia energetycznego (jeśli nie mamy własnych)
 np.random.seed(42)
-days = pd.date_range(start='2024-01-01', periods=200, freq='D')
+date_range = pd.date_range(start='2010-01-01', end='2023-12-31', freq='M')
+energy_consumption = 100 + 2 * np.arange(len(date_range)) + 10 * np.sin(
+    np.arange(len(date_range)) * 0.5) + np.random.normal(0, 5, len(date_range))
+data = pd.DataFrame({'Date': date_range, 'Energy_Consumption': energy_consumption})
+data.set_index('Date', inplace=True)
 
-# Strong weekly seasonality (7 days) + yearly pattern (365 days)
-base = 100
-weekly_seasonality = 15 * np.sin(2 * np.pi * np.arange(len(days)) / 7)
-yearly_seasonality = 20 * np.sin(2 * np.pi * np.arange(len(days)) / 365)
-noise = np.random.normal(0, 5, len(days))
+# Podział na zbiór treningowy i testowy
+train = data.iloc[:-24]  # pierwsze N-24 miesiące jako treningowe
+test = data.iloc[-24:]  # ostatnie 24 miesiące jako testowe
 
-energy_production = base + weekly_seasonality + yearly_seasonality + noise
-data = pd.Series(energy_production, index=days)
-
-# 2. Plot the original data
-plt.figure(figsize=(14, 6))
-plt.plot(data)
-plt.title('Daily Energy Production with Seasonality')
-plt.xlabel('Date')
-plt.ylabel('Energy Production (kWh)')
-plt.grid(True)
+# Wizualizacja danych
+plt.figure(figsize=(12, 6))
+plt.plot(train.index, train['Energy_Consumption'], label='Trening')
+plt.plot(test.index, test['Energy_Consumption'], label='Test')
+plt.title('Zużycie energetyczne w czasie')
+plt.xlabel('Data')
+plt.ylabel('Zużycie')
+plt.legend()
+plt.grid()
 plt.show()
 
-# 3. Split into train and test sets
-train_size = int(len(data) * 0.8)
-train, test = data[:train_size], data[train_size:]
 
-# 4. Fit SARIMA model with proper seasonal components
-# Weekly seasonality (7 days)
-order = (1, 1, 1)  # Non-seasonal (p,d,q)
-seasonal_order = (1, 1, 1, 7)  # Seasonal (P,D,Q,s)
+# Test stacjonarności
+def test_stationarity(timeseries):
+    result = adfuller(timeseries)
+    print('Test ADF:')
+    print(f'Statystyka ADF: {result[0]}')
+    print(f'p-value: {result[1]}')
+    print('Wartości krytyczne:')
+    for key, value in result[4].items():
+        print(f'   {key}: {value}')
+    return result[1] > 0.05  # zwraca True jeśli szereg jest niestacjonarny
 
-model = SARIMAX(train,
-                order=order,
-                seasonal_order=seasonal_order,
-                trend='c',
-                enforce_stationarity=False,
-                enforce_invertibility=False)
 
-results = model.fit(disp=False)
-print(results.summary())
+print("\nTest stacjonarności dla danych treningowych:")
+non_stationary = test_stationarity(train['Energy_Consumption'])
 
-# 5. Make predictions
-forecast_steps = len(test)
-forecast = results.get_forecast(steps=forecast_steps)
+if non_stationary:
+    print("\nSzereg jest niestacjonarny - różnicowanie może być potrzebne.")
+    # Różnicowanie
+    train['Energy_diff'] = train['Energy_Consumption'].diff()
+    train = train.dropna(subset=['Energy_diff'])  # usuwa tylko wiersze, gdzie 'Energy_diff' to NaN
+
+    print("\nTest stacjonarności po różnicowaniu:")
+    if test_stationarity(train['Energy_diff']):
+        print("Szereg nadal niestacjonarny - potrzebne kolejne różnicowanie")
+    else:
+        print("Szereg jest teraz stacjonarny")
+else:
+    print("\nSzereg jest stacjonarny - można przejść do modelowania")
+
+# Wykresy ACF i PACF do identyfikacji parametrów
+plt.figure(figsize=(12, 8))
+plt.subplot(211)
+plot_acf(train['Energy_Consumption'].dropna(), ax=plt.gca(), lags=24)
+plt.subplot(212)
+plot_pacf(train['Energy_Consumption'].dropna(), ax=plt.gca(), lags=24)
+plt.tight_layout()
+plt.show()
+
+
+# Funkcja do ewaluacji modelu
+def evaluate_model(model, train_data, test_data, order, seasonal_order=None):
+    history = train_data.copy()
+    predictions = []
+
+    if seasonal_order:  # Dla SARIMA
+        fitted_model = model(history['Energy_Consumption'],
+                             order=order,
+                             seasonal_order=seasonal_order,
+                             enforce_stationarity=False,
+                             enforce_invertibility=False).fit()
+    else:  # Dla pozostałych modeli
+        fitted_model = model(history['Energy_Consumption'],
+                             order=order).fit()
+
+    # Prognoza
+    forecast = fitted_model.get_forecast(steps=len(test_data))
+    predictions = forecast.predicted_mean
+    conf_int = forecast.conf_int()
+
+    # Obliczenie błędów
+    mse = mean_squared_error(test_data['Energy_Consumption'], predictions)
+    rmse = sqrt(mse)
+    mae = mean_absolute_error(test_data['Energy_Consumption'], predictions)
+
+    # Wizualizacja
+    plt.figure(figsize=(12, 6))
+    plt.plot(train_data.index, train_data['Energy_Consumption'], label='Trening')
+    plt.plot(test_data.index, test_data['Energy_Consumption'], label='Test')
+    plt.plot(test_data.index, predictions, label='Prognoza')
+    plt.fill_between(test_data.index,
+                     conf_int.iloc[:, 0],
+                     conf_int.iloc[:, 1],
+                     color='k', alpha=0.1)
+    plt.title(f'Prognoza vs Rzeczywiste wartości (RMSE={rmse:.2f}, MAE={mae:.2f})')
+    plt.legend()
+    plt.grid()
+    plt.show()
+
+    print(f"\nRMSE: {rmse:.2f}")
+    print(f"MAE: {mae:.2f}")
+
+    return fitted_model, predictions, rmse, mae
+
+
+# 1. Model AR (Autoregresyjny)
+print("\n=== Model AR ===")
+ar_order = (2, 0, 0)  # (p, d, q)
+ar_model, ar_pred, ar_rmse, ar_mae = evaluate_model(ARIMA, train, test, ar_order)
+
+# 2. Model MA (Średniej ruchomej)
+print("\n=== Model MA ===")
+ma_order = (0, 0, 2)  # (p, d, q)
+ma_model, ma_pred, ma_rmse, ma_mae = evaluate_model(ARIMA, train, test, ma_order)
+
+# 3. Model ARMA (Autoregresyjna średnia ruchoma)
+print("\n=== Model ARMA ===")
+arma_order = (2, 0, 2)  # (p, d, q)
+arma_model, arma_pred, arma_rmse, arma_mae = evaluate_model(ARIMA, train, test, arma_order)
+
+# 4. Model ARIMA (Autoregresyjne zintegrowana średnia ruchoma)
+print("\n=== Model ARIMA ===")
+arima_order = (2, 1, 2)  # (p, d, q)
+arima_model, arima_pred, arima_rmse, arima_mae = evaluate_model(ARIMA, train, test, arima_order)
+
+# 5. Model SARIMA (Sezonowa ARIMA)
+print("\n=== Model SARIMA ===")
+sarima_order = (1, 1, 1)  # (p, d, q)
+sarima_seasonal_order = (1, 1, 1, 12)  # (P, D, Q, s) gdzie s=12 dla danych miesięcznych
+sarima_model, sarima_pred, sarima_rmse, sarima_mae = evaluate_model(
+    SARIMAX, train, test, sarima_order, sarima_seasonal_order)
+
+# Porównanie modeli
+results = pd.DataFrame({
+    'Model': ['AR', 'MA', 'ARMA', 'ARIMA', 'SARIMA'],
+    'RMSE': [ar_rmse, ma_rmse, arma_rmse, arima_rmse, sarima_rmse],
+    'MAE': [ar_mae, ma_mae, arma_mae, arima_mae, sarima_mae]
+})
+
+print("\nPorównanie wyników wszystkich modeli:")
+print(results.sort_values(by='RMSE'))
+
+# Wybór najlepszego modelu
+best_model = results.loc[results['RMSE'].idxmin(), 'Model']
+print(f"\nNajlepszy model: {best_model}")
+
+# Prognoza na przyszłość używając najlepszego modelu
+if best_model == 'SARIMA':
+    final_model = SARIMAX(data['Energy_Consumption'],
+                          order=sarima_order,
+                          seasonal_order=sarima_seasonal_order).fit()
+else:
+    final_model = ARIMA(data['Energy_Consumption'],
+                        order=eval(f"{best_model.lower()}_order")).fit()
+
+# Prognoza na kolejne 12 okresów
+forecast = final_model.get_forecast(steps=12)
 forecast_mean = forecast.predicted_mean
-conf_int = forecast.conf_int()
+forecast_conf_int = forecast.conf_int()
 
-# 6. Evaluate model
-mse = mean_squared_error(test, forecast_mean)
-print(f'\nModel MSE: {mse:.2f}')
-
-# 7. Plot results
-plt.figure(figsize=(14, 7))
-plt.plot(train, label='Training Data')
-plt.plot(test, label='Actual Production', color='blue')
-plt.plot(forecast_mean.index, forecast_mean, label='SARIMA Forecast', color='red')
-plt.fill_between(conf_int.index,
-                conf_int.iloc[:, 0],
-                conf_int.iloc[:, 1], color='pink', alpha=0.3)
-plt.title('Energy Production Forecast with SARIMA')
-plt.xlabel('Date')
-plt.ylabel('Energy Production (kWh)')
+# Wizualizacja prognozy
+plt.figure(figsize=(12, 6))
+plt.plot(data.index, data['Energy_Consumption'], label='Dane historyczne')
+plt.plot(forecast_mean.index, forecast_mean, label='Prognoza')
+plt.fill_between(forecast_conf_int.index,
+                 forecast_conf_int.iloc[:, 0],
+                 forecast_conf_int.iloc[:, 1],
+                 color='k', alpha=0.1)
+plt.title(f'Prognoza zużycia energetycznego na kolejne 12 okresów ({best_model} model)')
+plt.xlabel('Data')
+plt.ylabel('Zużycie energetyczne')
 plt.legend()
-plt.grid(True)
-plt.show()
-
-# 8. Future forecasting (next 60 days)
-final_model = SARIMAX(data,
-                     order=order,
-                     seasonal_order=seasonal_order,
-                     trend='c',
-                     enforce_stationarity=False,
-                     enforce_invertibility=False)
-
-final_results = final_model.fit(disp=False)
-
-future_steps = 60
-future_forecast = final_results.get_forecast(steps=future_steps)
-future_mean = future_forecast.predicted_mean
-future_conf_int = future_forecast.conf_int()
-future_dates = pd.date_range(start=data.index[-1] + pd.Timedelta(days=1), periods=future_steps, freq='D')
-
-# 9. Plot final forecast
-plt.figure(figsize=(14, 7))
-plt.plot(data, label='Historical Data')
-plt.plot(future_dates, future_mean, label='60-Day Forecast', color='red')
-plt.fill_between(future_dates,
-                future_conf_int.iloc[:, 0],
-                future_conf_int.iloc[:, 1], color='pink', alpha=0.3)
-plt.title('Future Energy Production Forecast with Confidence Intervals')
-plt.xlabel('Date')
-plt.ylabel('Energy Production (kWh)')
-plt.legend()
-plt.grid(True)
+plt.grid()
 plt.show()

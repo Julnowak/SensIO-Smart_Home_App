@@ -8,9 +8,9 @@ import {
   Divider,
   Grid,
   IconButton,
+  InputAdornment,
   List,
   ListItem,
-  ListItemAvatar,
   ListItemText,
   Pagination,
   Paper,
@@ -18,28 +18,29 @@ import {
   Typography,
   styled
 } from "@mui/material";
-import { Add, Delete, Edit, Search, Settings } from "@mui/icons-material";
+import { Add, Delete, Edit, Search } from "@mui/icons-material";
 import client from "../../../client";
 import { API_BASE_URL } from "../../../config";
-import {useNavigate} from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
-const ColorIndicator = styled('div')(({ color }) => ({
-  width: 24,
-  height: 24,
+const ColorDot = styled('span')(({ color }) => ({
+  width: 16,
+  height: 16,
   borderRadius: '50%',
-  backgroundColor: color,
-  marginRight: 16,
+  display: 'inline-block',
+  marginRight: 12,
+  backgroundColor: color || '#ccc',
 }));
 
 const StyledListItem = styled(ListItem)(({ theme }) => ({
-  transition: 'all 0.2s',
+  borderRadius: 8,
+  marginBottom: theme.spacing(1),
+  boxShadow: theme.shadows[1],
+  transition: 'all 0.2s ease-in-out',
   '&:hover': {
-    transform: 'translateX(5px)',
+    transform: 'translateY(-2px)',
     backgroundColor: theme.palette.action.hover,
   },
-  '& .MuiListItemSecondaryAction-root': {
-    right: theme.spacing(2)
-  }
 }));
 
 const UserDevicesPage = () => {
@@ -49,21 +50,21 @@ const UserDevicesPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
   const token = localStorage.getItem("access");
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchDevices = async () => {
       try {
-        const response = await client.get(API_BASE_URL + "myDevices/", {
+        const response = await client.get(`${API_BASE_URL}myDevices/`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setDevices(response.data);
         setFilteredDevices(response.data);
       } catch (error) {
-        console.error("Failed to fetch devices", error);
+        console.error("Błąd podczas pobierania urządzeń", error);
       }
     };
-
-    token && fetchDevices();
+    if (token) fetchDevices();
   }, [token]);
 
   useEffect(() => {
@@ -75,112 +76,115 @@ const UserDevicesPage = () => {
   }, [search, devices]);
 
   const handleDelete = async (deviceId) => {
-    if(window.confirm("Czy na pewno chcesz usunąć to urządzenie?")) {
+    if (window.confirm("Czy na pewno chcesz usunąć to urządzenie?")) {
       try {
         await client.delete(`${API_BASE_URL}myDevices/${deviceId}/`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setDevices(devices.filter(device => device.device_id !== deviceId));
       } catch (error) {
-        console.error("Failed to delete device", error);
+        console.error("Błąd podczas usuwania urządzenia", error);
       }
     }
   };
-  const navigate = useNavigate()
 
   return (
-    <Container maxWidth="md" sx={{ py: 4 }}>
-      <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
-        <Grid container spacing={3}>
-          <Grid item xs={12}>
-            <Box display="flex" justifyContent="space-between" alignItems="center">
-              <Typography variant="h4" component="h1">
-                Moje Urządzenia
-              </Typography>
-              <Button
-                variant="contained"
-                startIcon={<Add />}
-                href="/newDevice"
-                sx={{ minWidth: 200 }}
+    <Container maxWidth="md" sx={{ py: 5 }}>
+      <Paper elevation={3} sx={{ p: 4, borderRadius: 3 }}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
+          <Typography variant="h4" fontWeight="bold">
+            Moje Urządzenia
+          </Typography>
+          <Button
+            variant="contained"
+            startIcon={<Add />}
+            href="/newDevice"
+            sx={{ minWidth: 180 }}
+          >
+            Dodaj Urządzenie
+          </Button>
+        </Box>
+
+        <TextField
+          fullWidth
+          variant="outlined"
+          placeholder="Wyszukaj urządzenie..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Search color="action" />
+              </InputAdornment>
+            ),
+          }}
+          sx={{ mb: 3 }}
+        />
+
+        <List>
+          {filteredDevices
+            .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+            .map((device) => (
+              <StyledListItem
+                key={device.device_id}
+                onClick={() => navigate(`/device/${device.device_id}`)}
+                secondaryAction={
+                  <Box>
+                    <IconButton href={`/device/${device.device_id}/edit`} size="small">
+                      <Edit />
+                    </IconButton>
+                    <IconButton onClick={() => handleDelete(device.device_id)} size="small">
+                      <Delete color="error" />
+                    </IconButton>
+                  </Box>
+                }
               >
-                Nowe Urządzenie
-              </Button>
-            </Box>
-          </Grid>
+                <ListItemText
+                  primary={
+                    <Box display="flex" alignItems="center">
+                      <ColorDot color={device.color} />
+                      <Typography variant="subtitle1" fontWeight={600}>
+                        {device.name}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ ml: 2 }}
+                      >
+                        {device.brand}
+                      </Typography>
+                    </Box>
+                  }
+                  secondary={
+                    <>
+                      <Typography variant="body2">
+                        Nr seryjny: {device.serial_number}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Lokalizacja: {device.room}
+                      </Typography>
+                    </>
+                  }
+                />
+              </StyledListItem>
+            ))}
+        </List>
 
-          <Grid item xs={12}>
-            <TextField
-              fullWidth
-              variant="outlined"
-              placeholder="Szukaj urządzenia..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              InputProps={{
-                startAdornment: <Search sx={{ color: 'action.active', mr: 1 }} />
-              }}
-            />
-          </Grid>
+        {filteredDevices.length === 0 && (
+          <Typography textAlign="center" color="text.secondary" mt={5}>
+            Brak urządzeń spełniających kryteria wyszukiwania.
+          </Typography>
+        )}
 
-          <Grid item xs={12}>
-            <List sx={{ bgcolor: 'background.paper' }}>
-              {filteredDevices
-                .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-                .map((device) => (
-                  <StyledListItem
-                    key={device.device_id}
-                    onClick={() => {navigate(`/device/${device.device_id}`)}}
-                    secondaryAction={
-                      <Box>
-                        <IconButton edge="end" href={`/device/${device.device_id}/edit`}>
-                          <Edit />
-                        </IconButton>
-                        <IconButton edge="end" onClick={() => handleDelete(device.device_id)}>
-                          <Delete color="error" />
-                        </IconButton>
-                      </Box>
-                    }
-                  >
-                    <ColorIndicator color={device.color} />
-                    <ListItemText
-                      primary={
-                        <Typography variant="h6" component="div">
-                          {device.name}
-                          <Typography
-                            variant="body2"
-                            color="text.secondary"
-                            component="span"
-                            sx={{ ml: 2 }}
-                          >
-                            {device.brand}
-                          </Typography>
-                        </Typography>
-                      }
-                      secondary={
-                        <>
-                          <Typography variant="body2" component="div">
-                            Nr seryjny: {device.serial_number}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {device.room}
-                          </Typography>
-                        </>
-                      }
-                    />
-                  </StyledListItem>
-                ))}
-            </List>
-          </Grid>
-
-          <Grid item xs={12}>
-            <Pagination
-              count={Math.ceil(filteredDevices.length / itemsPerPage)}
-              page={currentPage}
-              onChange={(e, page) => setCurrentPage(page)}
-              shape="rounded"
-              sx={{ display: 'flex', justifyContent: 'center' }}
-            />
-          </Grid>
-        </Grid>
+        <Box mt={4} display="flex" justifyContent="center">
+          <Pagination
+            count={Math.ceil(filteredDevices.length / itemsPerPage)}
+            page={currentPage}
+            onChange={(e, page) => setCurrentPage(page)}
+            color="primary"
+            shape="rounded"
+          />
+        </Box>
       </Paper>
     </Container>
   );

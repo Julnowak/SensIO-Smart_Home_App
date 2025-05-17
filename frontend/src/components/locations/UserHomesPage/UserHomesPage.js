@@ -18,36 +18,75 @@ import {
   MenuItem,
   TextField,
   Typography,
-  styled, Avatar, Chip
+  styled,
+  Avatar,
+  Chip,
+  Breadcrumbs,
+  Link,
+  Tooltip,
+  Badge, TableCell, TableContainer, Table, TableHead, TableRow, TableBody
 } from "@mui/material";
 import {
-    Add,
-    CheckCircle,
-    Edit,
-    Delete,
-    LocationOn, Search
+  Add,
+  CheckCircle,
+  Edit,
+  Delete,
+  LocationOn,
+  Search,
+  Home,
+  Apartment,
+  Business,
+  Warehouse,
+  School,
+  HealthAndSafety
 } from "@mui/icons-material";
 import client from "../../../client";
 import { API_BASE_URL } from "../../../config";
-import {useNavigate} from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+// import { DataGrid } from "@mui/x-data-grid";
 
-const StyledListItem = styled(ListItem)(({ theme }) => ({
-  transition: 'all 0.2s',
-  '&:hover': {
-    transform: 'translateX(5px)',
-    backgroundColor: theme.palette.action.hover,
-  },
-  '&.current': {
-    backgroundColor: theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.8)' : 'rgba(213,213,213,0.52) ' + '!important',
-    borderLeft: `4px solid ${theme.palette.primary.main}`
+// Building type icons mapping
+const buildingIcons = {
+  house: <Home color="primary" />,
+  apartment: <Apartment color="primary" />,
+  office: <Business color="primary" />,
+  warehouse: <Warehouse color="primary" />,
+  school: <School color="primary" />,
+  hospital: <HealthAndSafety color="primary" />,
+  default: <Apartment color="primary" />
+};
+
+const StyledCard = styled(Card)(({ theme }) => ({
+  borderRadius: "12px",
+  boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.08)",
+  transition: "all 0.3s ease",
+  "&:hover": {
+    transform: "translateY(-2px)",
+    boxShadow: "0px 6px 24px rgba(0, 0, 0, 0.12)"
   }
 }));
 
-const UserHomesPage = () => {
+const StatusBadge = styled(Chip)(({ theme, status }) => ({
+  fontWeight: 600,
+  fontSize: "0.7rem",
+  textTransform: "uppercase",
+  backgroundColor:
+    status === "active"
+      ? theme.palette.success.light
+      : theme.palette.grey[300],
+  color:
+    status === "active"
+      ? theme.palette.success.dark
+      : theme.palette.text.secondary
+}));
+
+const UserLocationsPage = () => {
   const [locations, setLocations] = useState([]);
   const [filteredLocations, setFilteredLocations] = useState([]);
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [viewMode, setViewMode] = useState("list"); // 'list' or 'grid'
+  const [sortConfig, setSortConfig] = useState({ key: "name", direction: "asc" });
   const itemsPerPage = 5;
 
   const token = localStorage.getItem("access");
@@ -56,10 +95,17 @@ const UserHomesPage = () => {
     const fetchLocations = async () => {
       try {
         const response = await client.get(API_BASE_URL + "myHomes/", {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${token}` }
         });
-        setLocations(response.data);
-        setFilteredLocations(response.data);
+        // Add mock status and devices count for demo purposes
+        const locationsWithStatus = response.data.map(loc => ({
+          ...loc,
+          status: Math.random() > 0.3 ? "active" : "inactive",
+          devicesCount: Math.floor(Math.random() * 15) + 1,
+          lastUpdated: new Date(Date.now() - Math.floor(Math.random() * 7 * 24 * 60 * 60 * 1000))
+        }));
+        setLocations(locationsWithStatus);
+        setFilteredLocations(locationsWithStatus);
       } catch (error) {
         console.error("Failed to fetch locations", error);
       }
@@ -69,20 +115,38 @@ const UserHomesPage = () => {
   }, [token]);
 
   useEffect(() => {
-    const filtered = locations.filter(location =>
-      location.name.toLowerCase().includes(search.toLowerCase())
-    );
+    let filtered = [...locations];
+
+    // Apply search filter
+    if (search) {
+      filtered = filtered.filter(location =>
+        location.name.toLowerCase().includes(search.toLowerCase()) ||
+        location.address.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      if (a[sortConfig.key] < b[sortConfig.key]) {
+        return sortConfig.direction === "asc" ? -1 : 1;
+      }
+      if (a[sortConfig.key] > b[sortConfig.key]) {
+        return sortConfig.direction === "asc" ? 1 : -1;
+      }
+      return 0;
+    });
+
     setFilteredLocations(filtered);
     setCurrentPage(1);
-  }, [search, locations]);
+  }, [search, locations, sortConfig]);
 
   const handleSetCurrent = async (homeId) => {
     try {
-      await client.put(API_BASE_URL + "myHomes/",
+      await client.put(
+        API_BASE_URL + "myHomes/",
         { location_id: homeId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      // Refresh locations after update
       const updated = locations.map(loc => ({
         ...loc,
         current: loc.home_id === homeId
@@ -94,7 +158,7 @@ const UserHomesPage = () => {
   };
 
   const handleDelete = async (homeId) => {
-    if(window.confirm("Czy na pewno chcesz usunąć tę lokację?")) {
+    if (window.confirm("Are you sure you want to delete this building?")) {
       try {
         await client.delete(`${API_BASE_URL}myHomes/${homeId}/`, {
           headers: { Authorization: `Bearer ${token}` }
@@ -106,201 +170,486 @@ const UserHomesPage = () => {
     }
   };
 
-  const navigate= useNavigate()
+  const handleSort = (key) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc"
+    }));
+  };
+
+  const navigate = useNavigate();
+
+  const formatDate = (date) => {
+    return new Date(date).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  };
+
+  // Columns for grid view
+  const columns = [
+    {
+      field: "name",
+      headerName: "Building Name",
+      flex: 1,
+      renderCell: (params) => (
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <Avatar
+            variant="rounded"
+            sx={{
+              bgcolor: "primary.light",
+              color: "primary.main",
+              width: 40,
+              height: 40
+            }}
+          >
+            {buildingIcons[params.row.type?.toLowerCase()] || buildingIcons.default}
+          </Avatar>
+          <Box>
+            <Typography variant="subtitle1" fontWeight={600}>
+              {params.value}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {params.row.address}
+            </Typography>
+          </Box>
+        </Box>
+      )
+    },
+    {
+      field: "status",
+      headerName: "Status",
+      width: 120,
+      renderCell: (params) => (
+        <StatusBadge
+          label={params.value}
+          status={params.value}
+          size="small"
+        />
+      )
+    },
+    {
+      field: "devicesCount",
+      headerName: "Devices",
+      width: 100,
+      renderCell: (params) => (
+        <Chip
+          label={`${params.value} devices`}
+          variant="outlined"
+          size="small"
+        />
+      )
+    },
+    {
+      field: "lastUpdated",
+      headerName: "Last Updated",
+      width: 180,
+      valueFormatter: (params) => formatDate(params.value)
+    },
+    {
+      field: "actions",
+      headerName: "Actions",
+      width: 150,
+      renderCell: (params) => (
+        <Box sx={{ display: "flex", gap: 1 }}>
+          <Tooltip title="Edit">
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/home/${params.row.home_id}/edit`);
+              }}
+            >
+              <Edit fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Delete">
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDelete(params.row.home_id);
+              }}
+              color="error"
+            >
+              <Delete fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Set as current">
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleSetCurrent(params.row.home_id);
+              }}
+              color={params.row.current ? "primary" : "default"}
+            >
+              <CheckCircle fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      )
+    }
+  ];
 
   return (
-    <Container maxWidth="md" sx={{ py: 4 }}>
-      <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
-        <Grid container spacing={3}>
-          <Grid item xs={12}>
-            <Box display="flex" justifyContent="space-between" alignItems="center">
-              <Typography variant="h4" component="h1">
-                Moje Lokacje
-              </Typography>
+    <Container maxWidth="xl" sx={{ py: 4 }}>
+      <Box sx={{ mb: 3 }}>
+        <Breadcrumbs aria-label="breadcrumb">
+          <Link color="inherit" href="/dashboard">
+            Dashboard
+          </Link>
+          <Typography color="text.primary">Building Management</Typography>
+        </Breadcrumbs>
+      </Box>
+
+      <Grid container spacing={3}>
+        <Grid item xs={12}>
+          <Box
+            display="flex"
+            justifyContent="space-between"
+            alignItems="center"
+            sx={{ mb: 2 }}
+          >
+            <Typography variant="h4" component="h1" fontWeight={700}>
+              Building Portfolio
+            </Typography>
+            <Box display="flex" gap={2}>
+              <Button
+                variant={viewMode === "list" ? "contained" : "outlined"}
+                onClick={() => setViewMode("list")}
+                size="small"
+              >
+                List View
+              </Button>
+              <Button
+                variant={viewMode === "grid" ? "contained" : "outlined"}
+                onClick={() => setViewMode("grid")}
+                size="small"
+              >
+                Grid View
+              </Button>
               <Button
                 variant="contained"
                 startIcon={<Add />}
                 href="/addHome"
                 sx={{ minWidth: 200 }}
               >
-                Nowa Lokacja
+                Add New Building
               </Button>
             </Box>
-          </Grid>
+          </Box>
+        </Grid>
 
-          <Grid item xs={12}>
-            <Card variant="outlined" sx={{ bgcolor: 'selected.light' }}>
-              <CardContent>
-                <Grid container spacing={2} alignItems="center">
-                  <Grid item>
-                    <LocationOn color="primary" fontSize="large" />
-                  </Grid>
-                  <Grid item xs={8}>
-                    <Typography variant="h6">
-                      Aktualna lokacja:
-                    </Typography>
-                    <Select
-                      fullWidth
-                      value={locations.find(loc => loc.current)?.home_id || ''}
-                      onChange={(e) => handleSetCurrent(e.target.value)}
-                    >
-                      {locations.map(location => (
-                        <MenuItem key={location.home_id} value={location.home_id}>
-                          {location.name}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </Grid>
+        <Grid item xs={12}>
+          <Card variant="outlined" sx={{ borderRadius: 2 }}>
+            <CardContent>
+              <Grid container spacing={2} alignItems="center">
+                <Grid item>
+                  <LocationOn color="primary" fontSize="large" />
                 </Grid>
-              </CardContent>
-            </Card>
-          </Grid>
+                <Grid item xs={8}>
+                  <Typography variant="h6" gutterBottom>
+                    Current Active Building:
+                  </Typography>
+                  <Select
+                    fullWidth
+                    value={locations.find(loc => loc.current)?.home_id || ""}
+                    onChange={(e) => handleSetCurrent(e.target.value)}
+                    sx={{ minWidth: 300 }}
+                  >
+                    {locations.map(location => (
+                      <MenuItem key={location.home_id} value={location.home_id}>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                          {buildingIcons[location.type?.toLowerCase()] || buildingIcons.default}
+                          {location.name} - {location.address}
+                        </Box>
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </Grid>
+                <Grid item xs={2}>
+                  <Box textAlign="right">
+                    <Typography variant="body2" color="text.secondary">
+                      Total Buildings
+                    </Typography>
+                    <Typography variant="h4" color="primary">
+                      {locations.length}
+                    </Typography>
+                  </Box>
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
+        </Grid>
 
-          <Grid item xs={12}>
-            <TextField
-              fullWidth
-              variant="outlined"
-              placeholder="Szukaj lokacji..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              InputProps={{
-                startAdornment: <Search sx={{ color: 'action.active', mr: 1 }} />
-              }}
-            />
-          </Grid>
-
-<Grid item xs={12}>
-  <List
-    sx={{
-      bgcolor: 'background.paper',
-      borderRadius: 2,
-      boxShadow: 1,
-      overflow: 'hidden',
-      p: 0
-    }}
-  >
-    {filteredLocations
-      .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-      .map((location) => (
-        <StyledListItem
-          key={location.home_id}
-          className={location.current ? 'current' : ''}
-          onClick={() => navigate(`/home/${location.home_id}`)}
-          sx={{
-            px: 3,
-            py: 2,
-            borderBottom: '1px solid',
-            borderColor: 'divider',
-            transition: 'all 0.2s ease',
-            '&:hover': {
-              backgroundColor: 'action.hover',
-            },
-            '&:last-child': {
-              borderBottom: 'none'
-            },
-
-          }}
-          secondaryAction={
-            <Box sx={{ display: 'flex', gap: 1 }}>
-
-              <IconButton
-                edge="start"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDelete(location.home_id);
+        <Grid item xs={12}>
+          <Paper elevation={0} sx={{ p: 2, borderRadius: 2 }}>
+            <Box display="flex" justifyContent="space-between" alignItems="center">
+              <TextField
+                variant="outlined"
+                placeholder="Search buildings..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                InputProps={{
+                  startAdornment: <Search sx={{ color: "action.active", mr: 1 }} />
                 }}
-                sx={{
-                  color: 'text.secondary',
-                  '&:hover': {
-                    color: 'error.main',
-                    backgroundColor: 'rgba(211, 47, 47, 0.08)'
+                sx={{ width: 400 }}
+              />
+              <Box display="flex" gap={1}>
+                <Typography variant="body2" color="text.secondary" sx={{ alignSelf: "center" }}>
+                  Sort by:
+                </Typography>
+                <Button
+                  size="small"
+                  endIcon={
+                    sortConfig.key === "name" && sortConfig.direction === "asc"
+                      ? "↑"
+                      : sortConfig.key === "name" && sortConfig.direction === "desc"
+                      ? "↓"
+                      : null
                   }
+                  onClick={() => handleSort("name")}
+                >
+                  Name
+                </Button>
+                <Button
+                  size="small"
+                  endIcon={
+                    sortConfig.key === "lastUpdated" && sortConfig.direction === "asc"
+                      ? "↑"
+                      : sortConfig.key === "lastUpdated" && sortConfig.direction === "desc"
+                      ? "↓"
+                      : null
+                  }
+                  onClick={() => handleSort("lastUpdated")}
+                >
+                  Last Updated
+                </Button>
+              </Box>
+            </Box>
+          </Paper>
+        </Grid>
+
+        {viewMode === "grid" ? (
+          <Grid item xs={12}>
+            <Paper elevation={0} sx={{ height: 600, width: "100%", borderRadius: 2 }}>
+<TableContainer component={Paper} sx={{ borderRadius: 2 }}>
+  <Table>
+    <TableHead>
+      <TableRow>
+        <TableCell>Building Name</TableCell>
+        <TableCell>Status</TableCell>
+        <TableCell>Devices</TableCell>
+        <TableCell>Last Updated</TableCell>
+        <TableCell>Actions</TableCell>
+      </TableRow>
+    </TableHead>
+    <TableBody>
+      {filteredLocations.map((location) => (
+        <TableRow
+          key={location.home_id}
+          hover
+          onClick={() => navigate(`/home/${location.home_id}`)}
+          sx={{ cursor: 'pointer' }}
+        >
+          <TableCell>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Avatar
+                variant="rounded"
+                sx={{
+                  bgcolor: 'primary.light',
+                  color: 'primary.main',
+                  width: 40,
+                  height: 40,
                 }}
               >
-                <Delete fontSize="small" />
-              </IconButton>
-            </Box>
-          }
-        >
-          <ListItemAvatar sx={{ minWidth: 80 }}>
-            <Avatar
-              variant="rounded"
-              src="https://www.colorland.pl/storage/app/uploads/public/a29/0MV/8xL/a290MV8xLmpwZyExY2E4OTk4Zjg1M2ZmNzYxODgyNDhhNmMyZjU1MjI5Ng==.jpg"
-              alt={location.name}
-              sx={{
-                width: 60,
-                height: 60,
-                borderRadius: 1.5,
-                boxShadow: 1
-              }}
-            />
-          </ListItemAvatar>
-          <ListItemText
-            primary={
-              <Box display="flex" alignItems="center">
-                <Typography
-                  variant="subtitle1"
-                  fontWeight={600}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1
-                  }}
-                >
+                {buildingIcons[location.type?.toLowerCase()] || buildingIcons.default}
+              </Avatar>
+              <Box>
+                <Typography variant="subtitle1" fontWeight={600}>
                   {location.name}
-                  {location.current && (
-                    <Chip
-                      label="Wybrane"
-                      size="small"
-                      color="primary"
-                      icon={<CheckCircle fontSize="small" />}
-                      sx={{
-                        height: 20,
-                        fontSize: '0.75rem',
-                        '& .MuiChip-icon': {
-                          fontSize: '1rem',
-                          ml: 0.5
-                        }
-                      }}
-                    />
-                  )}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {location.address}
                 </Typography>
               </Box>
-            }
-            secondary={
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  mt: 0.5
-                }}
-              >
-                <LocationOn fontSize="small" sx={{ mr: 0.5 }} />
-                {location.address}
-              </Typography>
-            }
-            sx={{ my: 0 }}
-          />
-        </StyledListItem>
+            </Box>
+          </TableCell>
+          <TableCell>
+            <StatusBadge
+              label={location.status}
+              status={location.status}
+              size="small"
+            />
+          </TableCell>
+          <TableCell>
+            <Chip
+              label={`${location.devicesCount} devices`}
+              variant="outlined"
+              size="small"
+            />
+          </TableCell>
+          <TableCell>
+            {formatDate(location.lastUpdated)}
+          </TableCell>
+          <TableCell>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Tooltip title="Edit">
+                <IconButton
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/home/${location.home_id}/edit`);
+                  }}
+                >
+                  <Edit fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Delete">
+                <IconButton
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(location.home_id);
+                  }}
+                  color="error"
+                >
+                  <Delete fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          </TableCell>
+        </TableRow>
       ))}
-  </List>
-</Grid>
+    </TableBody>
+  </Table>
+</TableContainer>
+            </Paper>
+          </Grid>
+        ) : (
+          <Grid item xs={12}>
+            <Grid container spacing={3}>
+              {filteredLocations
+                .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                .map((location) => (
+                  <Grid item xs={12} key={location.home_id}>
+                    <StyledCard
+                      onClick={() => navigate(`/home/${location.home_id}`)}
+                      sx={{
+                        borderLeft: location.current
+                          ? "4px solid primary.main"
+                          : "4px solid transparent"
+                      }}
+                    >
+                      <CardContent>
+                        <Grid container spacing={2} alignItems="center">
+                          <Grid item xs={1}>
+                            <Avatar
+                              variant="rounded"
+                              sx={{
+                                bgcolor: "primary.light",
+                                color: "primary.main",
+                                width: 48,
+                                height: 48
+                              }}
+                            >
+                              {buildingIcons[location.type?.toLowerCase()] || buildingIcons.default}
+                            </Avatar>
+                          </Grid>
+                          <Grid item xs={5}>
+                            <Box display="flex" alignItems="center" gap={1}>
+                              <Typography variant="subtitle1" fontWeight={600}>
+                                {location.name}
+                              </Typography>
+                              {location.current && (
+                                <Chip
+                                  label="Active"
+                                  size="small"
+                                  color="primary"
+                                  icon={<CheckCircle fontSize="small" />}
+                                />
+                              )}
+                            </Box>
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              sx={{ display: "flex", alignItems: "center", mt: 0.5 }}
+                            >
+                              <LocationOn fontSize="small" sx={{ mr: 0.5 }} />
+                              {location.address}
+                            </Typography>
+                          </Grid>
+                          <Grid item xs={2} textAlign="center">
+                            <StatusBadge
+                              label={location.status}
+                              status={location.status}
+                            />
+                          </Grid>
+                          <Grid item xs={2} textAlign="center">
+                            <Typography variant="body2" color="text.secondary">
+                              Devices
+                            </Typography>
+                            <Typography variant="h6">
+                              {location.devicesCount}
+                            </Typography>
+                          </Grid>
+                          <Grid item xs={2} textAlign="right">
+                            <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
+                              <Tooltip title="Edit">
+                                <IconButton
+                                  size="small"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigate(`/home/${location.home_id}/edit`);
+                                  }}
+                                >
+                                  <Edit fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Delete">
+                                <IconButton
+                                  size="small"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDelete(location.home_id);
+                                  }}
+                                  color="error"
+                                >
+                                  <Delete fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            </Box>
+                            <Typography variant="caption" color="text.secondary">
+                              Last updated: {formatDate(location.lastUpdated)}
+                            </Typography>
+                          </Grid>
+                        </Grid>
+                      </CardContent>
+                    </StyledCard>
+                  </Grid>
+                ))}
+            </Grid>
+          </Grid>
+        )}
 
+        {viewMode === "list" && (
           <Grid item xs={12}>
             <Pagination
               count={Math.ceil(filteredLocations.length / itemsPerPage)}
               page={currentPage}
               onChange={(e, page) => setCurrentPage(page)}
               shape="rounded"
-              sx={{ display: 'flex', justifyContent: 'center' }}
+              sx={{ display: "flex", justifyContent: "center" }}
             />
           </Grid>
-        </Grid>
-      </Paper>
+        )}
+      </Grid>
     </Container>
   );
 };
 
-export default UserHomesPage;
+export default UserLocationsPage;

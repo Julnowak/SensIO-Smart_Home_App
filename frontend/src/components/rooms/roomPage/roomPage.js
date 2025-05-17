@@ -1,17 +1,25 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from "react-router-dom";
 import {
-    Box,
-    Button,
-    Card,
-    CardContent,
-    CircularProgress,
-    Grid,
-    IconButton,
-    Paper,
-    Switch,
-    Typography,
-    styled, Chip
+  Box,
+  Button,
+  Card,
+  CardContent,
+  CircularProgress,
+  Grid,
+  IconButton,
+  Paper,
+  Switch,
+  Typography,
+  styled,
+  Chip,
+  Avatar,
+  Divider,
+  Badge,
+  LinearProgress,
+  Tooltip,
+  Tabs,
+  Tab
 } from '@mui/material';
 import {
   Lightbulb,
@@ -21,18 +29,39 @@ import {
   DoorFront,
   Refresh,
   Wifi,
-  WifiOff
+  WifiOff,
+  Sensors,
+  People,
+  Air,
+  MeetingRoom,
+  Security,
+  EnergySavingsLeaf,
+  MoreVert,
+  Timeline,
+  History,
+  Settings, Business
 } from '@mui/icons-material';
 import client from "../../../client";
 import { API_BASE_URL } from "../../../config";
 
-const StatusCard = styled(Paper)(({ theme }) => ({
-  padding: theme.spacing(3),
+
+const StatusCard = styled(Card)(({ theme }) => ({
   borderRadius: theme.shape.borderRadius * 2,
+  height: '100%',
   transition: 'all 0.3s ease',
   '&:hover': {
     transform: 'translateY(-2px)',
-    boxShadow: theme.shadows[4]
+    boxShadow: theme.shadows[6]
+  }
+}));
+
+const DeviceCard = styled(Paper)(({ theme, active }) => ({
+  padding: theme.spacing(2),
+  borderRadius: theme.shape.borderRadius * 2,
+  borderLeft: `4px solid ${active ? theme.palette.success.main : theme.palette.divider}`,
+  transition: 'all 0.2s ease',
+  '&:hover': {
+    backgroundColor: theme.palette.action.hover
   }
 }));
 
@@ -41,7 +70,22 @@ const RoomPage = () => {
   const [room, setRoom] = useState(null);
   const [loading, setLoading] = useState(true);
   const [wsStatus, setWsStatus] = useState('connecting');
+  const [activeTab, setActiveTab] = useState(0);
+  const [energyUsage, setEnergyUsage] = useState({
+    today: 15.2,
+    week: 102.5,
+    month: 420.8
+  });
   const token = localStorage.getItem("access");
+
+  // Mock device data
+  const [devices, setDevices] = useState([
+    { id: 1, name: "Smart Lighting", type: "light", status: true, lastActive: new Date() },
+    { id: 2, name: "HVAC System", type: "thermostat", status: true, temp: 22.5, lastActive: new Date(Date.now() - 3600000) },
+    { id: 3, name: "Door Lock", type: "security", status: false, lastActive: new Date(Date.now() - 86400000) },
+    { id: 4, name: "Occupancy Sensor", type: "sensor", status: true, lastActive: new Date() },
+    { id: 5, name: "Air Quality Monitor", type: "sensor", status: true, lastActive: new Date() }
+  ]);
 
   // WebSocket setup
   const [ws, setWs] = useState(null);
@@ -98,24 +142,19 @@ const RoomPage = () => {
     if (token) fetchRoom();
   }, [token, id]);
 
-  const handleLightToggle = () => {
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({
-        type: "toggle_light",
-        room_id: id,
-        state: !room.light
-      }));
-    }
-  };
+  const handleDeviceToggle = (deviceId) => {
+    const updatedDevices = devices.map(device =>
+      device.id === deviceId ? { ...device, status: !device.status } : device
+    );
+    setDevices(updatedDevices);
 
-  const handleWarningToggle = async () => {
-    try {
-      const response = await client.put(`${API_BASE_URL}rooms/${id}/`, {
-        warning: !room.warning
-      });
-      setRoom(prev => ({ ...prev, warning: response.data.warning }));
-    } catch (error) {
-      console.error('Error updating warning status:', error);
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      const device = updatedDevices.find(d => d.id === deviceId);
+      ws.send(JSON.stringify({
+        type: "device_update",
+        device_id: deviceId,
+        state: device.status
+      }));
     }
   };
 
@@ -135,136 +174,309 @@ const RoomPage = () => {
 
   if (loading || !room) {
     return (
-      <Box display="flex" justifyContent="center" mt={4}>
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
         <CircularProgress size={60} />
       </Box>
     );
   }
 
   return (
-    <Box sx={{ p: 3, maxWidth: 1200, mx: 'auto' }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 4 }}>
-        <Typography variant="h3" component="h1">
-          {room.name}
-          <Typography variant="subtitle1" color="text.secondary" component="span" sx={{ ml: 2 }}>
-            Floor {room.floor_number || 'N/A'}
+    <Box sx={{ p: 3, maxWidth: 1400, mx: 'auto' }}>
+      {/* Header Section */}
+      <Box sx={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        mb: 4,
+        gap: 2
+      }}>
+        <Box>
+          <Typography variant="h3" component="h1" fontWeight={700}>
+            {room.name}
           </Typography>
-        </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 1 }}>
+            <Chip
+              label={`Floor ${room.floor_number || 'N/A'}`}
+              icon={<MeetingRoom />}
+              size="small"
+              variant="outlined"
+            />
+            <Chip
+              label={room.building?.name || 'N/A'}
+              icon={<Business />}
+              size="small"
+              variant="outlined"
+            />
+            <Box sx={{ display: 'flex', alignItems: 'center', ml: 1 }}>
+              {wsStatus === 'connected' ? (
+                <Wifi color="success" fontSize="small" />
+              ) : (
+                <WifiOff color="error" fontSize="small" />
+              )}
+              <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                {wsStatus.charAt(0).toUpperCase() + wsStatus.slice(1)}
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <IconButton onClick={handleRefresh} color="primary">
-            <Refresh />
+          <Button
+            variant="outlined"
+            startIcon={<Timeline />}
+            sx={{ px: 3 }}
+          >
+            Analytics
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<History />}
+            sx={{ px: 3 }}
+          >
+            History
+          </Button>
+          <Tooltip title="Refresh">
+            <IconButton onClick={handleRefresh} color="primary">
+              <Refresh />
+            </IconButton>
+          </Tooltip>
+          <IconButton>
+            <MoreVert />
           </IconButton>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            {wsStatus === 'connected' ? (
-              <Wifi color="success" />
-            ) : (
-              <WifiOff color="error" />
-            )}
-            <Typography variant="caption" color="text.secondary">
-              {wsStatus.charAt(0).toUpperCase() + wsStatus.slice(1)}
-            </Typography>
-          </Box>
         </Box>
       </Box>
 
-      <Grid container spacing={3}>
-        {/* Controls Column */}
-        <Grid item xs={12} md={6}>
-          <StatusCard elevation={3}>
-            <Grid container spacing={3}>
-              <Grid item xs={12} sm={6}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Lightbulb fontSize="large" color={room.light ? 'warning' : 'disabled'} />
+      {/* Tabs */}
+      <Tabs
+        value={activeTab}
+        onChange={(e, newValue) => setActiveTab(newValue)}
+        sx={{ mb: 3 }}
+      >
+        <Tab label="Overview" icon={<Sensors />} />
+        <Tab label="Devices" icon={<Lightbulb />} />
+        <Tab label="Energy" icon={<EnergySavingsLeaf />} />
+        <Tab label="Security" icon={<Security />} />
+        <Tab label="Settings" icon={<Settings />} />
+      </Tabs>
+
+      {/* Main Content */}
+      {activeTab === 0 && (
+        <Grid container spacing={3}>
+          {/* Status Cards */}
+          <Grid item xs={12} md={4}>
+            <StatusCard>
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <Avatar sx={{ bgcolor: 'primary.light', color: 'primary.main', mr: 2 }}>
+                    <People />
+                  </Avatar>
                   <Box>
-                    <Typography variant="h6">Lighting</Typography>
-                    <Switch
-                      checked={room.light}
-                      onChange={handleLightToggle}
-                      color="warning"
-                    />
+                    <Typography variant="body2" color="text.secondary">
+                      Current Occupancy
+                    </Typography>
+                    <Typography variant="h4">
+                      {room.occupancy || 0}
+                    </Typography>
                   </Box>
                 </Box>
-              </Grid>
+                <LinearProgress
+                  variant="determinate"
+                  value={Math.min((room.occupancy || 0) / room.capacity * 100, 100)}
+                  color={room.occupancy === room.capacity ? 'error' : 'primary'}
+                  sx={{ height: 8, borderRadius: 4 }}
+                />
+                <Typography variant="caption" color="text.secondary">
+                  Capacity: {room.capacity || 'N/A'} people
+                </Typography>
+              </CardContent>
+            </StatusCard>
+          </Grid>
 
-              <Grid item xs={12} sm={6}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Warning fontSize="large" color={room.warning ? 'error' : 'disabled'} />
+          <Grid item xs={12} md={4}>
+            <StatusCard>
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <Avatar sx={{ bgcolor: 'success.light', color: 'success.main', mr: 2 }}>
+                    <Thermostat />
+                  </Avatar>
                   <Box>
-                    <Typography variant="h6">Security Alert</Typography>
-                    <Switch
-                      checked={room.warning}
-                      onChange={handleWarningToggle}
-                      color="error"
-                    />
+                    <Typography variant="body2" color="text.secondary">
+                      Current Temperature
+                    </Typography>
+                    <Typography variant="h4">
+                      {room.temperature || 'N/A'}°C
+                    </Typography>
                   </Box>
                 </Box>
-              </Grid>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Typography variant="caption" color="text.secondary">
+                    Setpoint: 22°C
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Humidity: {room.humidity || 'N/A'}%
+                  </Typography>
+                </Box>
+              </CardContent>
+            </StatusCard>
+          </Grid>
 
-              {/* Additional IoT Controls */}
-              <Grid item xs={12} sm={6}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Lock fontSize="large" color="action" />
+          <Grid item xs={12} md={4}>
+            <StatusCard>
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <Avatar sx={{ bgcolor: 'warning.light', color: 'warning.main', mr: 2 }}>
+                    <EnergySavingsLeaf />
+                  </Avatar>
                   <Box>
-                    <Typography variant="h6">Door Lock</Typography>
-                    <Switch disabled color="primary" />
+                    <Typography variant="body2" color="text.secondary">
+                      Energy Usage Today
+                    </Typography>
+                    <Typography variant="h4">
+                      {energyUsage.today} kWh
+                    </Typography>
                   </Box>
                 </Box>
-              </Grid>
-
-              <Grid item xs={12} sm={6}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Thermostat fontSize="large" color="action" />
-                  <Box>
-                    <Typography variant="h6">Thermostat</Typography>
-                    <Typography variant="body1">22.5°C</Typography>
-                  </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Typography variant="caption" color="text.secondary">
+                    Week: {energyUsage.week} kWh
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Month: {energyUsage.month} kWh
+                  </Typography>
                 </Box>
-              </Grid>
-            </Grid>
-          </StatusCard>
-        </Grid>
+              </CardContent>
+            </StatusCard>
+          </Grid>
 
-        {/* Room Info Column */}
-        <Grid item xs={12} md={6}>
-          <StatusCard elevation={3}>
-            <Typography variant="h5" gutterBottom sx={{ mb: 3 }}>
-              Room Details
+          {/* Devices Overview */}
+          <Grid item xs={12}>
+            <Typography variant="h5" gutterBottom sx={{ mb: 2 }}>
+              Active Devices
             </Typography>
-
             <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <Typography variant="body1" color="text.secondary">
-                  <strong>Position:</strong>
-                </Typography>
-                <Typography variant="body1">
-                  X: {room.position?.x || 'N/A'}, Y: {room.position?.y || 'N/A'}
-                </Typography>
-              </Grid>
-
-              <Grid item xs={6}>
-                <Typography variant="body1" color="text.secondary">
-                  <strong>Last Updated:</strong>
-                </Typography>
-                <Typography variant="body1">
-                  {new Date(room.updated_at).toLocaleString()}
-                </Typography>
-              </Grid>
-
-              <Grid item xs={12}>
-                <Typography variant="body1" color="text.secondary">
-                  <strong>Connected Devices:</strong>
-                </Typography>
-                <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
-                  <Chip icon={<DoorFront />} label="Smart Door" variant="outlined" />
-                  <Chip icon={<Thermostat />} label="Thermostat" variant="outlined" />
-                  <Chip icon={<Lightbulb />} label="Smart Lights" variant="outlined" />
-                </Box>
-              </Grid>
+              {devices.filter(d => d.status).map(device => (
+                <Grid item xs={12} sm={6} md={4} lg={3} key={device.id}>
+                  <DeviceCard active={device.status}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Box>
+                        <Typography variant="subtitle1" fontWeight={600}>
+                          {device.name}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Last active: {new Date(device.lastActive).toLocaleTimeString()}
+                        </Typography>
+                      </Box>
+                      <Switch
+                        checked={device.status}
+                        onChange={() => handleDeviceToggle(device.id)}
+                        color="primary"
+                        size="small"
+                      />
+                    </Box>
+                  </DeviceCard>
+                </Grid>
+              ))}
             </Grid>
-          </StatusCard>
+          </Grid>
         </Grid>
-      </Grid>
+      )}
+
+      {activeTab === 1 && (
+        <Grid container spacing={3}>
+          <Grid item xs={12}>
+            <Typography variant="h5" gutterBottom sx={{ mb: 2 }}>
+              All Connected Devices
+            </Typography>
+            <Paper sx={{ p: 3, borderRadius: 3 }}>
+              <Grid container spacing={3}>
+                {devices.map(device => (
+                  <Grid item xs={12} sm={6} md={4} key={device.id}>
+                    <Card variant="outlined">
+                      <CardContent>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                            <Avatar sx={{
+                              bgcolor: device.status ? 'success.light' : 'grey.100',
+                              color: device.status ? 'success.main' : 'grey.500'
+                            }}>
+                              {device.type === 'light' && <Lightbulb />}
+                              {device.type === 'thermostat' && <Thermostat />}
+                              {device.type === 'security' && <Lock />}
+                              {device.type === 'sensor' && <Sensors />}
+                            </Avatar>
+                            <Box>
+                              <Typography variant="subtitle1" fontWeight={600}>
+                                {device.name}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {device.type}
+                              </Typography>
+                            </Box>
+                          </Box>
+                          <Switch
+                            checked={device.status}
+                            onChange={() => handleDeviceToggle(device.id)}
+                            color="primary"
+                          />
+                        </Box>
+                        {device.temp && (
+                          <Box sx={{ mt: 2 }}>
+                            <Typography variant="body2" color="text.secondary">
+                              Current temperature: {device.temp}°C
+                            </Typography>
+                          </Box>
+                        )}
+                        <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                          Last active: {new Date(device.lastActive)}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                ))}
+              </Grid>
+            </Paper>
+          </Grid>
+        </Grid>
+      )}
+
+      {activeTab === 2 && (
+        <Box>
+          <Typography variant="h5" gutterBottom sx={{ mb: 3 }}>
+            Energy Consumption
+          </Typography>
+          <Paper sx={{ p: 3, borderRadius: 3, minHeight: 400 }}>
+            <Typography color="text.secondary">
+              Energy analytics coming soon
+            </Typography>
+          </Paper>
+        </Box>
+      )}
+
+      {activeTab === 3 && (
+        <Box>
+          <Typography variant="h5" gutterBottom sx={{ mb: 3 }}>
+            Security Settings
+          </Typography>
+          <Paper sx={{ p: 3, borderRadius: 3, minHeight: 400 }}>
+            <Typography color="text.secondary">
+              Security settings coming soon
+            </Typography>
+          </Paper>
+        </Box>
+      )}
+
+      {activeTab === 4 && (
+        <Box>
+          <Typography variant="h5" gutterBottom sx={{ mb: 3 }}>
+            Room Settings
+          </Typography>
+          <Paper sx={{ p: 3, borderRadius: 3, minHeight: 400 }}>
+            <Typography color="text.secondary">
+              Room configuration coming soon
+            </Typography>
+          </Paper>
+        </Box>
+      )}
     </Box>
   );
 };

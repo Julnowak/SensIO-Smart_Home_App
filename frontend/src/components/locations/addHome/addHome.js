@@ -1,250 +1,514 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   Box,
   Button,
+  Card,
+  CardContent,
+  Divider,
+  Grid,
   TextField,
   Typography,
-  Paper,
-  Grid,
-  MenuItem,
-  Select,
+  Alert,
+  Snackbar,
   FormControl,
   InputLabel,
-  Checkbox,
+  Select,
+  MenuItem,
+  Switch,
   FormControlLabel,
-} from '@mui/material';
+  Avatar,
+  IconButton,
+  Stepper,
+  Step,
+  StepLabel,
+  Paper,
+  Chip,
+  InputAdornment,
+  Badge,
+  styled
+} from "@mui/material";
+import {
+  CheckCircle,
+  CloudUpload,
+  Delete,
+  Home,
+  Apartment,
+  Factory,
+  AccountBalance,
+  Elevator,
+  Park,
+  MeetingRoom,
+  PhotoCamera
+} from "@mui/icons-material";
+import client from "../../../client";
+import { API_BASE_URL } from "../../../config";
+import { useNavigate } from "react-router-dom";
 
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import { styled } from '@mui/material/styles';
+const StyledUploadBox = styled(Paper)(({ theme }) => ({
+  border: `2px dashed ${theme.palette.divider}`,
+  borderRadius: theme.shape.borderRadius * 2,
+  padding: theme.spacing(4),
+  textAlign: 'center',
+  cursor: 'pointer',
+  transition: 'all 0.3s ease',
+  '&:hover': {
+    borderColor: theme.palette.primary.main,
+    backgroundColor: theme.palette.action.hover
+  }
+}));
 
-const VisuallyHiddenInput = styled('input')({
-  clip: 'rect(0 0 0 0)',
-  clipPath: 'inset(50%)',
-  height: 1,
-  overflow: 'hidden',
-  position: 'absolute',
-  bottom: 0,
-  left: 0,
-  whiteSpace: 'nowrap',
-  width: 1,
-});
+const BuildingTypeIcon = ({ type }) => {
+  const iconStyle = { fontSize: 20, mr: 1 };
+  switch (type) {
+    case 'residential': return <Home sx={iconStyle} />;
+    case 'commercial': return <Apartment sx={iconStyle} />;
+    case 'industrial': return <Factory sx={iconStyle} />;
+    case 'public': return <AccountBalance sx={iconStyle} />;
+    default: return <Home sx={iconStyle} />;
+  }
+};
 
-const AddHome = ({ onSave, users }) => {
+const AddHome = () => {
+  const [activeStep, setActiveStep] = useState(0);
   const [formData, setFormData] = useState({
-    name: '',
-    address: '',
-    regards: '',
-    owner: null,
-    floor_num: 1,
-    building_type: 'residual',
-    year_of_construction: new Date().getFullYear(),
-    building_area: 0,
-    current: false,
-    image: null,
+    name: "",
+    address: "",
+    yearBuilt: "",
+    buildingType: "residential",
+    totalArea: "",
+    floors: 1,
+    hasBasement: false,
+    hasAttic: false,
+    hasElevator: false,
+    hasParking: false,
+    hasConferenceRoom: false,
+    photo: null,
+    photoPreview: ""
   });
 
-  const [imagePreview, setImagePreview] = useState(null);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+  const navigate = useNavigate();
 
   const buildingTypes = [
-    { value: 'residual', label: 'Mieszkalne' },
-    { value: 'public', label: 'Publiczne' },
-    { value: 'industrial', label: 'Przemysłowe' },
-    { value: 'commercial', label: 'Komercyjne/handlowo-usługowe' },
+    { value: "residential", label: "Residential Building" },
+    { value: "commercial", label: "Commercial Building" },
+    { value: "industrial", label: "Industrial Facility" },
+    { value: "public", label: "Public Institution" }
   ];
 
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData({
-      ...formData,
-      [name]: type === 'checkbox' ? checked : value,
-    });
+  const steps = ['Basic Information', 'Building Details', 'Photo Upload'];
+
+  const handleNext = () => {
+    if (activeStep === 0 && (!formData.name || !formData.address)) {
+      setError("Building name and address are required");
+      return;
+    }
+    if (activeStep === 1 && formData.floors < 1) {
+      setError("Number of floors must be at least 1");
+      return;
+    }
+    setError("");
+    setActiveStep((prevActiveStep) => prevActiveStep + 1);
   };
 
-  const handleDateChange = (date) => {
-    setFormData({
-      ...formData,
-      year_of_construction: date ? date.getFullYear() : new Date().getFullYear(),
-    });
+  const handleBack = () => {
+    setError("");
+    setActiveStep((prevActiveStep) => prevActiveStep - 1);
   };
 
-  const handleImageChange = (e) => {
+  const handleImageUpload = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      setFormData({
-        ...formData,
-        image: file,
-      });
+    if (!file) return;
 
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
-      };
-      reader.readAsDataURL(file);
+    if (!file.type.startsWith("image/")) {
+      setError("Please select an image file");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError("File is too large (max 5MB)");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setFormData(prev => ({
+        ...prev,
+        photo: file,
+        photoPreview: reader.result
+      }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveImage = () => {
+    setFormData(prev => ({
+      ...prev,
+      photo: null,
+      photoPreview: ""
+    }));
+  };
+
+  const handleSubmit = async () => {
+    if (!formData.photo) {
+      setError("Building photo is required");
+      return;
+    }
+
+    const formPayload = new FormData();
+    Object.keys(formData).forEach(key => {
+      if (key === "photo") {
+        if (formData.photo) formPayload.append("photo", formData.photo);
+      } else {
+        formPayload.append(key, formData[key]);
+      }
+    });
+
+    try {
+      await client.post(API_BASE_URL + "myHomes/", formPayload, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${localStorage.getItem("access")}`
+        }
+      });
+      setSuccess(true);
+      setError("");
+    } catch (err) {
+      setError("Error saving building data");
     }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSave(formData);
-  };
-
   return (
-    <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Paper elevation={3} sx={{ p: 3, maxWidth: 800, margin: 'auto' }}>
-        <Typography variant="h5" gutterBottom>
-          Dodaj nowy budynek
-        </Typography>
-        <form onSubmit={handleSubmit}>
-          <Grid container spacing={3}>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Nazwa budynku"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                required
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Adres"
-                name="address"
-                value={formData.address}
-                onChange={handleChange}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Uwagi"
-                name="regards"
-                value={formData.regards}
-                onChange={handleChange}
-                multiline
-                rows={3}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel id="owner-label">Właściciel</InputLabel>
-                <Select
-                  labelId="owner-label"
-                  name="owner"
-                  value={formData.owner || ''}
-                  onChange={handleChange}
-                >
-                  {users?.map((user) => (
-                    <MenuItem key={user.id} value={user.id}>
-                      {user.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Liczba pięter"
-                name="floor_num"
-                type="number"
-                value={formData.floor_num}
-                onChange={handleChange}
-                inputProps={{ min: 1 }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel id="building-type-label">Typ budynku</InputLabel>
-                <Select
-                  labelId="building-type-label"
-                  name="building_type"
-                  value={formData.building_type}
-                  onChange={handleChange}
-                >
-                  {buildingTypes.map((type) => (
-                    <MenuItem key={type.value} value={type.value}>
-                      {type.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <DatePicker
-                views={['year']}
-                label="Rok budowy"
-                value={new Date(formData.year_of_construction, 0, 1)}
-                onChange={handleDateChange}
-                renderInput={(params) => (
-                  <TextField {...params} fullWidth />
-                )}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Powierzchnia budynku (m²)"
-                name="building_area"
-                type="number"
-                value={formData.building_area}
-                onChange={handleChange}
-                inputProps={{ min: 0 }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    name="current"
-                    checked={formData.current}
-                    onChange={handleChange}
-                    color="primary"
-                  />
-                }
-                label="Bieżący budynek"
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <Button
-                component="label"
-                variant="outlined"
-                startIcon={<CloudUploadIcon />}
-              >
-                Dodaj zdjęcie budynku
-                <VisuallyHiddenInput
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
+    <Box sx={{ maxWidth: 900, mx: "auto", p: 3 }}>
+      <Typography variant="h4" gutterBottom sx={{ mb: 3, fontWeight: 700 }}>
+        Add New Building
+      </Typography>
+
+      <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 4 }}>
+        {steps.map((label) => (
+          <Step key={label}>
+            <StepLabel>{label}</StepLabel>
+          </Step>
+        ))}
+      </Stepper>
+
+      <Card sx={{ mb: 3, borderRadius: 3 }}>
+        <CardContent>
+          {activeStep === 0 && (
+            <Grid container spacing={3}>
+              <Grid item xs={12}>
+                <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
+                  Basic Information
+                </Typography>
+                <Divider sx={{ mb: 3 }} />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Building Name"
+                  name="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  required
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Home color="action" />
+                      </InputAdornment>
+                    ),
+                  }}
                 />
-              </Button>
-              {imagePreview && (
-                <Box mt={2}>
-                  <img
-                    src={imagePreview}
-                    alt="Podgląd zdjęcia budynku"
-                    style={{ maxWidth: '100%', maxHeight: 200 }}
-                  />
-                </Box>
-              )}
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Address"
+                  name="address"
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  required
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <FormControl fullWidth>
+                  <InputLabel>Building Type</InputLabel>
+                  <Select
+                    name="buildingType"
+                    value={formData.buildingType}
+                    onChange={(e) => setFormData({ ...formData, buildingType: e.target.value })}
+                    label="Building Type"
+                  >
+                    {buildingTypes.map((type) => (
+                      <MenuItem key={type.value} value={type.value}>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <BuildingTypeIcon type={type.value} />
+                          {type.label}
+                        </Box>
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Year Built"
+                  name="yearBuilt"
+                  type="number"
+                  value={formData.yearBuilt}
+                  onChange={(e) => setFormData({ ...formData, yearBuilt: e.target.value })}
+                  inputProps={{ min: 1900, max: new Date().getFullYear() }}
+                />
+              </Grid>
             </Grid>
-            <Grid item xs={12}>
-              <Box display="flex" justifyContent="flex-end">
-                <Button
-                  type="submit"
-                  variant="contained"
-                  color="primary"
-                  size="large"
-                >
-                  Zapisz budynek
-                </Button>
-              </Box>
+          )}
+
+          {activeStep === 1 && (
+            <Grid container spacing={3}>
+              <Grid item xs={12}>
+                <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
+                  Building Specifications
+                </Typography>
+                <Divider sx={{ mb: 3 }} />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Total Area (m²)"
+                  name="totalArea"
+                  type="number"
+                  value={formData.totalArea}
+                  onChange={(e) => setFormData({ ...formData, totalArea: e.target.value })}
+                  inputProps={{ min: 0 }}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Number of Floors"
+                  name="floors"
+                  type="number"
+                  value={formData.floors}
+                  onChange={(e) => setFormData({ ...formData, floors: e.target.value })}
+                  inputProps={{ min: 1, max: 100 }}
+                  required
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <Typography variant="subtitle1" gutterBottom sx={{ mt: 1 }}>
+                  Building Features
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={6} sm={4} md={3}>
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          name="hasBasement"
+                          checked={formData.hasBasement}
+                          onChange={(e) => setFormData({ ...formData, hasBasement: e.target.checked })}
+                          color="primary"
+                        />
+                      }
+                      label={
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          {/*<Basement sx={{ mr: 1, fontSize: 20 }} />*/}
+                          Basement
+                        </Box>
+                      }
+                    />
+                  </Grid>
+                  <Grid item xs={6} sm={4} md={3}>
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          name="hasAttic"
+                          checked={formData.hasAttic}
+                          onChange={(e) => setFormData({ ...formData, hasAttic: e.target.checked })}
+                          color="primary"
+                        />
+                      }
+                      label={
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          {/*<Attic sx={{ mr: 1, fontSize: 20 }} />*/}
+                          Attic
+                        </Box>
+                      }
+                    />
+                  </Grid>
+                  <Grid item xs={6} sm={4} md={3}>
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          name="hasElevator"
+                          checked={formData.hasElevator}
+                          onChange={(e) => setFormData({ ...formData, hasElevator: e.target.checked })}
+                          color="primary"
+                        />
+                      }
+                      label={
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <Elevator sx={{ mr: 1, fontSize: 20 }} />
+                          Elevator
+                        </Box>
+                      }
+                    />
+                  </Grid>
+                  <Grid item xs={6} sm={4} md={3}>
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          name="hasParking"
+                          checked={formData.hasParking}
+                          onChange={(e) => setFormData({ ...formData, hasParking: e.target.checked })}
+                          color="primary"
+                        />
+                      }
+                      label={
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <Park sx={{ mr: 1, fontSize: 20 }} />
+                          Parking
+                        </Box>
+                      }
+                    />
+                  </Grid>
+                </Grid>
+              </Grid>
             </Grid>
-          </Grid>
-        </form>
-      </Paper>
-    </LocalizationProvider>
+          )}
+
+          {activeStep === 2 && (
+            <Grid container spacing={3}>
+              <Grid item xs={12}>
+                <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
+                  Building Photo
+                </Typography>
+                <Divider sx={{ mb: 3 }} />
+              </Grid>
+
+              <Grid item xs={12}>
+                <input
+                  accept="image/*"
+                  style={{ display: "none" }}
+                  id="photo-upload"
+                  type="file"
+                  onChange={handleImageUpload}
+                />
+
+                {formData.photoPreview ? (
+                  <Box sx={{ position: 'relative', maxWidth: 400, mx: 'auto' }}>
+                    <Badge
+                      overlap="circular"
+                      anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+                      badgeContent={
+                        <IconButton
+                          onClick={handleRemoveImage}
+                          size="small"
+                          sx={{ bgcolor: 'error.main', color: 'white', '&:hover': { bgcolor: 'error.dark' } }}
+                        >
+                          <Delete fontSize="small" />
+                        </IconButton>
+                      }
+                    >
+                      <Avatar
+                        src={formData.photoPreview}
+                        sx={{
+                          width: '100%',
+                          height: 'auto',
+                          aspectRatio: '16/9',
+                          borderRadius: 3,
+                          boxShadow: 3
+                        }}
+                        variant="rounded"
+                      />
+                    </Badge>
+                  </Box>
+                ) : (
+                  <label htmlFor="photo-upload">
+                    <StyledUploadBox>
+                      <PhotoCamera color="primary" sx={{ fontSize: 48, mb: 2 }} />
+                      <Typography variant="h6" gutterBottom>
+                        Upload Building Photo
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                        Drag and drop an image here, or click to browse
+                      </Typography>
+                      <Button
+                        variant="contained"
+                        component="span"
+                        startIcon={<CloudUpload />}
+                      >
+                        Select Image
+                      </Button>
+                      <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+                        Max file size: 5MB
+                      </Typography>
+                    </StyledUploadBox>
+                  </label>
+                )}
+              </Grid>
+            </Grid>
+          )}
+        </CardContent>
+      </Card>
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+      )}
+
+      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+        <Button
+          disabled={activeStep === 0}
+          onClick={handleBack}
+          variant="outlined"
+          sx={{ minWidth: 120 }}
+        >
+          Back
+        </Button>
+
+        {activeStep === steps.length - 1 ? (
+          <Button
+            variant="contained"
+            onClick={handleSubmit}
+            endIcon={<CheckCircle />}
+            size="large"
+            sx={{ minWidth: 200 }}
+          >
+            Save Building
+          </Button>
+        ) : (
+          <Button
+            variant="contained"
+            onClick={handleNext}
+            sx={{ minWidth: 120 }}
+          >
+            Next
+          </Button>
+        )}
+      </Box>
+
+      <Snackbar
+        open={success}
+        autoHideDuration={2000}
+        onClose={() => {
+          setSuccess(false);
+          navigate("/myHomes");
+        }}
+      >
+        <Alert severity="success" icon={<CheckCircle fontSize="inherit" />}>
+          Building successfully added!
+        </Alert>
+      </Snackbar>
+    </Box>
   );
 };
 

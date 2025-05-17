@@ -12,7 +12,6 @@ import {AuthProvider} from "./AuthContext";
 import Logout from "./components/user/logout/logout";
 import History from "./components/history/history";
 import UserDevicesPage from "./components/devices/userDevicesPage/userDevicesPage";
-import UserHomesPage from "./components/locations/UserHomesPage/UserHomesPage";
 import DevicePage from "./components/devices/devicePage/devicePage";
 import AddHome from "./components/locations/addHome/addHome";
 import BuildingPage from "./components/locations/BuildingPage/BuildingPage";
@@ -28,6 +27,10 @@ import TermsOfService from "./components/termsOfService/termsOfService";
 import PrivacyPolicy from "./components/termsOfService/privacyPolicy";
 import Contact from "./components/termsOfService/contact";
 import About from "./components/termsOfService/about";
+import LayoutEditor from "./components/layoutEditor";
+import UserLocationsPage from "./components/locations/UserHomesPage/UserHomesPage";
+import NotFoundPage from "./components/notFoundPage/notFoundPage";
+import Rules from "./components/rules/rules";
 
 function App() {
     const { mode } = useContext(ThemeContext);
@@ -52,7 +55,7 @@ function App() {
                         <Route path="/history" element={<History/>}/>
                         <Route path="/myDevices" element={<UserDevicesPage/>}/>
                         <Route path="//newDevice" element={<NewDevice/>}/>
-                        <Route path="/myHomes" element={<UserHomesPage/>}/>
+                        <Route path="/myHomes" element={<UserLocationsPage/>}/>
                         <Route path="/myRooms" element={<UserRoomsPage/>}/>
                         <Route path="/addHome" element={<AddHome/>}/>
                         <Route path="/dashboard" element={<Dashboard/>}/>
@@ -60,11 +63,15 @@ function App() {
                         <Route path="/home/:id" element={<BuildingPage/>}/>
                         <Route path="/room/:id" element={<RoomPage/>}/>
                         <Route path="/notifications" element={<Notifications/>}/>
+                        <Route path="/rules" element={<Rules/>}/>
 
                         <Route path="/terms-of-service" element={<TermsOfService/>}/>
                         <Route path="/privacy-policy" element={<PrivacyPolicy/>}/>
                         <Route path="/contact" element={<Contact/>}/>
                         <Route path="/about" element={<About/>}/>
+                        <Route path="/editor" element={<LayoutEditor/>}/>
+
+                        <Route path="*" element={<NotFoundPage />} />
                     </Routes>
                 </div>
                 {/* Routes */}
