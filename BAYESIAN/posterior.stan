@@ -37,13 +37,14 @@ model {
 generated quantities {
   vector[N] y_sim;
   vector[N] mu;
+  vector[N] log_lik;
   
   for (n in 1:N) {
     mu[n] = beta0 
             + beta1 * tanh(log_sqm_scaled[n]/1.5)
             + beta2 * temp_scaled[n] * exp(-temp_scaled[n]^2/2);
     
-    y_sim[n] = exp(normal_rng(mu[n], sigma));
-    y_sim[n] = fmin(y_sim[n], 2000); 
+    y_sim[n] = fmin(lognormal_rng(mu[n], sigma), 2000);
+    log_lik[n] = lognormal_lpdf(log(y[n]) | mu[n], sigma);
   }
 }

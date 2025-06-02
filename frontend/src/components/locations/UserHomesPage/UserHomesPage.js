@@ -38,7 +38,7 @@ import {
   Business,
   Warehouse,
   School,
-  HealthAndSafety
+  HealthAndSafety, ListAlt, ViewComfy
 } from "@mui/icons-material";
 import client from "../../../client";
 import { API_BASE_URL } from "../../../config";
@@ -47,13 +47,13 @@ import { useNavigate } from "react-router-dom";
 
 // Building type icons mapping
 const buildingIcons = {
-  house: <Home color="primary" />,
-  apartment: <Apartment color="primary" />,
-  office: <Business color="primary" />,
-  warehouse: <Warehouse color="primary" />,
-  school: <School color="primary" />,
-  hospital: <HealthAndSafety color="primary" />,
-  default: <Apartment color="primary" />
+  house: <Home color="black" />,
+  apartment: <Apartment color="black" />,
+  office: <Business color="black" />,
+  warehouse: <Warehouse color="black" />,
+  school: <School color="black" />,
+  hospital: <HealthAndSafety color="black" />,
+  default: <Apartment color="black" />
 };
 
 const StyledCard = styled(Card)(({ theme }) => ({
@@ -71,13 +71,13 @@ const StatusBadge = styled(Chip)(({ theme, status }) => ({
   fontSize: "0.7rem",
   textTransform: "uppercase",
   backgroundColor:
-    status === "active"
+    status === "aktywny"
       ? theme.palette.success.light
-      : theme.palette.grey[300],
+      : theme.palette.grey[400],
   color:
-    status === "active"
-      ? theme.palette.success.dark
-      : theme.palette.text.secondary
+    status === "aktywny"
+      ? "black"
+      : "black"
 }));
 
 const UserLocationsPage = () => {
@@ -100,7 +100,6 @@ const UserLocationsPage = () => {
         // Add mock status and devices count for demo purposes
         const locationsWithStatus = response.data.map(loc => ({
           ...loc,
-          status: Math.random() > 0.3 ? "active" : "inactive",
           devicesCount: Math.floor(Math.random() * 15) + 1,
           lastUpdated: new Date(Date.now() - Math.floor(Math.random() * 7 * 24 * 60 * 60 * 1000))
         }));
@@ -220,7 +219,7 @@ const UserLocationsPage = () => {
       )
     },
     {
-      field: "status",
+      field: "isActive",
       headerName: "Status",
       width: 120,
       renderCell: (params) => (
@@ -299,10 +298,8 @@ const UserLocationsPage = () => {
     <Container maxWidth="xl" sx={{ py: 4 }}>
       <Box sx={{ mb: 3 }}>
         <Breadcrumbs aria-label="breadcrumb">
-          <Link color="inherit" href="/dashboard">
-            Dashboard
-          </Link>
-          <Typography color="text.primary">Building Management</Typography>
+          <Typography color="text.primary">Zarządzaj</Typography>
+          <Typography color="text.primary">Moje lokacje</Typography>
         </Breadcrumbs>
       </Box>
 
@@ -315,7 +312,7 @@ const UserLocationsPage = () => {
             sx={{ mb: 2 }}
           >
             <Typography variant="h4" component="h1" fontWeight={700}>
-              Building Portfolio
+              Lokacje
             </Typography>
             <Box display="flex" gap={2}>
               <Button
@@ -323,14 +320,14 @@ const UserLocationsPage = () => {
                 onClick={() => setViewMode("list")}
                 size="small"
               >
-                List View
+                <ListAlt/>
               </Button>
               <Button
                 variant={viewMode === "grid" ? "contained" : "outlined"}
                 onClick={() => setViewMode("grid")}
                 size="small"
               >
-                Grid View
+                <ViewComfy/>
               </Button>
               <Button
                 variant="contained"
@@ -338,7 +335,7 @@ const UserLocationsPage = () => {
                 href="/addHome"
                 sx={{ minWidth: 200 }}
               >
-                Add New Building
+                Nowa lokacja
               </Button>
             </Box>
           </Box>
@@ -353,7 +350,7 @@ const UserLocationsPage = () => {
                 </Grid>
                 <Grid item xs={8}>
                   <Typography variant="h6" gutterBottom>
-                    Current Active Building:
+                    Wybrana lokacja:
                   </Typography>
                   <Select
                     fullWidth
@@ -374,7 +371,7 @@ const UserLocationsPage = () => {
                 <Grid item xs={2}>
                   <Box textAlign="right">
                     <Typography variant="body2" color="text.secondary">
-                      Total Buildings
+                      Liczba lokacji
                     </Typography>
                     <Typography variant="h4" color="primary">
                       {locations.length}
@@ -391,7 +388,7 @@ const UserLocationsPage = () => {
             <Box display="flex" justifyContent="space-between" alignItems="center">
               <TextField
                 variant="outlined"
-                placeholder="Search buildings..."
+                placeholder="Wyszukaj lokację..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 InputProps={{
@@ -401,7 +398,7 @@ const UserLocationsPage = () => {
               />
               <Box display="flex" gap={1}>
                 <Typography variant="body2" color="text.secondary" sx={{ alignSelf: "center" }}>
-                  Sort by:
+                  Sortuj po:
                 </Typography>
                 <Button
                   size="small"
@@ -414,7 +411,7 @@ const UserLocationsPage = () => {
                   }
                   onClick={() => handleSort("name")}
                 >
-                  Name
+                  Nazwa
                 </Button>
                 <Button
                   size="small"
@@ -427,7 +424,7 @@ const UserLocationsPage = () => {
                   }
                   onClick={() => handleSort("lastUpdated")}
                 >
-                  Last Updated
+                  Data aktualizacji
                 </Button>
               </Box>
             </Box>
@@ -437,97 +434,97 @@ const UserLocationsPage = () => {
         {viewMode === "grid" ? (
           <Grid item xs={12}>
             <Paper elevation={0} sx={{ height: 600, width: "100%", borderRadius: 2 }}>
-<TableContainer component={Paper} sx={{ borderRadius: 2 }}>
-  <Table>
-    <TableHead>
-      <TableRow>
-        <TableCell>Building Name</TableCell>
-        <TableCell>Status</TableCell>
-        <TableCell>Devices</TableCell>
-        <TableCell>Last Updated</TableCell>
-        <TableCell>Actions</TableCell>
-      </TableRow>
-    </TableHead>
-    <TableBody>
-      {filteredLocations.map((location) => (
-        <TableRow
-          key={location.home_id}
-          hover
-          onClick={() => navigate(`/home/${location.home_id}`)}
-          sx={{ cursor: 'pointer' }}
-        >
-          <TableCell>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Avatar
-                variant="rounded"
-                sx={{
-                  bgcolor: 'primary.light',
-                  color: 'primary.main',
-                  width: 40,
-                  height: 40,
-                }}
-              >
-                {buildingIcons[location.type?.toLowerCase()] || buildingIcons.default}
-              </Avatar>
-              <Box>
-                <Typography variant="subtitle1" fontWeight={600}>
-                  {location.name}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {location.address}
-                </Typography>
-              </Box>
-            </Box>
-          </TableCell>
-          <TableCell>
-            <StatusBadge
-              label={location.status}
-              status={location.status}
-              size="small"
-            />
-          </TableCell>
-          <TableCell>
-            <Chip
-              label={`${location.devicesCount} devices`}
-              variant="outlined"
-              size="small"
-            />
-          </TableCell>
-          <TableCell>
-            {formatDate(location.lastUpdated)}
-          </TableCell>
-          <TableCell>
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <Tooltip title="Edit">
-                <IconButton
-                  size="small"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/home/${location.home_id}/edit`);
-                  }}
-                >
-                  <Edit fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Delete">
-                <IconButton
-                  size="small"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDelete(location.home_id);
-                  }}
-                  color="error"
-                >
-                  <Delete fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            </Box>
-          </TableCell>
-        </TableRow>
-      ))}
-    </TableBody>
-  </Table>
-</TableContainer>
+              <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Nazwa lokacji</TableCell>
+                      <TableCell>Status</TableCell>
+                      <TableCell>Urządzenia</TableCell>
+                      <TableCell>Ostatnia aktualizacja</TableCell>
+                      <TableCell>Akcje</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {filteredLocations.map((location) => (
+                      <TableRow
+                        key={location.home_id}
+                        hover
+                        onClick={() => navigate(`/home/${location.home_id}`)}
+                        sx={{ cursor: 'pointer' }}
+                      >
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                            <Avatar
+                              variant="rounded"
+                              sx={{
+                                bgcolor: 'primary.light',
+                                color: 'mainprimary.',
+                                width: 40,
+                                height: 40,
+                              }}
+                            >
+                              {buildingIcons[location.type?.toLowerCase()] || buildingIcons.default}
+                            </Avatar>
+                            <Box>
+                              <Typography variant="subtitle1" fontWeight={600}>
+                                {location.name}
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary">
+                                {location.address}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <StatusBadge
+                            label={location.status}
+                            status={location.status}
+                            size="small"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            label={`${location.devicesCount} urządzeń`}
+                            variant="outlined"
+                            size="small"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          {new Date(location.lastUpdated).toLocaleDateString()}, {new Date(location.lastUpdated).toLocaleTimeString()}
+                        </TableCell>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', gap: 1 }}>
+                            <Tooltip title="Edit">
+                              <IconButton
+                                size="small"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/home/${location.home_id}/edit`);
+                                }}
+                              >
+                                <Edit fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Delete">
+                              <IconButton
+                                size="small"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDelete(location.home_id);
+                                }}
+                                color="error"
+                              >
+                                <Delete fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
             </Paper>
           </Grid>
         ) : (
@@ -552,7 +549,7 @@ const UserLocationsPage = () => {
                               variant="rounded"
                               sx={{
                                 bgcolor: "primary.light",
-                                color: "primary.main",
+
                                 width: 48,
                                 height: 48
                               }}
@@ -567,7 +564,7 @@ const UserLocationsPage = () => {
                               </Typography>
                               {location.current && (
                                 <Chip
-                                  label="Active"
+                                  label="Wybrany"
                                   size="small"
                                   color="primary"
                                   icon={<CheckCircle fontSize="small" />}
@@ -591,7 +588,7 @@ const UserLocationsPage = () => {
                           </Grid>
                           <Grid item xs={2} textAlign="center">
                             <Typography variant="body2" color="text.secondary">
-                              Devices
+                              Urządzenia
                             </Typography>
                             <Typography variant="h6">
                               {location.devicesCount}
@@ -624,7 +621,7 @@ const UserLocationsPage = () => {
                               </Tooltip>
                             </Box>
                             <Typography variant="caption" color="text.secondary">
-                              Last updated: {formatDate(location.lastUpdated)}
+                              Ostatnia aktualizacja: {new Date(location.lastUpdated).toLocaleDateString()}, {new Date(location.lastUpdated).toLocaleTimeString()}
                             </Typography>
                           </Grid>
                         </Grid>
