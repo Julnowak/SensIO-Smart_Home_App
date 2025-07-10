@@ -242,21 +242,6 @@ const Notifications = () => {
                 {/* Notifications List */}
                 <Grid item xs={12} lg={6}>
                     <Paper elevation={2} sx={{ borderRadius: "16px", p: 2 }}>
-                        <List>
-                            <ListItem>
-                                <ListItemIcon sx={{ minWidth: "40px" }}>
-                                    <Checkbox
-                                        checked={paginatedNotifications.length > 0 &&
-                                                paginatedNotifications.every(n => selectedNotifications.includes(n.id))}
-                                        indeterminate={
-                                            paginatedNotifications.some(n => selectedNotifications.includes(n.id)) &&
-                                            !paginatedNotifications.every(n => selectedNotifications.includes(n.id))
-                                        }
-                                        onChange={handleSelectAll}
-                                    />
-                                </ListItemIcon>
-                                <ListItemText primary="Zaznacz wszystkie" />
-                            </ListItem>
 
                             {paginatedNotifications.length > 0 ? (
                                 paginatedNotifications.map((notification) => (
@@ -338,7 +323,6 @@ const Notifications = () => {
                             ) : (
                                 <NotificationEmptyState />
                             )}
-                        </List>
 
                         {filteredNotifications.length > perPage && (
                             <Box display="flex" justifyContent="center" mt={3}>

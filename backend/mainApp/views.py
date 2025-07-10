@@ -206,10 +206,24 @@ class ActionData(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request):
-
         actions = Action.objects.filter(device__owner=request.user).order_by("-created_at")
         serializer = ActionSerializer(actions, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self,request):
+        if request.data['actionType'] == "export":
+            print(request.data['currentData'])
+
+        return Response( status=status.HTTP_200_OK)
+
+
+import random
+class TestData(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get(self, request):
+        num = random.randint(0,100)
+        return Response({"num": num}, status=status.HTTP_200_OK)
 
 
 class LayoutHandler(APIView):

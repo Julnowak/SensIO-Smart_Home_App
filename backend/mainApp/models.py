@@ -175,12 +175,20 @@ class Action(models.Model):
         ("MANUAL", "ręcznie"),
     ]
 
+    STATUS_TYPES = [
+        ("1", "krytyczny"),
+        ("2", "ostrzeżenie"),
+        ("3", "informacja"),
+        ("4", "inne"),
+    ]
+
     action_id = models.AutoField(primary_key=True)
     description = models.CharField(max_length=1000)
     device = models.ForeignKey(Device, on_delete=models.CASCADE)
     measurement = models.ForeignKey(Measurement, on_delete=models.CASCADE, blank=True, null=True)
     type = models.CharField(max_length=20, choices=ACTION_TYPES, default="AUTO")
     created_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=20, choices=STATUS_TYPES, default="3")
 
     def __str__(self):
         return "Akcja " + str(self.action_id)

@@ -22,6 +22,8 @@ import {
 } from "@mui/icons-material";
 import { Chart, registerables } from "chart.js";
 import { styled } from "@mui/material/styles";
+import client from "../../client";
+import {API_BASE_URL} from "../../config";
 
 Chart.register(...registerables);
 
@@ -101,6 +103,32 @@ const Dashboard = () => {
 
     return data;
   };
+
+  const token = localStorage.getItem("access");
+  const [num, setNum] = useState(0);
+
+  const fetchNum = async () => {
+    try {
+      const response = await client.get(API_BASE_URL + "test/", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setNum(response.data.num);
+    } catch (error) {
+      console.error("Error fetching number:", error);
+    }
+  };
+
+  useEffect(() => {
+    // ustaw interwał do cyklicznego pobierania
+    const intervalId = setInterval(fetchNum, 5000); // co 5 sekund
+
+    // opcjonalnie: pobierz od razu przy starcie
+    fetchNum();
+
+    // wyczyść interwał przy odmontowaniu komponentu
+    return () => clearInterval(intervalId);
+  }, []);
+
 
   const locations = ['Living Room', 'Kitchen', 'Bedroom', 'Bathroom'];
   const timeRanges = ['12h', '24h', '7d', '30d'];
@@ -183,7 +211,7 @@ const Dashboard = () => {
     <Container maxWidth="xl" sx={{ py: 4 }}>
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" component="h1" sx={{ fontWeight: 700, mb: 1 }}>
-          Smart Building Analytics
+          Smart Building Analytics {num}
         </Typography>
         <Typography variant="subtitle1" color="text.secondary">
           Real-time monitoring and predictive analysis for {selectedLocation}
