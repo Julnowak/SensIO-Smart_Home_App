@@ -42,6 +42,7 @@ import {
 import client from "../../client";
 import {API_BASE_URL} from "../../config";
 import AlarmStatistics from "./alarmStats";
+import {FaMagnifyingGlass} from "react-icons/fa6";
 
 const SeverityIcon = ({type}) => {
     const iconProps = {
@@ -81,9 +82,10 @@ function History() {
         search: "",
         type: "",
         dateRange: "",
-        severity: ""
+        status: ""
     });
     const [logs, setLogs] = useState([]);
+    const [filteredLogs, setFilteredLogs] = useState([]);
     const [stats, setStats] = useState({
         total: 0,
         errors: 0,
@@ -92,6 +94,7 @@ function History() {
     });
     const [tabValue, setTabValue] = useState(0);
     const [loading, setLoading] = useState(true);
+
 
     const token = localStorage.getItem("access");
         const fetchData = async () => {
@@ -104,6 +107,7 @@ function History() {
                 });
 
                 setLogs(response.data);
+                setFilteredLogs(response.data);
 
                 // Calculate statistics
                 const errorCount = response.data.filter(
@@ -136,22 +140,6 @@ function History() {
         }
     }, [token, fetchData]);
 
-    const filteredLogs = logs.filter(log => {
-        const matchesSearch =
-            filters.search === "" ||
-            log.description.toLowerCase().includes(filters.search.toLowerCase()) ||
-            log.device.name.toLowerCase().includes(filters.search.toLowerCase());
-        const matchesType = filters.type === "" || log.type === filters.type;
-        const matchesSeverity =
-            filters.severity === "" || log.severity === filters.severity;
-        const matchesDate =
-            filters.dateRange === "" ||
-            new Date(log.created_at).toDateString() ===
-            new Date(filters.dateRange).toDateString();
-
-        return matchesSearch && matchesType && matchesSeverity && matchesDate;
-    });
-
     const handleChangePage = (event, newPage) => {
         setPage(newPage);
     };
@@ -165,25 +153,55 @@ function History() {
         fetchData();
     };
 
-    const handleExport = async () => {
-        try {
-            const response = await client.post(API_BASE_URL + "actions/",{
-                actionType: "export",
-                currentData: filteredLogs,
-            },{
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            });
+    const handleFilter = () => {
+        setFilteredLogs(logs.filter(log => {
+        const matchesSearch =
+            filters.search === "" ||
+            log.description.toLowerCase().includes(filters.search.toLowerCase()) ||
+            log.device.name.toLowerCase().includes(filters.search.toLowerCase());
+        const matchesType = filters.type === "" || log.type === filters.type;
+        const matchesSeverity =
+            filters.status === "" || log.status === filters.status;
+        const matchesDate =
+            filters.dateRange === "" ||
+            new Date(log.created_at).toDateString() ===
+            new Date(filters.dateRange).toDateString();
 
-            setLogs(response.data);
-
-        } catch (error) {
-            console.error("Failed to fetch logs", error);
-        } finally {
-            setLoading(false);
-        }
+        return matchesSearch && matchesType && matchesSeverity && matchesDate;
+    }))
     };
+
+const handleExport = async () => {
+    try {
+        const response = await client.post(
+            API_BASE_URL + "actions/",
+            {
+                actionType: "export",
+                ids: filteredLogs.map(log => log.action_id),
+            },
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+                responseType: 'blob',
+            }
+        );
+
+        // Tworzenie linku do pobrania pliku
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'actions_export.csv';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+    } catch (error) {
+        console.error("Export error:", error);
+    } finally {
+        setLoading(false);
+    }
+};
+
 
     return (
         <Container maxWidth="xl" sx={{py: 4}}>
@@ -298,7 +316,7 @@ function History() {
                         <TextField
                             fullWidth
                             variant="outlined"
-                            placeholder="Search events..."
+                            placeholder="Wyszukaj zdarzenie..."
                             value={filters.search}
                             onChange={e => setFilters({...filters, search: e.target.value})}
                             InputProps={{
@@ -314,20 +332,20 @@ function History() {
                             displayEmpty
                             inputProps={{"aria-label": "Event type"}}
                         >
-                            <MenuItem value="">All Types</MenuItem>
-                            <MenuItem value="MANUAL">Manual</MenuItem>
-                            <MenuItem value="AUTO">Automatic</MenuItem>
+                            <MenuItem value="">Wszystkie typy</MenuItem>
+                            <MenuItem value="MANUAL">Manualne</MenuItem>
+                            <MenuItem value="AUTO">Automatyczne</MenuItem>
                         </Select>
                     </Grid>
                     <Grid item xs={12} md={2}>
                         <Select
                             fullWidth
-                            value={filters.severity}
-                            onChange={e => setFilters({...filters, severity: e.target.value})}
+                            value={filters.status}
+                            onChange={e => setFilters({...filters, status: e.target.value})}
                             displayEmpty
-                            inputProps={{"aria-label": "Severity"}}
+                            inputProps={{"aria-label": "Status"}}
                         >
-                            <MenuItem value="">Status</MenuItem>
+                            <MenuItem value="">Wszystkie statusy</MenuItem>
                             <MenuItem value="1">Błąd krytyczny</MenuItem>
                             <MenuItem value="2">Ostrzeżenie</MenuItem>
                             <MenuItem value="3">Informacja</MenuItem>
@@ -348,9 +366,19 @@ function History() {
                             fullWidth
                             variant="contained"
                             startIcon={<FilterIcon/>}
-                            onClick={() => setFilters({search: "", type: "", dateRange: "", severity: ""})}
+                            onClick={() => {
+                                setFilters({search: "", type: "", dateRange: "", status: ""});
+                                setFilteredLogs(logs)
+                            }}
                         >
-                            Clear
+                            Wyczyść
+                        </Button>
+                        <Button
+                            fullWidth
+                            variant="contained"
+                            startIcon={<FaMagnifyingGlass/>}
+                            onClick={handleFilter}
+                        >
                         </Button>
                     </Grid>
                 </Grid>
@@ -404,15 +432,6 @@ function History() {
                                         <TableRow
                                             key={log.id}
                                             hover
-                                            sx={{
-                                                "&:last-child td, &:last-child th": {border: 0},
-                                                bgcolor:
-                                                    log.status === "1"
-                                                        ? "error.light"
-                                                        : log.status === "2"
-                                                            ? "warning.light"
-                                                            : "inherit"
-                                            }}
                                         >
                                             <TableCell>
                                                 <Typography variant="body2" sx={{fontWeight: 500}}>
