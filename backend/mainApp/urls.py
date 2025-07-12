@@ -14,7 +14,7 @@ urlpatterns = [
     path('myHomes/', views.UserHomesData.as_view(), name='my-homes'),
     path('myDevices/', views.DevicesData.as_view(), name='my-devices'),
     path('myRooms/', views.RoomsData.as_view(), name='my-rooms'),
-    path('home/<int:home_id>', views.HomeData.as_view(), name='home'),
+    path('home/<int:home_id>/', views.HomeData.as_view(), name='home'),
     path('notifications/', views.NotificationsAPI.as_view(), name='notifications'),
     path('notifications/<int:pk>/', NotificationsAPI.as_view(), name='notification-detail'),
 

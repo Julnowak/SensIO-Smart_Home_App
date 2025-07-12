@@ -1,8 +1,10 @@
+import io
 import json
 
+import pandas as pd
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth import get_user_model
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.core.cache import cache
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 
@@ -125,9 +127,39 @@ class UserHomesData(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request):
+        print(request.POST)
         name = request.POST.get("name")
         address = request.POST.get("address")
-        home = Home.objects.create(name=name, address=address, owner=request.user)
+        yearbuilt = None
+        totalArea = None
+        buildingType = None
+        regards = None
+        photo = None
+        lat = None
+        lng = None
+        if "yearbuilt" in request.POST:
+            yearbuilt = request.POST.get("yearbuilt")
+        if "buildingType" in request.POST:
+            buildingType = request.POST.get("buildingType")
+        if "totalArea" in request.POST:
+            try:
+                totalArea = int(request.POST.get("totalArea"))
+            except:
+                pass
+        if "floors" in request.POST:
+            floors = int(request.POST.get("floors"))
+        if "regards" in request.POST:
+            regards = request.POST.get("regards")
+        if "photo" in request.FILES:
+            photo = request.FILES.get("photo")
+
+        if "location" in request.POST:
+            location = request.POST.get("location")
+            lat = float(location.split(",")[0])
+            lng = float(location.split(",")[1])
+        home = Home.objects.create(name=name, address=address, owner=request.user, year_of_construction=yearbuilt,
+                                   buildinq_type=buildingType, building_area=totalArea, floor_num=floors, regards=regards,
+                                   image=photo, lat=lat, lng=lng)
         serializer = HomeSerializer(home)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -136,7 +168,6 @@ class UserHomesData(APIView):
         location_current = Home.objects.get(current=True)
         location_current.current = False
         location_current.save()
-        print(location_current)
 
         loc_new = Home.objects.get(home_id=loc)
         loc_new.current = True
@@ -150,13 +181,15 @@ class HomeData(APIView):
     def get(self, request, home_id):
         home = Home.objects.get(home_id=home_id)
         floor = 1
-
         rooms = Room.objects.filter(home=home, floor=floor)
-
         roomsSerializer = RoomSerializer(rooms, many=True)
         serializer = HomeSerializer(home)
         return Response({"homeData": serializer.data, "roomsData": roomsSerializer.data}, status=status.HTTP_200_OK)
 
+    def delete(self, request, home_id):
+        home = Home.objects.get(home_id=home_id)
+        home.delete()
+        return Response(status=status.HTTP_200_OK)
 
 class DevicesData(APIView):
     permission_classes = (permissions.IsAuthenticated,)
@@ -211,10 +244,26 @@ class ActionData(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self,request):
-        if request.data['actionType'] == "export":
-            print(request.data['currentData'])
+        if request.data.get('actionType') == "export":
+            ids = request.data.get('ids', [])
+            actions = Action.objects.filter(action_id__in=ids)
 
-        return Response( status=status.HTTP_200_OK)
+            # Konwersja querysetu do listy słowników
+            data = ActionSerializer(actions, many=True).data
+
+            # Tworzenie DataFrame i zapis do CSV
+            df = pd.DataFrame(data)
+
+            buffer = io.StringIO()
+            df.to_csv(buffer, index=False)
+            buffer.seek(0)
+
+            # Tworzymy odpowiedź HTTP z plikiem CSV
+            response = HttpResponse(buffer.getvalue(), content_type='text/csv')
+            response['Content-Disposition'] = 'attachment; filename="actions_export.csv"'
+            return response
+
+        return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
 import random
@@ -279,7 +328,7 @@ class NotificationsAPI(APIView):
     permission_classes = (permissions.IsAuthenticated,)  # Only authenticated users can log out
 
     def get(self, request):
-        notifications = Notification.objects.filter(user=request.user)
+        notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
         serializer = NotificationSerializer(notifications, many=True)
         num = len(notifications.filter(isRead=False))
         print(num)
@@ -294,12 +343,18 @@ class NotificationsAPI(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        serializer = NotificationSerializer(
-            notification,
-            data={'isRead': True},
-            partial=True
-        )
-
+        if request.data['type'] == "read":
+            serializer = NotificationSerializer(
+                notification,
+                data={'isRead': True},
+                partial=True
+            )
+        else:
+            serializer = NotificationSerializer(
+                notification,
+                data={'isRead': False},
+                partial=True
+            )
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)

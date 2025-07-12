@@ -84,6 +84,8 @@ class Home(models.Model):
     current = models.BooleanField(default=False)
     created_at = models.DateField(default=datetime.date.today)
     isActive = models.BooleanField(default=True)
+    lng = models.CharField(max_length=100, null=True, blank=True)
+    lat = models.CharField(max_length=100, null=True, blank=True)
 
     def __str__(self):
         return "Dom " + str(self.home_id)
@@ -189,6 +191,7 @@ class Action(models.Model):
     type = models.CharField(max_length=20, choices=ACTION_TYPES, default="AUTO")
     created_at = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=STATUS_TYPES, default="3")
+    priority = models.IntegerField(default=1)
 
     def __str__(self):
         return "Akcja " + str(self.action_id)

@@ -32,6 +32,7 @@ import UserLocationsPage from "./components/locations/UserHomesPage/UserHomesPag
 import NotFoundPage from "./components/notFoundPage/notFoundPage";
 import Rules from "./components/rules/rules";
 import EnergyDashboard from "./components/dashboard/EnergyDashboard";
+import Settings from "./components/settings/settings";
 
 function App() {
     const { mode } = useContext(ThemeContext);
@@ -70,6 +71,7 @@ function App() {
                         <Route path="/privacy-policy" element={<PrivacyPolicy/>}/>
                         <Route path="/contact" element={<Contact/>}/>
                         <Route path="/about" element={<About/>}/>
+                        <Route path="/settings" element={<Settings/>}/>
                         <Route path="/editor" element={<LayoutEditor/>}/>
                         <Route path="/test" element={<EnergyDashboard/>}/>
 

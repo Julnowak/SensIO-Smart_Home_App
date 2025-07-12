@@ -33,7 +33,7 @@ import {
     ExpandMore,
     ChevronRight,
     CloseRounded,
-    ExpandLess,
+    ExpandLess, Settings,
 } from '@mui/icons-material';
 import {ThemeContext} from "../../Theme";
 import {AuthContext} from "../../AuthContext";
@@ -96,7 +96,6 @@ const CustomNavbar = () => {
                     headers: {Authorization: `Bearer ${token}`},
                 });
                 setNum(notifications.data.num);
-                console.log(notifications)
             } catch (error) {
                 console.error("Error fetching data:", error);
             }
@@ -293,6 +292,9 @@ const CustomNavbar = () => {
                             <NotificationsRounded sx={{fontSize: '22px'}}/>
                         </Badge>
                     </IconButton>
+                    <IconButton href="/settings" sx={{ml: 1}}>
+                        <Settings/>
+                    </IconButton>
                 </>
             )}
         </>
@@ -406,6 +408,13 @@ const renderSidebarContent = () => (
                 </Badge>
               </ListItemIcon>
               <ListItemText sx={{color: theme.palette.mode === 'dark' ? 'white' : 'black'}} primary="Powiadomienia" />
+            </ListItem>
+
+            <ListItem button href="/settings" component="a">
+              <ListItemIcon>
+                  <Settings />
+              </ListItemIcon>
+              <ListItemText sx={{color: theme.palette.mode === 'dark' ? 'white' : 'black'}} primary="Ustawienia" />
             </ListItem>
           </>
         )}

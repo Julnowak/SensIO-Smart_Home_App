@@ -46,12 +46,12 @@ import {
 // Styled components
 const NotificationListItem = styled(ListItem)(({ theme, selected }) => ({
   borderRadius: "8px",
-  margin: "8px 0",
   padding: 0,
   transition: "all 0.2s ease",
   backgroundColor: selected ? theme.palette.action.selected : theme.palette.background.paper,
   borderLeft: selected ? `4px solid ${theme.palette.primary.main}` : '4px solid transparent',
   boxShadow: theme.shadows[0],
+  width: "auto",
   "&:hover": {
     backgroundColor: theme.palette.action.hover,
     transform: "translateY(-1px)",
@@ -72,7 +72,7 @@ const NotificationListItem = styled(ListItem)(({ theme, selected }) => ({
 const NotificationDetailPanel = styled(Paper)(({theme}) => ({
     borderRadius: "12px",
     padding: "24px",
-    height: "calc(100vh - 220px)",
+    height: "calc(100vh - 324px)",
     overflow: "auto",
     position: "sticky",
     top: "20px",
@@ -89,7 +89,7 @@ const Notifications = () => {
     const [notifications, setNotifications] = useState([]);
     const [search, setSearch] = useState("");
     const [page, setPage] = useState(1);
-    const [perPage] = useState(6);
+    const [perPage] = useState(5);
     const [checkFlag, setCheckFlag] = useState(false);
     const [selectedNotification, setSelectedNotification] = useState(null);
     const [selectedNotifications, setSelectedNotifications] = useState([]);
@@ -331,6 +331,16 @@ const Notifications = () => {
                                     <CheckBoxOutlineBlank/>
                                 </IconButton>
                             </Tooltip>
+                            <Tooltip title="Anuluj">
+                                <IconButton onClick={() => {
+                                    setSelectedNotifications([]);
+                                    setSelectAllMode(false);
+                                    setCheckFlag(false)
+                                }}>
+                                    <Close/>
+                                </IconButton>
+                            </Tooltip>
+
                         </>
                     ) : (
                         <>
@@ -342,7 +352,7 @@ const Notifications = () => {
                                 </Tooltip>)
                             }
                             {!checkFlag ?
-                                <Tooltip title="Zaznacz">
+                                <Tooltip title="Tryb zaznaczania">
                                     <IconButton onClick={() => setCheckFlag(true)}>
                                         <Checklist/>
                                     </IconButton>
@@ -424,7 +434,7 @@ const Notifications = () => {
                 {/* Notification List - Hidden on mobile when detail is shown */}
                 <Grid item xs={12} lg={6} sx={{
                     display: {xs: showMobileDetail ? 'none' : 'block', lg: 'block'},
-                    height: 'calc(100vh - 200px)',
+                    height: 'calc(100vh - 300px)',
                     position: 'relative'
                 }}>
                     <Paper elevation={0} sx={{
@@ -463,7 +473,8 @@ const Notifications = () => {
                                                 selected={selectedNotification?.id === notification.id}
                                                 sx={{
                                                     height: 80,
-                                                    boxSizing: 'border-box'
+                                                    boxSizing: 'border-box',
+                                                    m:1,
                                                 }}
                                             >
                                                 <ListItemButton
@@ -557,7 +568,6 @@ const Notifications = () => {
                                         borderTop: '1px solid',
                                         borderColor: 'divider',
                                         justifyItems: "center",
-                                        width: "100%",
                                         zIndex: 1
                                     }}>
                                         <Pagination
@@ -600,7 +610,7 @@ const Notifications = () => {
                         {selectedNotification ? (
                             <>
                                 <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
-                                    <Typography variant="h6" fontWeight="600">
+                                    <Typography variant="h6" fontWeight="600" sx={{mr:1}}>
                                         {selectedNotification.title}
                                     </Typography>
                                     <Chip
@@ -622,7 +632,8 @@ const Notifications = () => {
                                     sx={{
                                         lineHeight: 1.7,
                                         whiteSpace: 'pre-line',
-                                        fontSize: '0.9rem'
+                                        fontSize: '0.9rem',
+                                        textAlign: "justify"
                                     }}
                                 >
                                     {selectedNotification.message || "Brak szczegółowej treści powiadomienia"}
