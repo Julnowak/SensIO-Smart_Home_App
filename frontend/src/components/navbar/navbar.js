@@ -179,7 +179,7 @@ const CustomNavbar = () => {
                                 sx={{
                                     py: 1.5,
                                     '&:hover': {
-                                        bgcolor: 'primary.light',
+                                        bgcolor: 'primary',
                                         color: 'primary.main'
                                     }
                                 }}
@@ -194,7 +194,7 @@ const CustomNavbar = () => {
                                 sx={{
                                     py: 1.5,
                                     '&:hover': {
-                                        bgcolor: 'primary.light',
+                                        bgcolor: 'primary',
                                         color: 'primary.main'
                                     }
                                 }}
@@ -209,7 +209,7 @@ const CustomNavbar = () => {
                                 sx={{
                                     py: 1.5,
                                     '&:hover': {
-                                        bgcolor: 'primary.light',
+                                        bgcolor: 'primary',
                                         color: 'primary.main'
                                     }
                                 }}
@@ -226,7 +226,7 @@ const CustomNavbar = () => {
                                 sx={{
                                     py: 1.5,
                                     '&:hover': {
-                                        bgcolor: 'primary.light',
+                                        bgcolor: 'primary',
                                         color: 'primary.main'
                                     }
                                 }}

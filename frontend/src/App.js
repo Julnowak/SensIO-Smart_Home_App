@@ -33,6 +33,7 @@ import NotFoundPage from "./components/notFoundPage/notFoundPage";
 import Rules from "./components/rules/rules";
 import EnergyDashboard from "./components/dashboard/EnergyDashboard";
 import Settings from "./components/settings/settings";
+import ScrollToTop from "./components/stt";
 
 function App() {
     const { mode } = useContext(ThemeContext);
@@ -44,6 +45,7 @@ function App() {
                 <AuthProvider>
                 {/* Navbar */}
                 <CustomNavbar/>
+                <ScrollToTop />
 
                 <div className="background-main min-vh-100">
                     <Routes>

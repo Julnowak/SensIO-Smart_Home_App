@@ -127,7 +127,6 @@ class UserHomesData(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request):
-        print(request.POST)
         name = request.POST.get("name")
         address = request.POST.get("address")
         yearbuilt = None
@@ -174,7 +173,6 @@ class UserHomesData(APIView):
         loc_new.save()
         return Response(status=status.HTTP_200_OK)
 
-
 class HomeData(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
@@ -190,6 +188,7 @@ class HomeData(APIView):
         home = Home.objects.get(home_id=home_id)
         home.delete()
         return Response(status=status.HTTP_200_OK)
+
 
 class DevicesData(APIView):
     permission_classes = (permissions.IsAuthenticated,)
@@ -280,29 +279,29 @@ class LayoutHandler(APIView):
 
     def post(self, request):
         layout = request.data['layout']
-        json_data = f'{layout}'
-        rooms = json.loads(json_data)
-        print(rooms)
+        print(request.data)
+        floorId = int(request.data['floorId'])
+
         d = {}
-        for v in rooms:
+        for v in layout:
             name = None
             pos = {}
             parent = None
-            f = Floor.objects.get(floor_id=v['floor'])
+            f = Floor.objects.get(floor_id=floorId)
+            pos = {"x": None, "y": None, "width": None, "height": None}
             for k, vv in v.items():
                 if k == "name":
                     name = vv
-                elif k == "position":
-                    pos = vv
-                elif k == "parent":
-                    if "temp" in str(vv):
-                        parent = d[vv]
-                    else:
-                        parent = vv
+                elif k == "x":
+                    pos["x"] = vv
+                elif k == "y":
+                    pos["y"] = vv
+                elif k == "width":
+                    pos["width"] = vv
+                elif k == "height":
+                    pos["height"] = vv
             if not Room.objects.filter(floor=f, position=pos).exists():
-                new = Room.objects.create(name=name, position=pos, home=f.home, floor=f, parent=parent)
-                if "temp" in str(v['room_id']):
-                    d[v['room_id']] = new.room_id
+                new = Room.objects.create(name=name, position=pos, home=f.home, floor=f)
             else:
                 old_r = Room.objects.get(floor=f, position=pos)
                 if old_r.name != name:

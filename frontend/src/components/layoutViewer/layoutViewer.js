@@ -18,8 +18,9 @@ import {
   HelpOutline as HelpIcon,
   Home as HomeIcon,
   Lightbulb as LightbulbIcon,
-  Close as CloseIcon
+  Close as CloseIcon, Edit
 } from "@mui/icons-material";
+import {useNavigate} from "react-router-dom";
 
 const CanvasContainer = styled(Box)(({ theme }) => ({
   position: 'relative',
@@ -75,7 +76,7 @@ const BlockView = styled(Box)(({ theme, light }) => ({
   }
 }));
 
-const LayoutViewer = ({ layout }) => {
+const LayoutViewer = ({ layout, floorId }) => {
   const [blocks, setBlocks] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
   const [scale, setScale] = useState(1);
@@ -86,7 +87,7 @@ const LayoutViewer = ({ layout }) => {
   const canvasRef = useRef(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-
+  const navigate = useNavigate()
   const calculateCenter = useCallback(() => {
     if (blocks.length === 0) return;
 
@@ -352,8 +353,10 @@ const LayoutViewer = ({ layout }) => {
           <Typography variant="h6" color="text.secondary">
             To piętro nie ma jeszcze zdefiniowanych pokoi
           </Typography>
-          <Button variant="contained" startIcon={<ZoomInIcon />}>
-            Rozpocznij edycję
+          <Button variant="contained" startIcon={<Edit />} onClick={() => {
+            navigate("/editor", { state: { floorId: floorId } })
+          }}>
+            Edytuj rozmieszczenie
           </Button>
         </Box>
       )}

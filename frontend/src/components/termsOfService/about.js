@@ -9,8 +9,7 @@ import {
     List,
     ListItem,
     ListItemIcon,
-    ListItemText,
-    Chip, Grid, Button
+    ListItemText, Grid, Button
 } from '@mui/material';
 import {
   School,

@@ -133,6 +133,7 @@ class Device(models.Model):
     topic = models.CharField(max_length=200, blank=True, null=True)
     info = models.TextField(max_length=1000, blank=True, null=True)
     brand = models.CharField(max_length=200, blank=True, null=True)
+    isActive = models.BooleanField(default=True)
     data_type = models.CharField(max_length=20, choices=DATA_TYPES, default="CONTINUOUS", blank=True, null=True)
 
     def __str__(self):

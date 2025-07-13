@@ -75,7 +75,6 @@ const UserLocationsPage = () => {
                 // Add mock status and devices count for demo purposes
                 const locationsWithStatus = response.data.map(loc => ({
                     ...loc,
-                    devicesCount: Math.floor(Math.random() * 15) + 1,
                     lastUpdated: new Date(Date.now() - Math.floor(Math.random() * 7 * 24 * 60 * 60 * 1000))
                 }));
                 setLocations(locationsWithStatus);
