@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, {useEffect, useState} from "react";
 import { useNavigate } from "react-router-dom";
 import client from "../../../client";
 import { API_BASE_URL } from "../../../config";
@@ -17,7 +17,7 @@ import {
   InputAdornment,
   IconButton,
   Paper,
-  MenuItem
+  MenuItem, Select, FormControl, InputLabel
 } from "@mui/material";
 import {
   Save as SaveIcon,
@@ -38,25 +38,72 @@ const NewDevice = () => {
     topic: "",
     info: "",
     brand: "",
+    building: "",
     room: "",
+    floor: "",
   });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const [buildings, setBuildings] = useState([]);
+  const [rooms, setRooms] = useState([]);
+  const [floors, setFloors] = useState([]);
 
-  const deviceTypes = [
-    "Light",
-    "Thermostat",
-    "Sensor",
-    "Camera",
-    "Speaker",
-    "Other"
-  ];
+  const handleChange = async (e) => {
+  const { name, value } = e.target;
 
-  const handleChange = (e) => {
-    setDeviceData({ ...deviceData, [e.target.name]: e.target.value });
-  };
+  // Prepare the new device data
+  let newDeviceData = { ...deviceData, [name]: value };
+
+  // If building changes, reset floor and room
+  if (name === "building") {
+    newDeviceData.floor = null;
+    newDeviceData.room = null;
+
+    try {
+      const response = await client.get(`${API_BASE_URL}roomsNewDevice/${value}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setFloors(response.data.floors);
+      setRooms([]); // clear rooms too
+    } catch (error) {
+      console.error("Błąd podczas pobierania pięter", error);
+    }
+  }
+
+  // If floor changes, reset room
+  if (name === "floor") {
+    newDeviceData.room = null;
+
+    try {
+      const response = await client.get(`${API_BASE_URL}roomsNewDevice/${deviceData.building}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { floorId: value },
+      });
+      setRooms(response.data.rooms);
+    } catch (error) {
+      console.error("Błąd podczas pobierania pokoi", error);
+    }
+  }
+
+  // Finally, update deviceData
+  setDeviceData(newDeviceData);
+};
+
+  useEffect(() => {
+    const fetchDevices = async () => {
+      try {
+        const response = await client.get(`${API_BASE_URL}myHomes/`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setBuildings(response.data);
+      } catch (error) {
+        console.error("Błąd podczas pobierania urządzeń", error);
+      }
+    };
+    if (token) fetchDevices();
+  }, [token]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -65,7 +112,7 @@ const NewDevice = () => {
 
     try {
       const response = await client.post(
-        API_BASE_URL + "device/",
+        API_BASE_URL + "myDevices/",
         deviceData,
         {
           headers: {
@@ -76,10 +123,10 @@ const NewDevice = () => {
       );
 
       setSuccess(true);
-      setTimeout(() => navigate("/devices"), 2000);
+      setTimeout(() => navigate("/myDevices"), 2000);
     } catch (err) {
       console.error("Error adding device:", err);
-      setError(err.response?.data?.message || "Failed to add device. Please try again.");
+      setError(err.response?.data?.message || "Nie udało się dodać urządzenia. Spróbuj ponownie.");
     } finally {
       setLoading(false);
     }
@@ -106,7 +153,7 @@ const NewDevice = () => {
           }}>
             <DevicesIcon color="primary" sx={{ fontSize: 40 }} />
             <Typography variant="h4" component="h1">
-              Add New Device
+              Dodaj nowe urządzenie
             </Typography>
           </Box>
           <Divider sx={{ mb: 4 }} />
@@ -122,7 +169,7 @@ const NewDevice = () => {
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
-                  label="Device Name *"
+                  label="Nazwa urządzenia"
                   name="name"
                   value={deviceData.name}
                   onChange={handleChange}
@@ -140,10 +187,11 @@ const NewDevice = () => {
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
-                  label="Serial Number"
+                  label="Numer seryjny"
                   name="serial_number"
                   value={deviceData.serial_number}
                   onChange={handleChange}
+                  required
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
@@ -164,21 +212,23 @@ const NewDevice = () => {
               <Grid item xs={12}>
                 <TextField
                   fullWidth
-                  label="Topic"
+                  label="Temat"
                   name="topic"
                   value={deviceData.topic}
                   onChange={handleChange}
-                  helperText="MQTT topic for device communication"
+                  helperText="Nazwa tematu MQTT do przesyłania danych"
+                  required
                 />
               </Grid>
 
-              <Grid item xs={12} md={6}>
+              <Grid item xs={12} md={12}>
                 <TextField
                   fullWidth
-                  label="Brand"
+                  label="Marka"
                   name="brand"
                   value={deviceData.brand}
                   onChange={handleChange}
+                  required
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
@@ -189,27 +239,72 @@ const NewDevice = () => {
                 />
               </Grid>
 
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label="Room"
-                  name="room"
-                  value={deviceData.room}
-                  onChange={handleChange}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <RoomIcon color="action" />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
+              <Grid item xs={4} md={4}>
+                <FormControl fullWidth>
+                  <InputLabel id="locationLabel">Lokacja*</InputLabel>
+                  <Select
+                    labelId="locationLabel"
+                    id="location"
+                    name={"building"}
+                    value={deviceData.building}
+                    label="Lokacja"
+                    onChange={handleChange}
+                    required
+                  >
+                    {buildings?.map((b) =>
+                        <MenuItem value={b.home_id}>
+                          {b.name}
+                        </MenuItem>)}
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid item xs={4} md={4}>
+                <FormControl fullWidth>
+                  <InputLabel id="floorLabel">Piętro*</InputLabel>
+                  <Select
+                    labelId="floorLabel"
+                    id="floor"
+                    name={"floor"}
+                    value={deviceData.floor}
+                    label="Lokacja"
+                    disabled={!deviceData.building}
+                    onChange={handleChange}
+                    required
+                  >
+                    {floors?.map((b) =>
+                        <MenuItem value={b.floor_id}>
+                          Piętro {b.floor_number}
+                        </MenuItem>)}
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid item xs={4} md={4}>
+                <FormControl fullWidth>
+                  <InputLabel id="roomLabel">Pomieszczenie*</InputLabel>
+                  <Select
+                    labelId="roomLabel"
+                    id="room"
+                    name={"room"}
+                    disabled={!deviceData.floor}
+                    value={deviceData.room}
+                    label="Pokój"
+                    onChange={handleChange}
+                    required
+                  >
+                    {rooms?.map((b) =>
+                        <MenuItem value={b.room_id}>
+                          {b.name}
+                        </MenuItem>)}
+                  </Select>
+                </FormControl>
               </Grid>
 
               <Grid item xs={12}>
                 <TextField
                   fullWidth
-                  label="Additional Info"
+                  label="Dodatkowe informacje"
                   name="info"
                   value={deviceData.info}
                   onChange={handleChange}
@@ -228,10 +323,10 @@ const NewDevice = () => {
                   <Button
                     variant="outlined"
                     startIcon={<CancelIcon />}
-                    onClick={() => navigate("/devices")}
-                    color="secondary"
+                    onClick={() => navigate("/myDevices")}
+                    color="primary"
                   >
-                    Cancel
+                    Anuluj
                   </Button>
                   <Button
                     type="submit"
@@ -239,7 +334,7 @@ const NewDevice = () => {
                     startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
                     disabled={loading}
                   >
-                    {loading ? "Saving..." : "Save Device"}
+                    {loading ? "Zapisuję..." : "Zapisz"}
                   </Button>
                 </Box>
               </Grid>
@@ -260,7 +355,7 @@ const NewDevice = () => {
           sx={{ width: "100%" }}
           icon={<CheckCircle fontSize="inherit" />}
         >
-          Device added successfully! Redirecting...
+          Urządzanie zostało dodane pomyślnie! Przekierowywanie...
         </Alert>
       </Snackbar>
     </Box>

@@ -234,6 +234,7 @@ const EditableCanvas = ({ layout, floor_id }) => {
   const lastMousePosition = useRef({ x: 0, y: 0 });
   const canvasRef = useRef(null);
 
+
   const handleWheel = (e) => {
     e.preventDefault();
     const zoomFactor = 1.1;
@@ -269,6 +270,15 @@ const EditableCanvas = ({ layout, floor_id }) => {
   };
 
   useEffect(() => {
+
+  if (layout.length <= 0 && l && fId){
+      layout = l
+      floor_id = fId
+  }
+
+  console.log(layout)
+  console.log(l)
+
   if (layout && layout.length > 0) {
     const convertedLayout = layout.map(room => ({
       ...room,

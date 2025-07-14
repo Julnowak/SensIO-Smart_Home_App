@@ -284,7 +284,6 @@ const UserLocationsPage = () => {
                                                     aktualizacja</TableCell>
                                             </>
                                         )}
-                                        <TableCell sx={{fontWeight: 'bold'}}>Akcje</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
@@ -355,35 +354,6 @@ const UserLocationsPage = () => {
                                                     </TableCell>
                                                 </>
                                             )}
-
-                                            <TableCell>
-                                                <Box sx={{display: 'flex', gap: 1}}>
-                                                    <Tooltip title="Edytuj">
-                                                        <IconButton
-                                                            size="small"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                navigate(`/home/${location.home_id}/edit`);
-                                                            }}
-                                                            sx={{color: 'primary.main'}}
-                                                        >
-                                                            <Edit fontSize="small"/>
-                                                        </IconButton>
-                                                    </Tooltip>
-                                                    <Tooltip title="Usuń">
-                                                        <IconButton
-                                                            size="small"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleDelete(location.home_id);
-                                                            }}
-                                                            sx={{color: 'error.main'}}
-                                                        >
-                                                            <Delete fontSize="small"/>
-                                                        </IconButton>
-                                                    </Tooltip>
-                                                </Box>
-                                            </TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>

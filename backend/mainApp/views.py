@@ -18,7 +18,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from mainApp.models import AppUser, Home
 from mainApp.serializers import UserRegisterSerializer, HomeSerializer, DeviceSerializer, UserSerializer, \
-    RoomSerializer, NotificationSerializer, ActionSerializer
+    RoomSerializer, NotificationSerializer, ActionSerializer, FloorSerializer
+from .mqtt_thread import start_mqtt_thread, stop_mqtt_thread
 
 UserModel = get_user_model()
 
@@ -136,8 +137,8 @@ class UserHomesData(APIView):
         photo = None
         lat = None
         lng = None
-        if "yearbuilt" in request.POST:
-            yearbuilt = request.POST.get("yearbuilt")
+        if "yearBuilt" in request.POST:
+            yearbuilt = request.POST.get("yearBuilt")
         if "buildingType" in request.POST:
             buildingType = request.POST.get("buildingType")
         if "totalArea" in request.POST:
@@ -159,6 +160,11 @@ class UserHomesData(APIView):
         home = Home.objects.create(name=name, address=address, owner=request.user, year_of_construction=yearbuilt,
                                    buildinq_type=buildingType, building_area=totalArea, floor_num=floors, regards=regards,
                                    image=photo, lat=lat, lng=lng)
+        if floors == 1:
+            Floor.objects.create(home=home, floor_number=1)
+        else:
+            for i in range(floors):
+                Floor.objects.create(home=home, floor_number=i+1)
         serializer = HomeSerializer(home)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -173,12 +179,18 @@ class UserHomesData(APIView):
         loc_new.save()
         return Response(status=status.HTTP_200_OK)
 
+
 class HomeData(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, home_id):
         home = Home.objects.get(home_id=home_id)
-        floor = 1
+
+        if request.GET.get("floorId"):
+            floor = Floor.objects.get(floor_id=request.GET.get("floorId"))
+        else:
+            floor = Floor.objects.filter(home_id=home_id)[0]
+
         rooms = Room.objects.filter(home=home, floor=floor)
         roomsSerializer = RoomSerializer(rooms, many=True)
         serializer = HomeSerializer(home)
@@ -199,11 +211,11 @@ class DevicesData(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request):
+        device = Device.objects.create(name=request.data["name"], serial_number=request.data["serial_number"],
+                                       topic=request.data["topic"], info=request.data["info"], brand=request.data["brand"],
+                                       room_id=request.data["room"])
 
-        print(request.data)
-        # devices = Device.objects.create()
-        # device =
-        # serializer = DeviceSerializer(device, many=True)
+        serializer = DeviceSerializer(device)
         return Response(status=status.HTTP_200_OK)
 
 
@@ -233,6 +245,40 @@ class DeviceData(APIView):
         serializer = DeviceSerializer(device)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    def post(self, request, device_id):
+        device = Device.objects.get(device_id=device_id)
+
+        if device.isActive:
+            stop_mqtt_thread(device.topic)
+            device.isActive = False
+        else:
+            start_mqtt_thread(device.topic, device_id)
+            device.isActive = True
+        device.save()
+
+        return Response(status=status.HTTP_200_OK)
+
+class RoomsNewDeviceApi(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get(self, request, home_id):
+        try:
+            home = Home.objects.get(home_id=home_id)
+        except Home.DoesNotExist:
+            return Response({"error": "Home not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        floor_id = request.GET.get("floorId")
+
+        if floor_id:
+            # Zwróć pokoje na danym piętrze
+            rooms = Room.objects.filter(home=home, floor_id=floor_id)
+            serializer = RoomSerializer(rooms, many=True)
+            return Response({"rooms": serializer.data}, status=status.HTTP_200_OK)
+        else:
+            # Zwróć listę pięter w domu
+            floors = Floor.objects.filter(home=home)
+            serializer = FloorSerializer(floors, many=True)
+            return Response({"floors": serializer.data}, status=status.HTTP_200_OK)
 
 class ActionData(APIView):
     permission_classes = (permissions.IsAuthenticated,)
@@ -282,31 +328,43 @@ class LayoutHandler(APIView):
         print(request.data)
         floorId = int(request.data['floorId'])
 
-        d = {}
+        f = Floor.objects.get(floor_id=floorId)
+        roomsIds = list(Room.objects.filter(floor=f).values_list("room_id", flat=True))
         for v in layout:
             name = None
-            pos = {}
-            parent = None
-            f = Floor.objects.get(floor_id=floorId)
-            pos = {"x": None, "y": None, "width": None, "height": None}
-            for k, vv in v.items():
-                if k == "name":
-                    name = vv
-                elif k == "x":
-                    pos["x"] = vv
-                elif k == "y":
-                    pos["y"] = vv
-                elif k == "width":
-                    pos["width"] = vv
-                elif k == "height":
-                    pos["height"] = vv
-            if not Room.objects.filter(floor=f, position=pos).exists():
-                new = Room.objects.create(name=name, position=pos, home=f.home, floor=f)
+
+            if v['id'] in roomsIds:
+                print(roomsIds)
+                roomsIds.remove(v['id'])
+                print(roomsIds)
+
+                old_r = Room.objects.get(room_id=v['id'])
+                if old_r.name != v['name']:
+                    old_r.name = v['name']
+
+                old_r.position = {"x": v['x'], "y": v['y'], "width": v['width'], "height": v['height']}
+                old_r.save()
             else:
-                old_r = Room.objects.get(floor=f, position=pos)
-                if old_r.name != name:
-                    old_r.name = name
-                    old_r.save()
+                pos = {"x": None, "y": None, "width": None, "height": None}
+                for k, vv in v.items():
+                    if k == "name":
+                        name = vv
+                    elif k == "x":
+                        pos["x"] = vv
+                    elif k == "y":
+                        pos["y"] = vv
+                    elif k == "width":
+                        pos["width"] = vv
+                    elif k == "height":
+                        pos["height"] = vv
+
+                Room.objects.create(name=name, position=pos, home=f.home, floor=f)
+
+        if roomsIds:
+            print(roomsIds)
+            for i in roomsIds:
+                Room.objects.get(room_id=i).delete()
+
         return Response(status=status.HTTP_200_OK)
 
 

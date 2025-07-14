@@ -12,7 +12,7 @@ import {
     Typography,
     Box,
     useMediaQuery,
-    styled, ListItemIcon, Button, ListItemText, ListItemButton, Collapse, List, Drawer, ListItem
+    styled, ListItemIcon, Button, ListItemText, Collapse, List, Drawer, ListItem
 } from '@mui/material';
 import {
     HomeRounded,
@@ -31,7 +31,6 @@ import {
     Devices,
     Home,
     ExpandMore,
-    ChevronRight,
     CloseRounded,
     ExpandLess, Settings,
 } from '@mui/icons-material';
@@ -62,8 +61,6 @@ const CustomNavbar = () => {
     const [managementAnchorEl, setManagementAnchorEl] = useState(null);
 
     // Menu handlers
-    const handleMenuOpen = (event) => setAnchorEl(event.currentTarget);
-    const handleMobileMenuOpen = (event) => setMobileAnchorEl(event.currentTarget);
     const handleManagementMenuOpen = (event) => setManagementAnchorEl(event.currentTarget);
     const handleClose = () => {
         setAnchorEl(null);
@@ -115,332 +112,379 @@ const CustomNavbar = () => {
     const renderDesktopMenu = () => (
         <>
             {isAuthenticated && (
-                <>
+                <Box sx={{display: 'flex', alignItems: 'center'}}>
+                    <IconButton href="/main" sx={{
+                        color: 'text.primary',
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                            bgcolor: 'action.hover',
+                            transform: 'translateY(-2px)',
+                        },
+                        '&.Mui-focusVisible': {
+                            bgcolor: 'action.selected',
+                        }, mr: 1
+                    }}>
+                        <HomeRounded/>
+                    </IconButton>
 
-                    <Box sx={{display: 'flex', alignItems: 'center', ml: 2}}>
-                        <IconButton href="/main">
-                            <HomeRounded/>
-                        </IconButton>
-
-                        <IconButton
-                            onClick={handleManagementMenuOpen}
-                            sx={{
-                                color: 'text.primary',
-                                borderRadius: 1,
-                                transition: 'all 0.2s ease',
-                                '&:hover': {
-                                    bgcolor: 'action.hover',
-                                    transform: 'translateY(-2px)'
-                                },
-                                '&.Mui-focusVisible': {
-                                    bgcolor: 'action.selected'
-                                }
-                            }}
-                        >
-                            <Typography
-                                variant="subtitle1"
+                    <IconButton
+                        onClick={handleManagementMenuOpen}
+                        sx={{
+                            color: 'text.primary',
+                            borderRadius: 1,
+                            transition: 'all 0.2s ease',
+                            '&:hover': {
+                                bgcolor: 'action.hover',
+                                transform: 'translateY(-1px)',
+                            },
+                            '&.Mui-focusVisible': {
+                                bgcolor: 'action.selected',
+                            },
+                        }}
+                    >
+                        <Typography variant="subtitle1" sx={{display: 'flex', alignItems: 'center'}}>
+                            Zarządzaj
+                            <ExpandMore
                                 sx={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 0.5
-                                }}
-                            >
-                                Zarządzaj
-                                <ExpandMore sx={{
                                     fontSize: 18,
                                     transition: 'transform 0.2s',
-                                    transform: Boolean(managementAnchorEl) ? 'rotate(180deg)' : 'none'
-                                }}/>
-                            </Typography>
-                        </IconButton>
+                                    transform: Boolean(managementAnchorEl) ? 'rotate(180deg)' : 'none',
+                                    ml: 0.5,
+                                }}
+                            />
+                        </Typography>
+                    </IconButton>
 
-                        <Menu
-                            anchorEl={managementAnchorEl}
-                            open={Boolean(managementAnchorEl)}
-                            onClose={handleClose}
-                            elevation={2}
+                    <Menu
+                        anchorEl={managementAnchorEl}
+                        open={Boolean(managementAnchorEl)}
+                        onClose={handleClose}
+                        elevation={4}
+                        sx={{
+                            '& .MuiPaper-root': {
+                                minWidth: 240,
+                                borderRadius: 2,
+                                backgroundColor: theme.palette.mode === 'dark' ? '#1e1e1e' : '#ffffff',
+                                color: theme.palette.text.primary,
+                                boxShadow: theme.palette.mode === 'dark'
+                                    ? '0px 6px 24px rgba(0, 0, 0, 0.7)'
+                                    : '0px 6px 24px rgba(0, 0, 0, 0.15)',
+                                mt: 2,
+                                border: theme.palette.mode === 'dark'
+                                    ? '1px solid rgba(255, 255, 255, 0.1)'
+                                    : '1px solid rgba(0, 0, 0, 0.08)',
+                            }
+                        }}
+                        transformOrigin={{horizontal: 'left', vertical: 'top'}}
+                        anchorOrigin={{horizontal: 'left', vertical: 'bottom'}}
+                        MenuListProps={{
+                            sx: {
+                                py: 0.5,
+                                px: 0.5,
+                            }
+                        }}
+                    >
+                        <MenuItem
+                            href="/myHomes"
+                            component="a"
                             sx={{
-                                '& .MuiPaper-root': {
-                                    minWidth: 220,
-                                    borderRadius: 2,
-                                    boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.1)',
-                                    mt: 1.5
-                                }
-                            }}
-                            transformOrigin={{horizontal: 'right', vertical: 'top'}}
-                            anchorOrigin={{horizontal: 'right', vertical: 'bottom'}}
-                            MenuListProps={{
-                                sx: {py: 0.5}
+                                py: 1.2,
+                                px: 2,
+                                borderRadius: 1,
+                                '&:hover': {
+                                    backgroundColor:
+                                        theme.palette.mode === 'dark'
+                                            ? 'rgba(255, 255, 255, 0.08)'
+                                            : 'rgba(0, 123, 255, 0.1)',
+                                    color: theme.palette.primary.main,
+                                },
                             }}
                         >
-                            <MenuItem
-                                href="/myHomes"
-                                component="a"
-                                sx={{
-                                    py: 1.5,
-                                    '&:hover': {
-                                        bgcolor: 'primary',
-                                        color: 'primary.main'
-                                    }
-                                }}
-                            >
-                                <Home sx={{fontSize: 20, mr: 1.5}}/>
-                                Moje lokacje
-                            </MenuItem>
+                            <Home sx={{fontSize: 20, mr: 1.5}}/>
+                            Moje lokacje
+                        </MenuItem>
 
-                            <MenuItem
-                                href="/myDevices"
-                                component="a"
-                                sx={{
-                                    py: 1.5,
-                                    '&:hover': {
-                                        bgcolor: 'primary',
-                                        color: 'primary.main'
-                                    }
-                                }}
-                            >
-                                <Devices sx={{fontSize: 20, mr: 1.5}}/>
-                                Moje urządzenia
-                            </MenuItem>
+                        <MenuItem
+                            href="/myDevices"
+                            component="a"
+                            sx={{
+                                py: 1.2,
+                                px: 2,
+                                borderRadius: 1,
+                                '&:hover': {
+                                    backgroundColor:
+                                        theme.palette.mode === 'dark'
+                                            ? 'rgba(255, 255, 255, 0.08)'
+                                            : 'rgba(0, 123, 255, 0.1)',
+                                    color: theme.palette.primary.main,
+                                },
+                            }}
+                        >
+                            <Devices sx={{fontSize: 20, mr: 1.5}}/>
+                            Moje urządzenia
+                        </MenuItem>
 
-                            <MenuItem
-                                href="/myRooms"
-                                component="a"
-                                sx={{
-                                    py: 1.5,
-                                    '&:hover': {
-                                        bgcolor: 'primary',
-                                        color: 'primary.main'
-                                    }
-                                }}
-                            >
-                                <DoorBack sx={{fontSize: 20, mr: 1.5}}/>
-                                Moje pomieszczenia
-                            </MenuItem>
+                        <MenuItem
+                            href="/myRooms"
+                            component="a"
+                            sx={{
+                                py: 1.2,
+                                px: 2,
+                                borderRadius: 1,
+                                '&:hover': {
+                                    backgroundColor:
+                                        theme.palette.mode === 'dark'
+                                            ? 'rgba(255, 255, 255, 0.08)'
+                                            : 'rgba(0, 123, 255, 0.1)',
+                                    color: theme.palette.primary.main,
+                                },
+                            }}
+                        >
+                            <DoorBack sx={{fontSize: 20, mr: 1.5}}/>
+                            Moje pomieszczenia
+                        </MenuItem>
 
-                            <Divider sx={{my: 0.5}}/>
+                        <Divider sx={{my: 0.5}}/>
 
-                            <MenuItem
-                                href="/rules"
-                                component="a"
-                                sx={{
-                                    py: 1.5,
-                                    '&:hover': {
-                                        bgcolor: 'primary',
-                                        color: 'primary.main'
-                                    }
-                                }}
-                            >
-                                <Rule sx={{fontSize: 20, mr: 1.5}}/>
-                                Reguły
-                            </MenuItem>
-                        </Menu>
-                    </Box>
+                        <MenuItem
+                            href="/rules"
+                            component="a"
+                            sx={{
+                                py: 1.2,
+                                px: 2,
+                                borderRadius: 1,
+                                '&:hover': {
+                                    backgroundColor:
+                                        theme.palette.mode === 'dark'
+                                            ? 'rgba(255, 255, 255, 0.08)'
+                                            : 'rgba(0, 123, 255, 0.1)',
+                                    color: theme.palette.primary.main,
+                                },
+                            }}
+                        >
+                            <Rule sx={{fontSize: 20, mr: 1.5}}/>
+                            Reguły
+                        </MenuItem>
+                    </Menu>
 
-                    <IconButton href="/dashboard" sx={{"&:hover": {borderRadius: 2}}}>
+
+                    <IconButton href="/dashboard" sx={{
+                        color: 'text.primary',
+                        borderRadius: 1,
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                            bgcolor: 'action.hover',
+                            transform: 'translateY(-2px)',
+                        },
+                        '&.Mui-focusVisible': {
+                            bgcolor: 'action.selected',
+                        },
+                    }}>
                         <Typography variant="body1">Wykresy</Typography>
                     </IconButton>
 
                     <IconButton
                         href="/history"
                         sx={{
-                            position: 'relative',
-                            borderRadius: '50%', // Start circular
-                            minWidth: 0,
-                            padding: '8px',
-                            transition: theme => theme.transitions.create(['all'], {
-                                duration: theme.transitions.duration.standard,
-                                easing: theme.transitions.easing.easeInOut,
-                            }),
-
-                            // Initial oval state (hidden)
-                            '&::before': {
-                                content: '""',
-                                position: 'absolute',
-                                top: 0,
-                                left: '50%',
-                                transform: 'translateX(-50%)',
-                                width: '40%',
-                                height: '100%',
-                                borderRadius: '24px',
-                                backgroundColor: 'rgba(0, 0, 0, 0.08)',
-                                opacity: 0,
-                                transition: theme => theme.transitions.create(['all'], {
-                                    duration: theme.transitions.duration.standard,
-                                }),
-                                zIndex: -1,
-                            },
-
-                            // Hover state
-                            '&:hover': {
-                                borderRadius: 2,
-                                transform: 'translateY(-2px)',
-                                '&::before': {
-                                    width: '100%',
-                                    borderRadius: 2,
-                                    opacity: 1,
-                                },
-                            },
-
-                        }}
+                        color: 'text.primary',
+                        borderRadius: 1,
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                            bgcolor: 'action.hover',
+                            transform: 'translateY(-2px)',
+                        },
+                        '&.Mui-focusVisible': {
+                            bgcolor: 'action.selected',
+                        }
+                    }}
                     >
                         <Typography variant="body1">Historia</Typography>
                     </IconButton>
 
-                    <IconButton href="/notifications">
+                    <IconButton href="/notifications" sx={{
+                        color: 'text.primary',
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                            bgcolor: 'action.hover',
+                            transform: 'translateY(-2px)',
+                        },
+                        '&.Mui-focusVisible': {
+                            bgcolor: 'action.selected',
+                        },
+                    }}>
                         <Badge badgeContent={num} color="error">
                             <NotificationsRounded sx={{fontSize: '22px'}}/>
                         </Badge>
                     </IconButton>
-                    <IconButton href="/settings" sx={{ml: 1}}>
+
+                    <IconButton href="/settings" sx={{
+                        color: 'text.primary',
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                            bgcolor: 'action.hover',
+                            transform: 'translateY(-2px)',
+                        },
+                        '&.Mui-focusVisible': {
+                            bgcolor: 'action.selected',
+                        }, ml: 0.5}}>
                         <Settings/>
                     </IconButton>
-                </>
+                </Box>
             )}
         </>
     );
 
-const [mobileOpen, setMobileOpen] = useState(false);
-const [expandedSection, setExpandedSection] = useState(null);
 
-const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen);
-  };
+    const [mobileOpen, setMobileOpen] = useState(false);
+    const [expandedSection, setExpandedSection] = useState(null);
 
-const toggleSection = (section) => {
-    setExpandedSection(expandedSection === section ? null : section);
-};
+    const handleDrawerToggle = () => {
+        setMobileOpen(!mobileOpen);
+    };
 
-const renderSidebarContent = () => (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-        p: 2
-      }}
-    >
-      <Box sx={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        mb: 2,
-        p: 1
-      }}>
-        <Typography variant="h6" fontWeight="bold">
-          Menu
-        </Typography>
-        <IconButton onClick={handleDrawerToggle}>
-          <CloseRounded />
-        </IconButton>
-      </Box>
+    const toggleSection = (section) => {
+        setExpandedSection(expandedSection === section ? null : section);
+    };
 
-      <Divider sx={{ mb: 2 }} />
-
-      <List component="nav" sx={{ flexGrow: 1 }}>
-        {isAuthenticated && (
-          <>
-            <ListItem button href="/main" component="a">
-              <ListItemIcon>
-                <HomeRounded />
-              </ListItemIcon>
-              <ListItemText sx={{color: theme.palette.mode === 'dark' ? 'white' : 'black'}} primary="Strona główna" />
-            </ListItem>
-
-            <ListItem button onClick={() => toggleSection('manage')}>
-              <ListItemIcon>
-                <CameraIndoor />
-              </ListItemIcon>
-              <ListItemText primary="Zarządzaj" />
-              {expandedSection === 'manage' ? <ExpandLess /> : <ExpandMore />}
-            </ListItem>
-
-            <Collapse in={expandedSection === 'manage'} timeout="auto" unmountOnExit>
-              <List component="div" disablePadding>
-                <ListItem button href="/myHomes" component="a" sx={{ pl: 4 }}>
-                  <ListItemIcon>
-                    <Home />
-                  </ListItemIcon>
-                  <ListItemText sx={{color: theme.palette.mode === 'dark' ? 'white' : 'black'}} primary="Moje lokacje" />
-                </ListItem>
-
-                <ListItem button href="/myDevices" component="a" sx={{ pl: 4 }}>
-                  <ListItemIcon>
-                    <Devices />
-                  </ListItemIcon>
-                  <ListItemText sx={{color: theme.palette.mode === 'dark' ? 'white' : 'black'}} primary="Moje urządzenia" />
-                </ListItem>
-
-                <ListItem button href="/myRooms" component="a" sx={{ pl: 4 }}>
-                  <ListItemIcon>
-                    <DoorBack />
-                  </ListItemIcon>
-                  <ListItemText sx={{color: theme.palette.mode === 'dark' ? 'white' : 'black'}} primary="Moje pomieszczenia" />
-                </ListItem>
-
-                <ListItem button href="/rules" component="a" sx={{ pl: 4 }}>
-                  <ListItemIcon>
-                    <Rule />
-                  </ListItemIcon>
-                  <ListItemText sx={{color: theme.palette.mode === 'dark' ? 'white' : 'black'}} primary="Reguły" />
-                </ListItem>
-              </List>
-            </Collapse>
-
-            <ListItem button href="/dashboard" component="a">
-              <ListItemIcon>
-                <DonutSmall />
-              </ListItemIcon>
-              <ListItemText sx={{color: theme.palette.mode === 'dark' ? 'white' : 'black'}} primary="Wykresy" />
-            </ListItem>
-
-            <ListItem button href="/history" component="a">
-              <ListItemIcon>
-                <History />
-              </ListItemIcon>
-              <ListItemText sx={{color: theme.palette.mode === 'dark' ? 'white' : 'black'}} primary="Historia" />
-            </ListItem>
-
-            <ListItem button href="/notifications" component="a">
-              <ListItemIcon>
-                <Badge badgeContent={num} color="error">
-                  <NotificationsRounded />
-                </Badge>
-              </ListItemIcon>
-              <ListItemText sx={{color: theme.palette.mode === 'dark' ? 'white' : 'black'}} primary="Powiadomienia" />
-            </ListItem>
-
-            <ListItem button href="/settings" component="a">
-              <ListItemIcon>
-                  <Settings />
-              </ListItemIcon>
-              <ListItemText sx={{color: theme.palette.mode === 'dark' ? 'white' : 'black'}} primary="Ustawienia" />
-            </ListItem>
-          </>
-        )}
-      </List>
-
-      <Box sx={{ mt: 'auto', p: 1 }}>
-        <Button
-          fullWidth
-          href={isAuthenticated ? '/logout' : '/login'}
-          component="a"
-          startIcon={isAuthenticated ? <LogoutRounded /> : <LoginRounded />}
-          sx={{
-            py: 1.5,
-            borderRadius: 1,
-            color: isAuthenticated ? 'error.main' : 'success.main',
-            '&:hover': {
-              bgcolor: isAuthenticated ? 'error.light' : 'success.light',
-              color: 'black',
-            }
-          }}
+    const renderSidebarContent = () => (
+        <Box
+            sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%',
+                p: 2
+            }}
         >
-          {isAuthenticated ? 'Wyloguj się' : 'Zaloguj się'}
-        </Button>
-      </Box>
-    </Box>
-  );
+            <Box sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                mb: 2,
+                p: 1
+            }}>
+                <Typography variant="h6" fontWeight="bold">
+                    Menu
+                </Typography>
+                <IconButton onClick={handleDrawerToggle}>
+                    <CloseRounded/>
+                </IconButton>
+            </Box>
+
+            <Divider sx={{mb: 2}}/>
+
+            <List component="nav" sx={{flexGrow: 1}}>
+                {isAuthenticated && (
+                    <>
+                        <ListItem href="/main" component="a">
+                            <ListItemIcon>
+                                <HomeRounded/>
+                            </ListItemIcon>
+                            <ListItemText sx={{color: theme.palette.mode === 'dark' ? 'white' : 'black'}}
+                                          primary="Strona główna"/>
+                        </ListItem>
+
+                        <ListItem onClick={() => toggleSection('manage')}>
+                            <ListItemIcon>
+                                <CameraIndoor/>
+                            </ListItemIcon>
+                            <ListItemText primary="Zarządzaj"/>
+                            {expandedSection === 'manage' ? <ExpandLess/> : <ExpandMore/>}
+                        </ListItem>
+
+                        <Collapse in={expandedSection === 'manage'} timeout="auto" unmountOnExit>
+                            <List component="div" disablePadding>
+                                <ListItem href="/myHomes" component="a" sx={{pl: 4}}>
+                                    <ListItemIcon>
+                                        <Home/>
+                                    </ListItemIcon>
+                                    <ListItemText sx={{color: theme.palette.mode === 'dark' ? 'white' : 'black'}}
+                                                  primary="Moje lokacje"/>
+                                </ListItem>
+
+                                <ListItem href="/myDevices" component="a" sx={{pl: 4}}>
+                                    <ListItemIcon>
+                                        <Devices/>
+                                    </ListItemIcon>
+                                    <ListItemText sx={{color: theme.palette.mode === 'dark' ? 'white' : 'black'}}
+                                                  primary="Moje urządzenia"/>
+                                </ListItem>
+
+                                <ListItem href="/myRooms" component="a" sx={{pl: 4}}>
+                                    <ListItemIcon>
+                                        <DoorBack/>
+                                    </ListItemIcon>
+                                    <ListItemText sx={{color: theme.palette.mode === 'dark' ? 'white' : 'black'}}
+                                                  primary="Moje pomieszczenia"/>
+                                </ListItem>
+
+                                <ListItem href="/rules" component="a" sx={{pl: 4}}>
+                                    <ListItemIcon>
+                                        <Rule/>
+                                    </ListItemIcon>
+                                    <ListItemText sx={{color: theme.palette.mode === 'dark' ? 'white' : 'black'}}
+                                                  primary="Reguły"/>
+                                </ListItem>
+                            </List>
+                        </Collapse>
+
+                        <ListItem href="/dashboard" component="a">
+                            <ListItemIcon>
+                                <DonutSmall/>
+                            </ListItemIcon>
+                            <ListItemText sx={{color: theme.palette.mode === 'dark' ? 'white' : 'black'}}
+                                          primary="Wykresy"/>
+                        </ListItem>
+
+                        <ListItem href="/history" component="a">
+                            <ListItemIcon>
+                                <History/>
+                            </ListItemIcon>
+                            <ListItemText sx={{color: theme.palette.mode === 'dark' ? 'white' : 'black'}}
+                                          primary="Historia"/>
+                        </ListItem>
+
+                        <ListItem href="/notifications" component="a">
+                            <ListItemIcon>
+                                <Badge badgeContent={num} color="error">
+                                    <NotificationsRounded/>
+                                </Badge>
+                            </ListItemIcon>
+                            <ListItemText sx={{color: theme.palette.mode === 'dark' ? 'white' : 'black'}}
+                                          primary="Powiadomienia"/>
+                        </ListItem>
+
+                        <ListItem href="/settings" component="a">
+                            <ListItemIcon>
+                                <Settings/>
+                            </ListItemIcon>
+                            <ListItemText sx={{color: theme.palette.mode === 'dark' ? 'white' : 'black'}}
+                                          primary="Ustawienia"/>
+                        </ListItem>
+                    </>
+                )}
+            </List>
+
+            <Box sx={{mt: 'auto', p: 1}}>
+                <Button
+                    fullWidth
+                    href={isAuthenticated ? '/logout' : '/login'}
+                    component="a"
+                    startIcon={isAuthenticated ? <LogoutRounded/> : <LoginRounded/>}
+                    sx={{
+                        py: 1.5,
+                        borderRadius: 1,
+                        color: isAuthenticated ? 'error.main' : 'success.main',
+                        '&:hover': {
+                            bgcolor: isAuthenticated ? 'error.light' : 'success.light',
+                            color: 'black',
+                        }
+                    }}
+                >
+                    {isAuthenticated ? 'Wyloguj się' : 'Zaloguj się'}
+                </Button>
+            </Box>
+        </Box>
+    );
 
     return (
         <StyledAppBar position="sticky" elevation={0}>
@@ -479,12 +523,32 @@ const renderSidebarContent = () => (
                     <Box sx={{flexGrow: 1}}/>
 
                     <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
-                        <IconButton onClick={toggleTheme}>
+                        <IconButton onClick={toggleTheme} sx={{
+                        color: 'text.primary',
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                            bgcolor: 'action.hover',
+                            transform: 'translateY(-2px)',
+                        },
+                        '&.Mui-focusVisible': {
+                            bgcolor: 'action.selected',
+                        }
+                    }}>
                             {theme.palette.mode === 'dark' ? <LightModeRounded/> : <DarkModeRounded/>}
                         </IconButton>
 
                         {isAuthenticated && (
-                            <IconButton href="/userProfile">
+                            <IconButton href="/userProfile" sx={{
+                        color: 'text.primary',
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                            bgcolor: 'action.hover',
+                            transform: 'translateY(-2px)',
+                        },
+                        '&.Mui-focusVisible': {
+                            bgcolor: 'action.selected',
+                        }
+                    }}>
                                 <Avatar
                                     src={image}
                                     sx={{width: 36, height: 36}}
@@ -497,43 +561,47 @@ const renderSidebarContent = () => (
                         {isSmallScreen ? (
                             <>
                                 <IconButton
-                                edge="start"
+                                    edge="start"
 
-                                aria-label="menu"
-                                onClick={handleDrawerToggle}
-                                sx={{ ml: 1 }}
-                              >
-                                <MenuRounded />
-                              </IconButton>
+                                    aria-label="menu"
+                                    onClick={handleDrawerToggle}
+                                    sx={{ml: 1}}
+                                >
+                                    <MenuRounded/>
+                                </IconButton>
                                 <Drawer
                                     variant="temporary"
                                     anchor="left"
                                     open={mobileOpen}
                                     onClose={handleDrawerToggle}
                                     ModalProps={{
-                                      keepMounted: true, // Better open performance on mobile
+                                        keepMounted: true, // Better open performance on mobile
                                     }}
                                     sx={{
-                                      '& .MuiDrawer-paper': {
-                                        width: 280,
-                                        boxSizing: 'border-box',
-                                      },
+                                        '& .MuiDrawer-paper': {
+                                            width: 280,
+                                            boxSizing: 'border-box',
+                                        },
                                     }}
-                                  >
+                                >
                                     {renderSidebarContent()}
-                                  </Drawer>
+                                </Drawer>
                             </>
                         ) : (
                             <IconButton
                                 href={isAuthenticated ? '/logout' : '/login'}
                                 sx={{
-                                    borderRadius: 2,
-                                    px: 2,
-                                    bgcolor: theme.palette.action.selected,
-                                    '&:hover': {
-                                        bgcolor: theme.palette.action.hover
-                                    }
-                                }}
+                        color: 'text.primary',
+                        borderRadius: 2,
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                            bgcolor: 'action.hover',
+                            transform: 'translateY(-2px)',
+                        },
+                        '&.Mui-focusVisible': {
+                            bgcolor: 'action.selected',
+                        }
+                    }}
                             >
                                 {isAuthenticated ? <LogoutRounded/> : <LoginRounded/>}
                                 <Typography sx={{ml: 1}}>

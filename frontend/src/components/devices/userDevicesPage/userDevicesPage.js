@@ -176,15 +176,19 @@ const UserDevicesPage = () => {
           </Typography>
         )}
 
-        <Box mt={4} display="flex" justifyContent="center">
-          <Pagination
-            count={Math.ceil(filteredDevices.length / itemsPerPage)}
-            page={currentPage}
-            onChange={(e, page) => setCurrentPage(page)}
-            color="primary"
-            shape="rounded"
-          />
-        </Box>
+        {filteredDevices.length !== 0 && (
+          <Box mt={4} display="flex" justifyContent="center">
+            <Pagination
+              count={Math.ceil(filteredDevices.length / itemsPerPage)}
+              page={currentPage}
+              onChange={(e, page) => setCurrentPage(page)}
+              color="primary"
+              shape="rounded"
+            />
+          </Box>
+        ) }
+
+
       </Paper>
     </Container>
   );

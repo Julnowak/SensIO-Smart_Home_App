@@ -41,6 +41,13 @@ class UserSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class FloorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Floor
+        fields = '__all__'
+        depth = 2
+
+
 class HomeSerializer(serializers.ModelSerializer):
     devicesCount = serializers.SerializerMethodField()
     floors = serializers.SerializerMethodField()
@@ -55,7 +62,9 @@ class HomeSerializer(serializers.ModelSerializer):
         return Device.objects.filter(room__in=rooms).count()
 
     def get_floors(self, obj):
-        return Floor.objects.filter(home=obj)
+        f = Floor.objects.filter(home=obj)
+        floors = FloorSerializer(f, many=True).data
+        return floors
 
 
 class NotificationSerializer(serializers.ModelSerializer):

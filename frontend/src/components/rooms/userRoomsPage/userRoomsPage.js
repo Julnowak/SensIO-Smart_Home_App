@@ -44,7 +44,7 @@ import {
   Thermostat,
   Lightbulb,
   Security,
-  People
+  People, MapsHomeWork, HelpOutline, QuestionMark, QuestionMarkOutlined
 } from "@mui/icons-material";
 import client from "../../../client";
 import { API_BASE_URL } from "../../../config";
@@ -171,26 +171,23 @@ const UserRoomsPage = () => {
       <Paper elevation={0} sx={{ p: 3, borderRadius: 3, mb: 3 }}>
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
           <Typography variant="h4" component="h1" sx={{ fontWeight: 700 }}>
-            <MeetingRoom sx={{ verticalAlign: 'middle', mr: 1 }} />
-            Room Management
+            Pomieszczenia
+            <sup><Tooltip sx={{ml:1}} title={'Pomieszczenia mogą być edytowane na stronie lokacji w dedykowanym edytorze.'}>
+              <HelpOutline/>
+            </Tooltip></sup>
           </Typography>
 
+
           <Box display="flex" alignItems="center" gap={2}>
-            <Tooltip title="Refresh">
+            <Tooltip title="Odśwież">
               <IconButton onClick={handleRefresh}>
                 <Refresh />
               </IconButton>
             </Tooltip>
-            <Button
-              variant="contained"
-              startIcon={<Add />}
-              href="/add-room"
-              sx={{ minWidth: 200 }}
-            >
-              Add New Room
-            </Button>
+
           </Box>
         </Box>
+        
 
         <Tabs
           value={activeTab}
@@ -199,11 +196,8 @@ const UserRoomsPage = () => {
           variant="scrollable"
           scrollButtons="auto"
         >
-          <Tab label="All Rooms" />
-          <Tab label="Favorites" icon={<Star fontSize="small" />} />
-          <Tab label="Active" />
-          <Tab label="Warnings" />
-          <Tab label="Issues" />
+          <Tab label="Wszystkie" icon={<MapsHomeWork fontSize="small" />} />
+          <Tab label="Ulubione" icon={<Star fontSize="small" />} />
         </Tabs>
 
         <Grid container spacing={3} mb={4}>
@@ -211,7 +205,7 @@ const UserRoomsPage = () => {
             <TextField
               fullWidth
               variant="outlined"
-              placeholder="Search rooms..."
+              placeholder="Wyszukaj pomieszczenie..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               InputProps={{
@@ -263,19 +257,11 @@ const UserRoomsPage = () => {
                   <em>All Floors</em>
                 </MenuItem>
                 {floors.map(floor => (
-                  <MenuItem key={floor} value={floor}>
-                    Floor {floor}
+                  <MenuItem key={floor.id} value={floor.id}>
+                    Piętro {floor.floor_number}
                   </MenuItem>
                 ))}
               </Select>
-              <Tooltip title="View Mode">
-                <Button
-                  variant="outlined"
-                  onClick={() => setViewMode(viewMode === 'list' ? 'grid' : 'list')}
-                >
-                  {viewMode === 'list' ? <ViewModule /> : <ViewList />}
-                </Button>
-              </Tooltip>
             </Box>
           </Grid>
         </Grid>
@@ -283,7 +269,6 @@ const UserRoomsPage = () => {
 
       {loading && <LinearProgress sx={{ mb: 2 }} />}
 
-      {viewMode === 'list' ? (
         <Paper elevation={0} sx={{ p: 2, borderRadius: 3, mb: 3 }}>
           <List sx={{ width: '100%' }}>
             {currentItems.length > 0 ? (
@@ -365,7 +350,7 @@ const UserRoomsPage = () => {
                             </Box>
                             {room.last_activity && (
                               <Typography variant="caption" color="text.secondary">
-                                Last activity: {new Date(room.last_activity).toLocaleDateString()}
+                                Ostatnia aktywność: {new Date(room.last_activity).toLocaleDateString()}
                               </Typography>
                             )}
                           </>
@@ -378,108 +363,12 @@ const UserRoomsPage = () => {
               </Stack>
             ) : (
               <Typography variant="body1" color="text.secondary" textAlign="center" py={4}>
-                No rooms matching search criteria
+                Brak pomieszczeń spełniających kryteria
               </Typography>
             )}
           </List>
         </Paper>
-      ) : (
-        <Grid container spacing={3}>
-          {currentItems.map((room) => (
-            <Grid item xs={12} sm={6} md={4} key={room.room_id}>
-              <RoomCard
-                elevation={2}
-                component={Button}
-                href={`/room/${room.room_id}`}
-                sx={{
-                  textAlign: 'left',
-                  textTransform: 'none',
-                  p: 3
-                }}
-              >
-                <Box display="flex" flexDirection="column" height="100%">
-                  <Box display="flex" justifyContent="space-between" mb={2}>
-                    <Badge
-                      overlap="circular"
-                      anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                      badgeContent={
-                        <StatusBadge
-                          status={room.status}
-                          size="small"
-                          label={room.status.toUpperCase()}
-                        />
-                      }
-                    >
-                      <Avatar sx={{
-                        bgcolor: room.is_favorite ? 'warning.light' : 'primary.light',
-                        color: room.is_favorite ? 'warning.dark' : 'primary.dark',
-                        width: 56,
-                        height: 56
-                      }}>
-                        {room.is_favorite ? <Star /> : <MeetingRoom />}
-                      </Avatar>
-                    </Badge>
-                    <IconButton size="small">
-                      <MoreVert />
-                    </IconButton>
-                  </Box>
 
-                  <Typography variant="h6" gutterBottom>
-                    {room.name}
-                  </Typography>
-
-                  <Box display="flex" alignItems="center" gap={1} mb={1}>
-                    <LocationOn color="action" fontSize="small" />
-                    <Typography variant="body2" color="text.secondary">
-                      {room.location}
-                    </Typography>
-                  </Box>
-
-                  <Box display="flex" alignItems="center" gap={1} mb={2}>
-                    <Layers color="action" fontSize="small" />
-                    <Typography variant="body2" color="text.secondary">
-                      Floor {room.floor}
-                    </Typography>
-                  </Box>
-
-                  <Divider sx={{ my: 2 }} />
-
-                  <Grid container spacing={1} mb={2}>
-                    <Grid item xs={4}>
-                      <Box textAlign="center">
-                        <Thermostat color="primary" fontSize="small" />
-                        <Typography variant="caption" display="block">
-                          {Math.floor(Math.random() * 10)}°C
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={4}>
-                      <Box textAlign="center">
-                        <Lightbulb color="primary" fontSize="small" />
-                        <Typography variant="caption" display="block">
-                          {room.device_count} devices
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={4}>
-                      <Box textAlign="center">
-                        <People color="primary" fontSize="small" />
-                        <Typography variant="caption" display="block">
-                          {Math.floor(Math.random() * 10)}/10
-                        </Typography>
-                      </Box>
-                    </Grid>
-                  </Grid>
-
-                  <Typography variant="caption" color="text.secondary" mt="auto">
-                    Last updated: {new Date(room.last_activity).toLocaleDateString()}
-                  </Typography>
-                </Box>
-              </RoomCard>
-            </Grid>
-          ))}
-        </Grid>
-      )}
 
       {filteredRooms.length > 0 && (
         <Box display="flex" justifyContent="center" mt={4}>

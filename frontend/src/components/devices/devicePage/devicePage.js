@@ -77,6 +77,16 @@ const DevicePage = () => {
     }
   }, [params.id, token]);
 
+  const handleActiveChange = async (e) => {
+    const response = await client.post(API_BASE_URL + `device/${params.id}/`,
+    {},{
+      headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+    );
+  };
+
   const getRoomColor = (roomName) => {
     const room = availableRooms.find(r => r.name === roomName);
     return room ? room.color : theme.palette.primary.main;
@@ -110,7 +120,7 @@ const DevicePage = () => {
           Powrót
         </Button>
         <Box sx={{ display: 'flex', textAlign: 'right', gap: 2,}}>
-          <FormControlLabel control={<Switch defaultChecked color="success"/>} label="Aktywne" />
+          <FormControlLabel control={<Switch value={device.isActive} onChange={handleActiveChange} color="success"/>} label="Aktywne" />
         </Box>
       </Box>
 

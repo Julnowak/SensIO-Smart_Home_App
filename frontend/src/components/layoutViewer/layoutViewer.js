@@ -42,16 +42,15 @@ const Canvas = styled(Box)({
   willChange: 'transform',
 });
 
-const BlockView = styled(Box)(({ theme, light }) => ({
+const BlockView = styled(Box)(({ theme, light, pos }) => ({
   position: 'absolute',
-  width: '80px', // Smaller default size
-  height: '80px',
+  width: pos.width,
+  height: pos.height,
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
   borderRadius: theme.shape.borderRadius,
   transition: 'all 0.3s ease',
-  boxShadow: theme.shadows[2],
   backgroundColor: light ? theme.palette.warning.light : theme.palette.grey[300],
   border: `2px solid ${light ? theme.palette.warning.main : theme.palette.divider}`,
   '&:hover': {
@@ -67,13 +66,6 @@ const BlockView = styled(Box)(({ theme, light }) => ({
     textAlign: 'center',
     padding: '0 4px' // Add some padding
   },
-  [theme.breakpoints.up('sm')]: { // Larger blocks on bigger screens
-    width: '100px',
-    height: '100px',
-    '& .MuiTypography-root': {
-      fontSize: '0.875rem'
-    }
-  }
 }));
 
 const LayoutViewer = ({ layout, floorId }) => {
@@ -91,14 +83,12 @@ const LayoutViewer = ({ layout, floorId }) => {
   const calculateCenter = useCallback(() => {
     if (blocks.length === 0) return;
 
-    // Calculate bounding box of all rooms
     const positions = blocks.map(block => block.position);
     const minX = Math.min(...positions.map(p => p.x));
-    const maxX = Math.max(...positions.map(p => p.x));
+    const maxX = Math.max(...positions.map(p => p.x +p.width));
     const minY = Math.min(...positions.map(p => p.y));
-    const maxY = Math.max(...positions.map(p => p.y));
+    const maxY = Math.max(...positions.map(p => p.y+p.height));
 
-    // Calculate center of bounding box
     const centerX = (minX + maxX) / 2;
     const centerY = (minY + maxY) / 2;
 
@@ -106,8 +96,6 @@ const LayoutViewer = ({ layout, floorId }) => {
     if (container) {
       const containerWidth = container.clientWidth;
       const containerHeight = container.clientHeight;
-
-      // Calculate new offset to center the layout
       const newOffsetX = (containerWidth / 2 - centerX * scale) / scale;
       const newOffsetY = (containerHeight / 2 - centerY * scale) / scale;
 
@@ -120,6 +108,7 @@ const LayoutViewer = ({ layout, floorId }) => {
     const container = canvasRef.current;
     if (!container) return;
 
+
     calculateCenter();
 
     // Add resize observer to handle window resizing
@@ -128,14 +117,14 @@ const LayoutViewer = ({ layout, floorId }) => {
     return () => resizeObserver.disconnect();
   }, [calculateCenter]);
 
-  const handleWheel = (e) => {
-    e.preventDefault();
-    const zoomFactor = 1.1;
-    setScale(prev => {
-      const newScale = e.deltaY > 0 ? prev / zoomFactor : prev * zoomFactor;
-      return Math.max(0.5, Math.min(newScale, 2));
-    });
-  };
+  // const handleWheel = (e) => {
+  //   e.preventDefault();
+  //   const zoomFactor = 1.1;
+  //   setScale(prev => {
+  //     const newScale = e.deltaY > 0 ? prev / zoomFactor : prev * zoomFactor;
+  //     return Math.max(0.5, Math.min(newScale, 2));
+  //   });
+  // };
 
   const handleMouseDown = (e) => {
     if (e.target === canvasRef.current) {
@@ -219,7 +208,7 @@ const LayoutViewer = ({ layout, floorId }) => {
   };
 
   const handleResetView = () => {
-    setScale(isMobile ? 0.8 : 1); // Slightly smaller default scale for mobile
+    setScale(isMobile ? 0.8 : 1);
     calculateCenter();
   };
 
@@ -227,6 +216,9 @@ const LayoutViewer = ({ layout, floorId }) => {
     if (layout?.length > 0) {
       setBlocks(layout);
       calculateCenter();
+    }
+    else{
+      setBlocks(layout);
     }
   }, [layout, calculateCenter]);
 
@@ -242,7 +234,7 @@ const LayoutViewer = ({ layout, floorId }) => {
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
-          onWheel={handleWheel}
+          // onWheel={handleWheel}
           sx={{ cursor: isDragging ? 'grabbing' : 'grab' }}
         >
           <Canvas style={{
@@ -255,14 +247,14 @@ const LayoutViewer = ({ layout, floorId }) => {
                 href={`/room/${block.room_id}`}
                 sx={{
                   position: 'absolute',
-                  top: block.position.y,
-                  left: block.position.x,
+                  top: block.position.y +block.position.height/2,
+                  left: block.position.x +block.position.width/2,
                   textTransform: 'none',
                   p: 0,
                   '&:hover': { textDecoration: 'none' }
                 }}
               >
-                <BlockView light={block.light}>
+                <BlockView light={block.light} pos={block.position}>
                   <Typography variant="body2">
                     {block.name}
                   </Typography>
@@ -323,7 +315,6 @@ const LayoutViewer = ({ layout, floorId }) => {
             </IconButton>
           </Box>
 
-          {/* Zoom Indicator */}
           <Box sx={{
             position: 'absolute',
             bottom: 16,
@@ -335,7 +326,7 @@ const LayoutViewer = ({ layout, floorId }) => {
             boxShadow: 1
           }}>
             <Typography variant="caption">
-              Zoom: {Math.round(scale * 100)}%
+              Skala: {Math.round(scale * 100)}%
             </Typography>
           </Box>
         </CanvasContainer>
@@ -354,7 +345,7 @@ const LayoutViewer = ({ layout, floorId }) => {
             To piętro nie ma jeszcze zdefiniowanych pokoi
           </Typography>
           <Button variant="contained" startIcon={<Edit />} onClick={() => {
-            navigate("/editor", { state: { floorId: floorId } })
+            navigate("/editor", { state: { floorId: floorId, layout: null } })
           }}>
             Edytuj rozmieszczenie
           </Button>

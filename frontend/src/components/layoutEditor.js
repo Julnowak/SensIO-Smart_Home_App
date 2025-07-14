@@ -15,7 +15,8 @@ import {
     Menu,
     MenuItem,
     Slider,
-    Chip
+    Chip,
+    Alert, Badge
 } from "@mui/material";
 import {
     Save as SaveIcon,
@@ -24,10 +25,9 @@ import {
     Close as CloseIcon,
     Add as AddIcon,
     Delete as DeleteIcon,
-    Merge as MergeIcon,
     Help as HelpIcon,
     Fullscreen as FullscreenIcon,
-    GridOn as GridIcon, KeyboardReturn
+    KeyboardReturn, VisibilityOff, Visibility, ContentCopy, GridView, Straighten
 } from "@mui/icons-material";
 import {v4 as uuidv4} from "uuid";
 import {styled} from "@mui/material/styles";
@@ -63,6 +63,18 @@ const RoomBlock = styled(Paper, {
     zIndex: selected ? 5 : 1
 }));
 
+const WallButton = styled(IconButton)(({theme, active}) => ({
+    position: "absolute",
+    backgroundColor: active ? theme.palette.primary.main : theme.palette.grey[300],
+    color: active ? theme.palette.common.white : theme.palette.text.primary,
+    width: 24,
+    height: 24,
+    minWidth: 24,
+    "&:hover": {
+        backgroundColor: active ? theme.palette.primary.dark : theme.palette.grey[400]
+    }
+}));
+
 function isOverlapping(roomA, roomB) {
     return !(
         roomA.x + roomA.width <= roomB.x ||
@@ -72,59 +84,89 @@ function isOverlapping(roomA, roomB) {
     );
 }
 
+function hasAdjacentRoom(rooms, room, direction) {
+    const padding = 5; // Small tolerance for adjacency
+
+    return rooms.some(otherRoom => {
+        if (otherRoom.id === room.id) return false;
+
+        switch (direction) {
+            case 'top':
+                return (
+                    Math.abs(otherRoom.y + otherRoom.height - room.y) <= padding &&
+                    ((otherRoom.x < room.x + room.width && otherRoom.x + otherRoom.width > room.x) ||
+                        (room.x < otherRoom.x + otherRoom.width && room.x + room.width > otherRoom.x))
+                );
+            case 'right':
+                return (
+                    Math.abs(otherRoom.x - (room.x + room.width)) <= padding &&
+                    ((otherRoom.y < room.y + room.height && otherRoom.y + otherRoom.height > room.y) ||
+                        (room.y < otherRoom.y + otherRoom.height && room.y + room.height > otherRoom.y)
+                    ));
+            case 'bottom':
+                return (
+                    Math.abs(otherRoom.y - (room.y + room.height)) <= padding &&
+                    ((otherRoom.x < room.x + room.width && otherRoom.x + otherRoom.width > room.x) ||
+                        (room.x < otherRoom.x + otherRoom.width && room.x + room.width > otherRoom.x)
+                    ));
+            case 'left':
+                return (
+                    Math.abs(otherRoom.x + otherRoom.width - room.x) <= padding &&
+                    ((otherRoom.y < room.y + room.height && otherRoom.y + otherRoom.height > room.y) ||
+                        (room.y < otherRoom.y + otherRoom.height && room.y + room.height > otherRoom.y))
+                );
+            default:
+                return false;
+        }
+    });
+}
+
+function canDeleteRoom(rooms, roomId) {
+    const roomToDelete = rooms.find(r => r.id === roomId);
+    if (!roomToDelete) return false;
+    if (rooms.length <= 2) return true;
+    // Check all adjacent rooms
+    const adjacentRooms = rooms.filter(otherRoom => {
+        if (otherRoom.id === roomId) return false;
+        return (
+            hasAdjacentRoom([roomToDelete], otherRoom, 'top') ||
+            hasAdjacentRoom([roomToDelete], otherRoom, 'right') ||
+            hasAdjacentRoom([roomToDelete], otherRoom, 'bottom') ||
+            hasAdjacentRoom([roomToDelete], otherRoom, 'left')
+        );
+    });
+
+    // For each adjacent room, check if it would have all walls unconnected after deletion
+    for (const adjRoom of adjacentRooms) {
+        let connectedWalls = 0;
+
+        ['top', 'right', 'bottom', 'left'].forEach(direction => {
+            if (hasAdjacentRoom(
+                rooms.filter(r => r.id !== roomId),
+                adjRoom,
+                direction
+            )) {
+                connectedWalls++;
+            }
+        });
+
+        if (connectedWalls === 0) {
+            return false;
+        }
+    }
+
+    return true;
+}
 
 const RoomEditor = () => {
-
     const [rooms, setRooms] = useState([]);
     const [selectedRoom, setSelectedRoom] = useState(null);
-    const [selectedRooms, setSelectedRooms] = useState([]);
+    const [hoveredSide, setHoveredSide] = useState(null);
+    const [error, setError] = useState(null);
+
     const location = useLocation();
-    const { floorId } = location.state || {};
-
-
-    const handleMerge = () => {
-        if (selectedRooms.length < 2) return;
-
-        // Pobierz pokoje do połączenia
-        const roomsToMerge = rooms.filter(room => selectedRooms.includes(room.id));
-
-        // Wyznacz minimalny prostokąt obejmujący wszystkie pokoje
-        const minX = Math.min(...roomsToMerge.map(r => r.x));
-        const minY = Math.min(...roomsToMerge.map(r => r.y));
-        const maxX = Math.max(...roomsToMerge.map(r => r.x + r.width));
-        const maxY = Math.max(...roomsToMerge.map(r => r.y + r.height));
-
-        // Utwórz nowy pokój
-        const mergedRoom = {
-            id: uuidv4(),
-            name: roomsToMerge.map(r => r.name).join(" + "),
-            x: minX,
-            y: minY,
-            width: maxX - minX,
-            height: maxY - minY,
-            merged: true
-        };
-
-        // Usuń stare pokoje, dodaj nowy
-        setRooms([
-            ...rooms.filter(room => !selectedRooms.includes(room.id)),
-            mergedRoom
-        ]);
-        setSelectedRooms([mergedRoom.id]);
-    };
-
+    const {floorId, layout} = location.state || {};
     const token = localStorage.getItem("access");
-    const handleSave = () => {
-        // Twoja logika zapisu
-        console.log("Save rooms", rooms);
-        client.post(API_BASE_URL + "layout_handler/",
-            {layout: rooms,
-                floorId: floorId},
-            {headers: {Authorization: `Bearer ${token}`}}
-        )
-    };
-    console.log(floorId)
-
     const [scale, setScale] = useState(1);
     const [offset, setOffset] = useState({x: 0, y: 0});
     const [isDragging, setIsDragging] = useState(false);
@@ -133,19 +175,31 @@ const RoomEditor = () => {
     const [newRoomSize, setNewRoomSize] = useState(120);
     const lastMousePosition = useRef({x: 0, y: 0});
     const canvasRef = useRef(null);
+    const [blockSize, setBlockSize] = useState({width: 120, height: 120});
+    const [showMeasurements, setShowMeasurements] = useState(true);
+    const [roomVisibility, setRoomVisibility] = useState({});
+    const [showGrid, setShowGrid] = useState(true);
 
     useEffect(() => {
-        if (Array.isArray(rooms) && rooms.length === 0) {
-            const canvas = canvasRef.current;
-            if (canvas) {
-                const rect = canvas.getBoundingClientRect();
-                const x = rect.width / 2 - 60;
-                const y = rect.height / 2 - 60;
-                addRoom({x, y});
+        if (layout && layout.length > 0) {
+            const positions = layout.map(room => ({
+                id: room.room_id,
+                name: room.name,
+                x: room.position.x,
+                y: room.position.y,
+                width: room.position.width,
+                height: room.position.height
+            }));
+            setRooms(positions);
+            if (positions.length > 0) {
+                setBlockSize({
+                    width: positions[0].width,
+                    height: positions[0].height
+                });
             }
         }
-    }, []);
-
+        console.log(location.state)
+    }, [layout]);
 
     const handleMouseDown = (e) => {
         if (e.target === canvasRef.current) {
@@ -153,6 +207,18 @@ const RoomEditor = () => {
             lastMousePosition.current = {x: e.clientX, y: e.clientY};
             setSelectedRoom(null);
         }
+    };
+
+    const handleSave = () => {
+        client.post(API_BASE_URL + "layout_handler/",
+            {
+                layout: rooms,
+                floorId: floorId
+            },
+            {
+                headers: {Authorization: `Bearer ${token}`}
+            }
+        );
     };
 
     const handleMouseMove = (e) => {
@@ -170,30 +236,46 @@ const RoomEditor = () => {
 
     const handleMouseUp = () => setIsDragging(false);
 
-    const addRoom = (position, size = newRoomSize) => {
+    const addRoom = (position, size = newRoomSize, direction = null) => {
         const newRoom = {
             id: uuidv4(),
-            name: `Room ${rooms.length + 1}`,
+            name: `Pokój ${rooms.length + 1}`,
             x: position.x,
             y: position.y,
             width: size,
-            height: size,
-            merged: false
+            height: size
         };
 
-        // Sprawdź kolizję z istniejącymi pokojami
+        // Check collision with existing rooms
         const overlaps = rooms.some(room => isOverlapping(room, newRoom));
         if (overlaps) {
-            alert("Nowy pokój nachodzi na istniejący. Wybierz inne miejsce.");
+            setError("Nowy pokój nachodzi na istniejący. Wybierz inne miejsce.");
+            setTimeout(() => setError(null), 3000);
             return;
+        }
+
+        // If adding adjacent to another room, check if that wall is free
+        if (direction && selectedRoom) {
+            const parentRoom = rooms.find(r => r.id === selectedRoom);
+            if (parentRoom && hasAdjacentRoom(rooms, parentRoom, direction)) {
+                setError(`Nie można dodać pokoju - ściana ${direction} jest już zajęta.`);
+                setTimeout(() => setError(null), 3000);
+                return;
+            }
         }
 
         setRooms([...rooms, newRoom]);
         setSelectedRoom(newRoom.id);
     };
 
-    // Poprawiona funkcja dodawania pokoi z uwzględnieniem transformacji
-    const handleAddRoom = (side = "right") => {
+    const toggleRoomVisibility = (roomId) => {
+        setRoomVisibility(prev => ({
+            ...prev,
+            [roomId]: !prev[roomId]
+        }));
+    };
+
+    const handleAddRoom = (direction) => {
         if (!selectedRoom) {
             // If no room selected, fallback to center
             const canvas = canvasRef.current;
@@ -218,32 +300,37 @@ const RoomEditor = () => {
         let newX = room.x;
         let newY = room.y;
 
-        switch (side) {
+        switch (direction) {
             case "right":
-                newX = room.x + room.width; // place to the right edge
+                newX = room.x + room.width;
                 newY = room.y;
                 break;
             case "left":
-                newX = room.x - newRoomSize; // place to the left edge
+                newX = room.x - newRoomSize;
                 newY = room.y;
                 break;
             case "top":
                 newX = room.x;
-                newY = room.y - newRoomSize; // place above
+                newY = room.y - newRoomSize;
                 break;
             case "bottom":
                 newX = room.x;
-                newY = room.y + room.height; // place below
+                newY = room.y + room.height;
                 break;
             default:
                 break;
         }
 
-        addRoom({x: newX, y: newY}, newRoomSize);
+        addRoom({x: newX, y: newY}, newRoomSize, direction);
     };
 
-
     const deleteRoom = (id) => {
+        if (!canDeleteRoom(rooms, id)) {
+            setError("Nie można usunąć pokoju - spowodowałoby to izolację sąsiednich pomieszczeń.");
+            setTimeout(() => setError(null), 3000);
+            return;
+        }
+
         setRooms(rooms.filter(room => room.id !== id));
         if (selectedRoom === id) setSelectedRoom(null);
     };
@@ -270,23 +357,22 @@ const RoomEditor = () => {
         const newSize = Math.max(100, room[axis] + amount);
         const updatedRoom = {...room, [axis]: newSize};
 
-        // Sprawdź kolizję z innymi pokojami (pomijając siebie)
+        // Check collision with other rooms (excluding self)
         const overlaps = rooms.some(r =>
             r.id !== id && isOverlapping(r, updatedRoom)
         );
         if (overlaps) {
-            alert("Zmiana rozmiaru spowoduje nachodzenie na inny pokój.");
+            setError("Zmiana rozmiaru spowoduje nachodzenie na inny pokój.");
+            setTimeout(() => setError(null), 3000);
             return;
         }
 
         updateRoom(id, {[axis]: newSize});
     };
 
-
     return (
         <Box
             ref={canvasRef}
-
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
@@ -298,8 +384,10 @@ const RoomEditor = () => {
                 overflow: "hidden",
                 backgroundColor: "background.default",
                 cursor: isDragging ? "grabbing" : "grab",
-                backgroundImage: `linear-gradient(#e0e0e0 1px, transparent 1px), linear-gradient(90deg, #e0e0e0 1px, transparent 1px)`,
-                backgroundSize: "20px 20px"
+                backgroundImage: showGrid
+                    ? `linear-gradient(#e0e0e0 1px, transparent 1px), linear-gradient(90deg, #e0e0e0 1px, transparent 1px)`
+                    : 'none',
+                backgroundSize: `${20 * scale}px ${20 * scale}px`
             }}
         >
             {/* Pokój */}
@@ -314,8 +402,7 @@ const RoomEditor = () => {
                 {rooms?.map(room => (
                     <React.Fragment key={room.id}>
                         <RoomBlock
-                            selected={selectedRooms.includes(room.id)}
-                            merged={room.merged}
+                            selected={selectedRoom === room.id}
                             style={{
                                 left: room.x,
                                 top: room.y,
@@ -323,14 +410,14 @@ const RoomEditor = () => {
                                 height: room.height
                             }}
                             onClick={() => {
-                                setSelectedRoom(room.id)
-                                setSelectedRooms(prev =>
-                                    prev.includes(room.id)
-                                        ? prev.filter(id => id !== room.id)
-                                        : [...prev, room.id]
-                                );
+                                setSelectedRoom(room.id);
+                                setBlockSize({
+                                    width: room.width,
+                                    height: room.height
+                                });
                             }}
                             onContextMenu={(e) => handleContextMenu(e, room.id)}
+                            onMouseLeave={() => setHoveredSide(null)}
                         >
                             <TextField
                                 value={room.name}
@@ -347,77 +434,88 @@ const RoomEditor = () => {
                                 }}
                             />
 
-                            {selectedRoom === room.id && (
-                                <>
-                                    {/* Przyciski do zmiany rozmiaru */}
-                                    <Box sx={{
-                                        position: "absolute",
-                                        right: 0,
-                                        bottom: 0,
-                                        display: "flex"
-                                    }}>
-                                        <IconButton
-                                            size="small"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleResize(room.id, 'width', 20);
-                                            }}
-                                            sx={{bgcolor: "background.paper"}}
-                                        >
-                                            <AddIcon fontSize="small"/>
-                                        </IconButton>
-                                        <IconButton
-                                            size="small"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleResize(room.id, 'height', 20);
-                                            }}
-                                            sx={{bgcolor: "background.paper"}}
-                                        >
-                                            <AddIcon fontSize="small" style={{transform: "rotate(90deg)"}}/>
-                                        </IconButton>
-                                    </Box>
-
-                                    {/* Przycisk usuwania */}
-                                    <IconButton
-                                        size="small"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            deleteRoom(room.id);
-                                        }}
-                                        sx={{
-                                            position: "absolute",
-                                            top: -12,
-                                            right: -12,
-                                            bgcolor: "error.main",
-                                            color: "white",
-                                            "&:hover": {bgcolor: "error.dark"}
-                                        }}
-                                    >
-                                        <DeleteIcon fontSize="small"/>
-                                    </IconButton>
-                                </>
+                            {showMeasurements && (
+                                <Box sx={{
+                                    position: 'absolute',
+                                    bottom: 4,
+                                    right: 4,
+                                    fontSize: '0.7rem',
+                                    color: 'text.secondary'
+                                }}>
+                                    {Math.round(room.width)}x{Math.round(room.height)}
+                                </Box>
                             )}
 
-                            {room.merged && (
-                                <Chip
-                                    label="Merged"
-                                    size="small"
-                                    color="secondary"
-                                    sx={{
-                                        position: "absolute",
-                                        bottom: 4,
-                                        right: 4,
-                                        fontSize: '0.6rem'
-                                    }}
-                                />
+                            {selectedRoom === room.id && (
+                                <>
+                                    {/* Wall buttons for adding adjacent rooms */}
+                                    {['top', 'right', 'bottom', 'left'].map(direction => {
+                                        const hasAdjacent = hasAdjacentRoom(rooms, room, direction);
+                                        return (
+                                            <WallButton
+                                                key={direction}
+                                                active={hoveredSide === direction}
+                                                disabled={hasAdjacent}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleAddRoom(direction);
+                                                }}
+                                                onMouseEnter={() => setHoveredSide(direction)}
+                                                onMouseLeave={() => setHoveredSide(null)}
+                                                sx={{
+                                                    ...(direction === 'top' && {
+                                                        top: -12,
+                                                        left: '50%',
+                                                        transform: 'translateX(-50%)'
+                                                    }),
+                                                    ...(direction === 'right' && {
+                                                        right: -12,
+                                                        top: '50%',
+                                                        transform: 'translateY(-50%)'
+                                                    }),
+                                                    ...(direction === 'bottom' && {
+                                                        bottom: -12,
+                                                        left: '50%',
+                                                        transform: 'translateX(-50%)'
+                                                    }),
+                                                    ...(direction === 'left' && {
+                                                        left: -12,
+                                                        top: '50%',
+                                                        transform: 'translateY(-50%)'
+                                                    })
+                                                }}
+                                            >
+                                                <AddIcon fontSize="small"/>
+                                            </WallButton>
+                                        );
+                                    })}
+
+                                </>
                             )}
                         </RoomBlock>
                     </React.Fragment>
                 ))}
             </Box>
 
-            {/* Kontrolki */}
+            {/* Error message */}
+            {error && (
+                <Alert
+                    severity="error"
+                    sx={{
+                        position: "absolute",
+                        top: 16,
+                        left: "50%",
+                        transform: "translateX(-50%)",
+                        zIndex: 20,
+                        width: "auto",
+                        maxWidth: "80%"
+                    }}
+                >
+                    {error}
+                </Alert>
+            )}
+
+            {/* Controls */}
             <Box
                 sx={{
                     position: "absolute",
@@ -501,57 +599,131 @@ const RoomEditor = () => {
                 </Tooltip>
             </Box>
 
-            {/* Panel dodawania */}
             <Paper
                 sx={{
                     position: "absolute",
-                    top: 16,
+                    top: 80,
                     left: 16,
-                    p: 2,
+                    p: 1,
                     zIndex: 10,
                     display: "flex",
                     flexDirection: "column",
-                    gap: 2
+                    gap: 1
                 }}
             >
-                <Typography variant="subtitle2">Add Room</Typography>
-                <Slider
-                    value={newRoomSize}
-                    onChange={(e, v) => setNewRoomSize(v)}
-                    min={80}
-                    max={200}
-                    step={10}
-                    valueLabelDisplay="auto"
-                    sx={{width: 120}}
-                />
-                <Button variant="contained" startIcon={<AddIcon/>} onClick={() => handleAddRoom("right")}>
-                    Add Room to Right
-                </Button>
+                <Tooltip title="Toggle Grid">
+                    <IconButton onClick={() => setShowGrid(!showGrid)} size="small">
+                        <Badge color="primary" variant="dot" invisible={showGrid}>
+                            <GridView fontSize="small"/>
+                        </Badge>
+                    </IconButton>
+                </Tooltip>
 
-                <Button variant="contained" startIcon={<AddIcon/>} onClick={() => handleAddRoom("left")}>
-                    Add Room to Left
-                </Button>
+                <Tooltip title="Toggle Measurements">
+                    <IconButton onClick={() => setShowMeasurements(!showMeasurements)} size="small">
+                        <Badge color="primary" variant="dot" invisible={showMeasurements}>
+                            <Straighten fontSize="small"/>
+                        </Badge>
+                    </IconButton>
+                </Tooltip>
 
-                <Button variant="contained" startIcon={<AddIcon/>} onClick={() => handleAddRoom("top")}>
-                    Add Room to Top
-                </Button>
+                {selectedRoom && (
+                    <>
+                        <Tooltip title="Toggle Room Visibility">
+                            <IconButton
+                                onClick={() => toggleRoomVisibility(selectedRoom)}
+                                size="small"
+                            >
+                                {roomVisibility[selectedRoom] === false ? (
+                                    <VisibilityOff fontSize="small"/>
+                                ) : (
+                                    <Visibility fontSize="small"/>
+                                )}
+                            </IconButton>
+                        </Tooltip>
 
-                <Button variant="contained" startIcon={<AddIcon/>} onClick={() => handleAddRoom("bottom")}>
-                    Add Room to Bottom
-                </Button>
-                <Divider sx={{my: 1}}/>
-
-                <Button
-                    variant="outlined"
-                    startIcon={<MergeIcon/>}
-                    onClick={handleMerge}
-                    disabled={!selectedRoom}
-                >
-                    Merge Rooms
-                </Button>
+                    </>
+                )}
             </Paper>
 
-            {/* Menu kontekstowe */}
+            {rooms.length < 1 &&
+                (<Button
+                    sx={{
+                        position: "absolute",
+                        top: 16,
+                        left: 16,
+                        p: 1,
+                        zIndex: 10,
+
+                    }}
+                    variant="contained"
+                    startIcon={<AddIcon/>}
+                    onClick={() => handleAddRoom("right")}
+                    disabled={selectedRoom && hasAdjacentRoom(rooms, rooms.find(r => r.id === selectedRoom), 'right')}
+                >
+                    Nowy pokój
+                </Button>)}
+
+            {rooms.length >= 1 && selectedRoom && (
+                <Paper
+                    sx={{
+                        position: "absolute",
+                        top: 16,
+                        left: 16,
+                        p: 2,
+                        zIndex: 10,
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 2,
+                        minWidth: 200
+                    }}
+                >
+                    <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                        <Typography variant="subtitle1">Edycja pokoju</Typography>
+                    </Box>
+
+                    <Divider/>
+
+                    <Typography variant="body2">Szerokość:</Typography>
+                    <Slider
+                        value={blockSize.width}
+                        onChange={(e, value) => {
+                            setBlockSize(prev => ({...prev, width: value}));
+                            handleResize(selectedRoom, 'width', value - rooms.find(r => r.id === selectedRoom).width);
+                        }}
+                        min={80}
+                        max={300}
+                        step={10}
+                        valueLabelDisplay="auto"
+                    />
+
+
+                    <Typography variant="body2">Wysokość:</Typography>
+                    <Slider
+                        value={blockSize.height}
+                        onChange={(e, value) => {
+                            setBlockSize(prev => ({...prev, height: value}));
+                            handleResize(selectedRoom, 'height', value - rooms.find(r => r.id === selectedRoom).height);
+                        }}
+                        min={80}
+                        max={300}
+                        step={10}
+                        valueLabelDisplay="auto"
+                    />
+
+                    <Button
+                        variant="contained"
+                        color="error"
+                        startIcon={<DeleteIcon/>}
+                        onClick={() => deleteRoom(selectedRoom)}
+                        size="small"
+                    >
+                        Usuń
+                    </Button>
+                </Paper>
+            )}
+
+            {/* Context menu */}
             <Menu
                 open={contextMenu !== null}
                 onClose={() => setContextMenu(null)}
@@ -568,35 +740,41 @@ const RoomEditor = () => {
                 }}>
                     Edytuj
                 </MenuItem>
-                <MenuItem onClick={() => {
-                    if (contextMenu?.roomId) {
-                        deleteRoom(contextMenu.roomId);
-                    }
-                    setContextMenu(null);
-                }}>
-                    Delete
+                <MenuItem
+                    onClick={() => {
+                        if (contextMenu?.roomId) {
+                            deleteRoom(contextMenu.roomId);
+                        }
+                        setContextMenu(null);
+                    }}
+                    disabled={contextMenu?.roomId && !canDeleteRoom(rooms, contextMenu.roomId)}
+                >
+                    Usuń
                 </MenuItem>
             </Menu>
 
             {/* Help Dialog */}
             <Dialog open={showHelp} onClose={() => setShowHelp(false)} maxWidth="sm">
-                <DialogTitle>Building Layout Editor Guide</DialogTitle>
+                <DialogTitle>Instrukcja edytora układu pomieszczeń</DialogTitle>
                 <DialogContent>
                     <Typography variant="body1" gutterBottom>
-                        <strong>How to use the editor:</strong>
+                        <strong>Jak korzystać z edytora:</strong>
                     </Typography>
                     <ul>
-                        <li><Typography>Click and drag to pan the canvas</Typography></li>
-                        <li><Typography>Use mouse wheel to zoom in/out</Typography></li>
-                        <li><Typography>Click on a room to select it</Typography></li>
-                        <li><Typography>Drag the corners to resize rooms</Typography></li>
-                        <li><Typography>Right-click for context menu</Typography></li>
-                        <li><Typography>Use the controls panel to add new rooms</Typography></li>
-                        <li><Typography>Select multiple rooms and click "Merge" to combine them</Typography></li>
+                        <li><Typography>Kliknij i przeciągnij, aby przesunąć widok</Typography></li>
+                        <li><Typography>Użyj kółka myszy, aby przybliżyć/oddalić</Typography></li>
+                        <li><Typography>Kliknij na pokój, aby go wybrać</Typography></li>
+                        <li><Typography>Użyj przycisków w rogach, aby zmienić rozmiar</Typography></li>
+                        <li><Typography>Kliknij prawym przyciskiem myszy, aby otworzyć menu kontekstowe</Typography>
+                        </li>
+                        <li><Typography>Użyj przycisków "+" na ścianach, aby dodać sąsiedni pokój</Typography></li>
+                        <li><Typography>Przyciski "+" są wyłączone, gdy ściana jest już zajęta</Typography></li>
+                        <li><Typography>Nie można usunąć pokoju, jeśli spowodowałoby to izolację sąsiednich
+                            pomieszczeń</Typography></li>
                     </ul>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setShowHelp(false)}>Close</Button>
+                    <Button onClick={() => setShowHelp(false)}>Zamknij</Button>
                 </DialogActions>
             </Dialog>
         </Box>

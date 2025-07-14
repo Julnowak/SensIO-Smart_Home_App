@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import client from "../../../client";
 import { API_BASE_URL } from "../../../config";
-import { useParams } from "react-router-dom";
+import {useNavigate, useParams} from "react-router-dom";
 import LayoutViewer from "../../layoutViewer/layoutViewer";
 import {
   Edit,
@@ -131,6 +131,7 @@ const BuildingPage = () => {
   const [selectedFloor, setSelectedFloor] = useState(null);
   const [mapDialogOpen, setMapDialogOpen] = useState(false);
   const theme = useTheme();
+  const navigate = useNavigate()
 
   const token = localStorage.getItem("access");
   const params = useParams();
@@ -139,15 +140,17 @@ const BuildingPage = () => {
     const fetchData = async () => {
       try {
         const response = await client.get(API_BASE_URL + "home/" + params.id, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${token}` }
         });
+
         const homeData = response.data.homeData;
         setLocation(homeData);
         setFormData(homeData);
         setLayout(response.data.roomsData);
-        setSelectedFloor(homeData?.floor_id);
+        setSelectedFloor(homeData.floors[0].floor_id);
 
-        console.log(homeData)
+
+        console.log(response.data.roomsData)
       } catch (error) {
         console.error("Error fetching location:", error);
       }
@@ -184,6 +187,16 @@ const BuildingPage = () => {
     // Add API call to save changes here
   };
 
+  const handleChangeFloor = async (e) => {
+    setSelectedFloor(e.target.value)
+    const response = await client.get(API_BASE_URL + "home/" + params.id, {
+      headers: {Authorization: `Bearer ${token}`},
+      params: {floorId: e.target.value},
+    });
+    setLayout(response.data.roomsData);
+    console.log(response.data.roomsData)
+  };
+
   const handleLocationChange = (newLocation) => {
     setFormData(prev => ({
       ...prev,
@@ -199,6 +212,7 @@ const BuildingPage = () => {
       </Box>
     );
   }
+
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -390,13 +404,13 @@ const BuildingPage = () => {
                   <Box sx={{ mb: 2, mt: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
                     <Layers color="action" />
                     <Typography variant="body1">
-                      <strong>Powierzchnia budynku:</strong> {location.building_area}
+                      <strong>Powierzchnia budynku:</strong> {location.building_area} m<sup>2</sup>
                     </Typography>
                   </Box>
                   <Box sx={{ mb: 2, mt: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
                     <Layers color="action" />
                     <Typography variant="body1">
-                      <strong>Typ budynku:</strong> {location.building_type}
+                      <strong>Typ budynku:</strong> {location.building_type? location.building_type:"Nieznany"}
                     </Typography>
                   </Box>
               </Grid>
@@ -484,7 +498,7 @@ const BuildingPage = () => {
               </Typography>
               <Select
                 value={selectedFloor}
-                onChange={(e) => setSelectedFloor(e.target.value)}
+                onChange={(e) => handleChangeFloor(e)}
                 size="small"
                 sx={{
                   minWidth: 120,
@@ -500,16 +514,24 @@ const BuildingPage = () => {
               </Select>
             </Box>
 
-            <Button
+            {layout.length > 0 && (<Button
               variant="outlined"
               startIcon={<Schema />}
               sx={{
                 px: 3,
                 py: 1
               }}
+              onClick={() => {
+                navigate("/editor", {
+                state: {
+                  floorId: selectedFloor,
+                  layout: layout,
+                }
+              });
+              }}
             >
               Tryb edycji
-            </Button>
+            </Button>)}
           </Box>
 
           <Paper
