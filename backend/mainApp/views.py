@@ -137,7 +137,7 @@ class UserHomesData(APIView):
         photo = None
         lat = None
         lng = None
-        if "yearBuilt" in request.POST:
+        if "yearBuilt" in request.POST and request.POST.get("yearBuilt") != "":
             yearbuilt = request.POST.get("yearBuilt")
         if "buildingType" in request.POST:
             buildingType = request.POST.get("buildingType")
@@ -153,7 +153,7 @@ class UserHomesData(APIView):
         if "photo" in request.FILES:
             photo = request.FILES.get("photo")
 
-        if "location" in request.POST:
+        if "location" in request.POST and request.POST.get("location") != '':
             location = request.POST.get("location")
             lat = float(location.split(",")[0])
             lng = float(location.split(",")[1])
@@ -198,7 +198,16 @@ class HomeData(APIView):
 
     def delete(self, request, home_id):
         home = Home.objects.get(home_id=home_id)
-        home.delete()
+
+        if home.current == True:
+            home.delete()
+            homes = Home.objects.filter(owner_id=request.user.id).values_list("home_id", flat=True)
+            h = Home.objects.get(home_id=homes[0])
+            h.current = True
+            h.save()
+        else:
+            home.delete()
+
         return Response(status=status.HTTP_200_OK)
 
 
@@ -206,14 +215,22 @@ class DevicesData(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request):
-        devices = Device.objects.filter(room__home__owner=request.user)
+        devices = Device.objects.filter(location__owner=request.user)
+        rooms = Room.objects.filter(home__owner=request.user)
+        floors = Floor.objects.filter(home__owner=request.user)
+        locations = Home.objects.filter(owner=request.user)
+
+        roomsSerializer = RoomSerializer(rooms, many=True)
+        floorSerializer = FloorSerializer(floors, many=True)
+        locationSerializer = HomeSerializer(locations, many=True)
         serializer = DeviceSerializer(devices, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response({"roomsData": roomsSerializer.data, "floorsData": floorSerializer.data,
+                         "locationsData": locationSerializer.data, "devicesData": serializer.data}, status=status.HTTP_200_OK)
 
     def post(self, request):
         device = Device.objects.create(name=request.data["name"], serial_number=request.data["serial_number"],
                                        topic=request.data["topic"], info=request.data["info"], brand=request.data["brand"],
-                                       room_id=request.data["room"])
+                                       room_id=request.data["room"], color=request.data["color"], floor_id=request.data["floor"], location_id=request.data["building"])
 
         serializer = DeviceSerializer(device)
         return Response(status=status.HTTP_200_OK)
@@ -224,8 +241,13 @@ class RoomsData(APIView):
 
     def get(self, request):
         rooms = Room.objects.filter(home__owner=request.user)
+        floors = Floor.objects.filter(home__owner=request.user)
+        locations = Home.objects.filter(owner=request.user)
         serializer = RoomSerializer(rooms, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        floorSerializer = FloorSerializer(floors, many=True)
+        locationSerializer = HomeSerializer(locations, many=True)
+        return Response({"roomsData": serializer.data, "floorsData": floorSerializer.data,
+                         "locationsData": locationSerializer.data}, status=status.HTTP_200_OK)
 
 
 class RoomData(APIView):
@@ -257,6 +279,7 @@ class DeviceData(APIView):
         device.save()
 
         return Response(status=status.HTTP_200_OK)
+
 
 class RoomsNewDeviceApi(APIView):
     permission_classes = (permissions.IsAuthenticated,)

@@ -1,10 +1,12 @@
+import asyncio
 import json
 
 from asgiref.sync import sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 
 from mainApp.connection import client
-from mainApp.models import Room
+from mainApp.models import Room, Sensor, Measurement
+from mainApp.serializers import SensorSerializer, MeasurementSerializer
 
 
 class RoomConsumer(AsyncWebsocketConsumer):
@@ -67,3 +69,54 @@ class RoomConsumer(AsyncWebsocketConsumer):
     @staticmethod
     async def save_room(room):
         await sync_to_async(room.save)()  # Save the room in the DB
+
+
+class HomeFloorConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        print("🔌 Próba połączenia WebSocket...")
+
+        self.home_id = self.scope["url_route"]["kwargs"]["home_id"]
+        self.floor_id = self.scope["url_route"]["kwargs"]["floor_id"]
+        self.room_group_name = f"chart_updates_{self.home_id}_{self.floor_id}"
+
+        await self.channel_layer.group_add(self.room_group_name, self.channel_name)
+        await self.accept()
+
+        print("✅ WebSocket połączony!")
+
+        self.running = True
+        asyncio.create_task(self.send_sensor_data_loop())
+
+
+    async def disconnect(self, close_code):
+        await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
+
+    async def receive(self, text_data):
+
+        print(text_data)
+        print("fffffffffffffff")
+        # Można zaimplementować filtrowanie po stronie klienta, ale niekonieczne
+        pass
+
+    async def send_sensor_data_loop(self):
+        while self.running:
+            data = await self.get_serialized_sensor_data()
+            if data:
+                await self.send(text_data=json.dumps(data))
+            await asyncio.sleep(5)  # np. co 3 sekundy
+
+    @sync_to_async
+    def get_serialized_sensor_data(self):
+
+        print(self.floor_id)
+        print(self.home_id)
+
+        sensors = Sensor.objects.filter(device__room__floor_id=int(self.floor_id))
+        measurements = Measurement.objects.filter(sensor__in=sensors)
+        serialized = MeasurementSerializer(measurements, many=True).data
+
+        # Tylko jeśli są nowe dane
+        return {
+            "type": "sensor_update",
+            "data": serialized,
+        }

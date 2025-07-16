@@ -32,7 +32,7 @@ import {
     Home,
     ExpandMore,
     CloseRounded,
-    ExpandLess, Settings,
+    ExpandLess, Settings, HomeWork,
 } from '@mui/icons-material';
 import {ThemeContext} from "../../Theme";
 import {AuthContext} from "../../AuthContext";
@@ -205,26 +205,6 @@ const CustomNavbar = () => {
                         </MenuItem>
 
                         <MenuItem
-                            href="/myDevices"
-                            component="a"
-                            sx={{
-                                py: 1.2,
-                                px: 2,
-                                borderRadius: 1,
-                                '&:hover': {
-                                    backgroundColor:
-                                        theme.palette.mode === 'dark'
-                                            ? 'rgba(255, 255, 255, 0.08)'
-                                            : 'rgba(0, 123, 255, 0.1)',
-                                    color: theme.palette.primary.main,
-                                },
-                            }}
-                        >
-                            <Devices sx={{fontSize: 20, mr: 1.5}}/>
-                            Moje urządzenia
-                        </MenuItem>
-
-                        <MenuItem
                             href="/myRooms"
                             component="a"
                             sx={{
@@ -242,6 +222,26 @@ const CustomNavbar = () => {
                         >
                             <DoorBack sx={{fontSize: 20, mr: 1.5}}/>
                             Moje pomieszczenia
+                        </MenuItem>
+
+                        <MenuItem
+                            href="/myDevices"
+                            component="a"
+                            sx={{
+                                py: 1.2,
+                                px: 2,
+                                borderRadius: 1,
+                                '&:hover': {
+                                    backgroundColor:
+                                        theme.palette.mode === 'dark'
+                                            ? 'rgba(255, 255, 255, 0.08)'
+                                            : 'rgba(0, 123, 255, 0.1)',
+                                    color: theme.palette.primary.main,
+                                },
+                            }}
+                        >
+                            <Devices sx={{fontSize: 20, mr: 1.5}}/>
+                            Moje urządzenia
                         </MenuItem>
 
                         <Divider sx={{my: 0.5}}/>
@@ -286,17 +286,17 @@ const CustomNavbar = () => {
                     <IconButton
                         href="/history"
                         sx={{
-                        color: 'text.primary',
-                        borderRadius: 1,
-                        transition: 'all 0.2s ease',
-                        '&:hover': {
-                            bgcolor: 'action.hover',
-                            transform: 'translateY(-2px)',
-                        },
-                        '&.Mui-focusVisible': {
-                            bgcolor: 'action.selected',
-                        }
-                    }}
+                            color: 'text.primary',
+                            borderRadius: 1,
+                            transition: 'all 0.2s ease',
+                            '&:hover': {
+                                bgcolor: 'action.hover',
+                                transform: 'translateY(-2px)',
+                            },
+                            '&.Mui-focusVisible': {
+                                bgcolor: 'action.selected',
+                            }
+                        }}
                     >
                         <Typography variant="body1">Historia</Typography>
                     </IconButton>
@@ -326,7 +326,8 @@ const CustomNavbar = () => {
                         },
                         '&.Mui-focusVisible': {
                             bgcolor: 'action.selected',
-                        }, ml: 0.5}}>
+                        }, ml: 0.5
+                    }}>
                         <Settings/>
                     </IconButton>
                 </Box>
@@ -375,7 +376,18 @@ const CustomNavbar = () => {
             <List component="nav" sx={{flexGrow: 1}}>
                 {isAuthenticated && (
                     <>
-                        <ListItem href="/main" component="a">
+                        <ListItem href="/main" component="a" sx={{
+                            color: 'text.primary',
+                            borderRadius: 1,
+                            transition: 'all 0.2s ease',
+                            '&:hover': {
+                                bgcolor: 'action.hover',
+                                transform: 'translateY(-1px)',
+                            },
+                            '&.Mui-focusVisible': {
+                                bgcolor: 'action.selected',
+                            },
+                        }}>
                             <ListItemIcon>
                                 <HomeRounded/>
                             </ListItemIcon>
@@ -383,7 +395,18 @@ const CustomNavbar = () => {
                                           primary="Strona główna"/>
                         </ListItem>
 
-                        <ListItem onClick={() => toggleSection('manage')}>
+                        <ListItem sx={{
+                            color: 'text.primary',
+                            borderRadius: 1,
+                            transition: 'all 0.2s ease',
+                            '&:hover': {
+                                bgcolor: 'action.hover',
+                                transform: 'translateY(-1px)',
+                            },
+                            '&.Mui-focusVisible': {
+                                bgcolor: 'action.selected',
+                            },
+                        }} onClick={() => toggleSection('manage')}>
                             <ListItemIcon>
                                 <CameraIndoor/>
                             </ListItemIcon>
@@ -393,15 +416,39 @@ const CustomNavbar = () => {
 
                         <Collapse in={expandedSection === 'manage'} timeout="auto" unmountOnExit>
                             <List component="div" disablePadding>
-                                <ListItem href="/myHomes" component="a" sx={{pl: 4}}>
+                                <ListItem href="/myHomes" component="a" sx={{
+                                    pl: 4,
+                                    color: 'text.primary',
+                                    borderRadius: 1,
+                                    transition: 'all 0.2s ease',
+                                    '&:hover': {
+                                        bgcolor: 'action.hover',
+                                        transform: 'translateY(-1px)',
+                                    },
+                                    '&.Mui-focusVisible': {
+                                        bgcolor: 'action.selected',
+                                    },
+                                }}>
                                     <ListItemIcon>
-                                        <Home/>
+                                        <HomeWork/>
                                     </ListItemIcon>
                                     <ListItemText sx={{color: theme.palette.mode === 'dark' ? 'white' : 'black'}}
                                                   primary="Moje lokacje"/>
                                 </ListItem>
 
-                                <ListItem href="/myDevices" component="a" sx={{pl: 4}}>
+                                <ListItem href="/myDevices" component="a" sx={{
+                                    pl: 4,
+                                    color: 'text.primary',
+                                    borderRadius: 1,
+                                    transition: 'all 0.2s ease',
+                                    '&:hover': {
+                                        bgcolor: 'action.hover',
+                                        transform: 'translateY(-1px)',
+                                    },
+                                    '&.Mui-focusVisible': {
+                                        bgcolor: 'action.selected',
+                                    },
+                                }}>
                                     <ListItemIcon>
                                         <Devices/>
                                     </ListItemIcon>
@@ -409,7 +456,19 @@ const CustomNavbar = () => {
                                                   primary="Moje urządzenia"/>
                                 </ListItem>
 
-                                <ListItem href="/myRooms" component="a" sx={{pl: 4}}>
+                                <ListItem href="/myRooms" component="a" sx={{
+                                    pl: 4,
+                                    color: 'text.primary',
+                                    borderRadius: 1,
+                                    transition: 'all 0.2s ease',
+                                    '&:hover': {
+                                        bgcolor: 'action.hover',
+                                        transform: 'translateY(-1px)',
+                                    },
+                                    '&.Mui-focusVisible': {
+                                        bgcolor: 'action.selected',
+                                    },
+                                }}>
                                     <ListItemIcon>
                                         <DoorBack/>
                                     </ListItemIcon>
@@ -417,7 +476,19 @@ const CustomNavbar = () => {
                                                   primary="Moje pomieszczenia"/>
                                 </ListItem>
 
-                                <ListItem href="/rules" component="a" sx={{pl: 4}}>
+                                <ListItem href="/rules" component="a" sx={{
+                                    pl: 4,
+                                    color: 'text.primary',
+                                    borderRadius: 1,
+                                    transition: 'all 0.2s ease',
+                                    '&:hover': {
+                                        bgcolor: 'action.hover',
+                                        transform: 'translateY(-1px)',
+                                    },
+                                    '&.Mui-focusVisible': {
+                                        bgcolor: 'action.selected',
+                                    },
+                                }}>
                                     <ListItemIcon>
                                         <Rule/>
                                     </ListItemIcon>
@@ -427,7 +498,18 @@ const CustomNavbar = () => {
                             </List>
                         </Collapse>
 
-                        <ListItem href="/dashboard" component="a">
+                        <ListItem sx={{
+                            color: 'text.primary',
+                            borderRadius: 1,
+                            transition: 'all 0.2s ease',
+                            '&:hover': {
+                                bgcolor: 'action.hover',
+                                transform: 'translateY(-1px)',
+                            },
+                            '&.Mui-focusVisible': {
+                                bgcolor: 'action.selected',
+                            },
+                        }} href="/dashboard" component="a">
                             <ListItemIcon>
                                 <DonutSmall/>
                             </ListItemIcon>
@@ -435,7 +517,18 @@ const CustomNavbar = () => {
                                           primary="Wykresy"/>
                         </ListItem>
 
-                        <ListItem href="/history" component="a">
+                        <ListItem sx={{
+                            color: 'text.primary',
+                            borderRadius: 1,
+                            transition: 'all 0.2s ease',
+                            '&:hover': {
+                                bgcolor: 'action.hover',
+                                transform: 'translateY(-1px)',
+                            },
+                            '&.Mui-focusVisible': {
+                                bgcolor: 'action.selected',
+                            },
+                        }} href="/history" component="a">
                             <ListItemIcon>
                                 <History/>
                             </ListItemIcon>
@@ -443,7 +536,18 @@ const CustomNavbar = () => {
                                           primary="Historia"/>
                         </ListItem>
 
-                        <ListItem href="/notifications" component="a">
+                        <ListItem sx={{
+                            color: 'text.primary',
+                            borderRadius: 1,
+                            transition: 'all 0.2s ease',
+                            '&:hover': {
+                                bgcolor: 'action.hover',
+                                transform: 'translateY(-1px)',
+                            },
+                            '&.Mui-focusVisible': {
+                                bgcolor: 'action.selected',
+                            },
+                        }} href="/notifications" component="a">
                             <ListItemIcon>
                                 <Badge badgeContent={num} color="error">
                                     <NotificationsRounded/>
@@ -453,7 +557,18 @@ const CustomNavbar = () => {
                                           primary="Powiadomienia"/>
                         </ListItem>
 
-                        <ListItem href="/settings" component="a">
+                        <ListItem sx={{
+                            color: 'text.primary',
+                            borderRadius: 1,
+                            transition: 'all 0.2s ease',
+                            '&:hover': {
+                                bgcolor: 'action.hover',
+                                transform: 'translateY(-1px)',
+                            },
+                            '&.Mui-focusVisible': {
+                                bgcolor: 'action.selected',
+                            },
+                        }} href="/settings" component="a">
                             <ListItemIcon>
                                 <Settings/>
                             </ListItemIcon>
@@ -524,31 +639,31 @@ const CustomNavbar = () => {
 
                     <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
                         <IconButton onClick={toggleTheme} sx={{
-                        color: 'text.primary',
-                        transition: 'all 0.2s ease',
-                        '&:hover': {
-                            bgcolor: 'action.hover',
-                            transform: 'translateY(-2px)',
-                        },
-                        '&.Mui-focusVisible': {
-                            bgcolor: 'action.selected',
-                        }
-                    }}>
+                            color: 'text.primary',
+                            transition: 'all 0.2s ease',
+                            '&:hover': {
+                                bgcolor: 'action.hover',
+                                transform: 'translateY(-2px)',
+                            },
+                            '&.Mui-focusVisible': {
+                                bgcolor: 'action.selected',
+                            }
+                        }}>
                             {theme.palette.mode === 'dark' ? <LightModeRounded/> : <DarkModeRounded/>}
                         </IconButton>
 
                         {isAuthenticated && (
                             <IconButton href="/userProfile" sx={{
-                        color: 'text.primary',
-                        transition: 'all 0.2s ease',
-                        '&:hover': {
-                            bgcolor: 'action.hover',
-                            transform: 'translateY(-2px)',
-                        },
-                        '&.Mui-focusVisible': {
-                            bgcolor: 'action.selected',
-                        }
-                    }}>
+                                color: 'text.primary',
+                                transition: 'all 0.2s ease',
+                                '&:hover': {
+                                    bgcolor: 'action.hover',
+                                    transform: 'translateY(-2px)',
+                                },
+                                '&.Mui-focusVisible': {
+                                    bgcolor: 'action.selected',
+                                }
+                            }}>
                                 <Avatar
                                     src={image}
                                     sx={{width: 36, height: 36}}
@@ -591,17 +706,17 @@ const CustomNavbar = () => {
                             <IconButton
                                 href={isAuthenticated ? '/logout' : '/login'}
                                 sx={{
-                        color: 'text.primary',
-                        borderRadius: 2,
-                        transition: 'all 0.2s ease',
-                        '&:hover': {
-                            bgcolor: 'action.hover',
-                            transform: 'translateY(-2px)',
-                        },
-                        '&.Mui-focusVisible': {
-                            bgcolor: 'action.selected',
-                        }
-                    }}
+                                    color: 'text.primary',
+                                    borderRadius: 2,
+                                    transition: 'all 0.2s ease',
+                                    '&:hover': {
+                                        bgcolor: 'action.hover',
+                                        transform: 'translateY(-2px)',
+                                    },
+                                    '&.Mui-focusVisible': {
+                                        bgcolor: 'action.selected',
+                                    }
+                                }}
                             >
                                 {isAuthenticated ? <LogoutRounded/> : <LoginRounded/>}
                                 <Typography sx={{ml: 1}}>

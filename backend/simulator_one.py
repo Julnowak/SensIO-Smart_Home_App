@@ -2,7 +2,7 @@ import paho.mqtt.client as mqtt
 import json
 import random
 import time
-from datetime import datetime
+from datetime import datetime, UTC
 
 # HiveMQ broker config (Cloud)
 MQTT_CLIENT_ID = "SIMULATOR_ONE"
@@ -46,7 +46,7 @@ def generate_data():
     temperature = round(random.uniform(18.0, 30.0), 1)
     humidity = round(random.uniform(30.0, 70.0), 1)
     light = random.choice([True, False])  # Simulate on/off
-    now = datetime.utcnow().isoformat()
+    now = datetime.now(UTC)
 
     data = {
         "temp": {"value": temperature, "type": "continuous", "SN": TEMP_SN},

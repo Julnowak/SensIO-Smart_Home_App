@@ -108,9 +108,9 @@ const AddHome = () => {
         hasElevator: false,
         hasParking: false,
         hasConferenceRoom: false,
-        photo: null,
+        photo: "",
         photoPreview: "",
-        location: null,
+        location: "",
     });
 
     const [error, setError] = useState("");
@@ -181,17 +181,17 @@ const AddHome = () => {
 
     const handleImageUpload = (e) => {
         const file = e.target.files[0];
-        if (!file) return;
-
-        if (!file.type.startsWith("image/")) {
-            setError("Please select an image file");
-            return;
-        }
-
-        if (file.size > 5 * 1024 * 1024) {
-            setError("File is too large (max 5MB)");
-            return;
-        }
+        // if (!file) return;
+        //
+        // if (!file.type.startsWith("image/")) {
+        //     setError("Please select an image file");
+        //     return;
+        // }
+        //
+        // if (file.size > 5 * 1024 * 1024) {
+        //     setError("File is too large (max 5MB)");
+        //     return;
+        // }
 
         const reader = new FileReader();
         reader.onloadend = () => {

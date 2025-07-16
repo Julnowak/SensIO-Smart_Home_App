@@ -28,6 +28,8 @@ import {
   Settings as SettingsIcon, RestartAlt
 } from "@mui/icons-material";
 import { styled } from "@mui/material/styles";
+import {formatDistance} from "date-fns";
+import {pl} from "date-fns/locale";
 
 const DeviceCard = styled(Card)(({ theme }) => ({
   maxWidth: 800,
@@ -120,7 +122,7 @@ const DevicePage = () => {
           Powrót
         </Button>
         <Box sx={{ display: 'flex', textAlign: 'right', gap: 2,}}>
-          <FormControlLabel control={<Switch value={device.isActive} onChange={handleActiveChange} color="success"/>} label="Aktywne" />
+          <FormControlLabel control={<Switch checked={device.isActive} onChange={handleActiveChange} color="success"/>} label="Aktywne" />
         </Box>
       </Box>
 
@@ -128,13 +130,18 @@ const DevicePage = () => {
         <CardContent sx={{ p: 4 }}>
           <Box sx={{ textAlign: 'center', mb: 4 }}>
             <Box sx={{ display: 'flex', justifyContent: "right", textAlign: 'right', gap: 2,}}>
-              <Typography><b>Ostatnio aktywny:</b><br/> 5 minut temu</Typography>
+              <Typography>
+                <b>Ostatnio aktywny:</b>
+                <em>
+                <br/> {device.lastUpdated? formatDistance(new Date(device.lastUpdated) , new Date(), { addSuffix: true, locale: pl }):'Brak aktywności'}
+                </em>
+            </Typography>
             </Box>
             <Avatar
               sx={{
                 width: 80,
                 height: 80,
-                bgcolor: getRoomColor(device.room),
+                bgcolor: device.color,
                 mb: 2,
                 mx: 'auto'
               }}
@@ -145,72 +152,44 @@ const DevicePage = () => {
               {device.name}
             </Typography>
             <Box>
+              {device.room?.name && (
               <Chip
-                label={device.room || "Not assigned"}
+                label={device.room.name || "Not assigned"}
                 color="primary"
                 sx={{
-                  backgroundColor: getRoomColor(device.room),
-                  color: theme.palette.getContrastText(getRoomColor(device.room)),
                   fontWeight: 'bold',
                   mr: 0.5
                 }}
               />
-              <Chip label="Online"
-                    sx={{
-                      color: theme.palette.getContrastText(getRoomColor(device.room)),
-                      fontWeight: 'bold',
-                      ml: 0.5
-                    }}
-                    color="success" />
-            </Box>
+              )}
+
+              {device.floor?.floor_number && (
+              <Chip
+                label={`Piętro ${device.floor?.floor_number}` || "Not assigned"}
+                color="secondary"
+                sx={{
+                  fontWeight: 'bold',
+                  mr: 0.5
+                }}
+              />
+              )}
+
+              {device.location?.name && (
+              <Chip
+                label={device.location.name || "Not assigned"}
+                sx={{
+                  fontWeight: 'bold',
+                  mr: 0.5
+                }}
+              />
+              )}
+
+          </Box>
           </Box>
 
           <Divider sx={{ my: 3 }} />
 
           <List>
-            <InfoListItem>
-              <ListItemAvatar>
-                <Avatar sx={{ bgcolor: theme.palette.primary.light, mr: 2 }}>
-                  <MemoryIcon sx={{ color: theme.palette.primary.contrastText }} />
-                </Avatar>
-              </ListItemAvatar>
-              <ListItemText
-                primary="Temat"
-                secondary={device.topic || "N/A"}
-                secondaryTypographyProps={{ variant: "body1" }}
-              />
-            </InfoListItem>
-
-            <Grid container spacing={3}>
-              <Grid item xs={12} sm={6}>
-                <InfoListItem>
-                  <ListItemAvatar>
-                    <Avatar sx={{ bgcolor: theme.palette.warning.light, mr: 2 }}>
-                      <FactoryIcon sx={{ color: theme.palette.warning.contrastText }} />
-                    </Avatar>
-                  </ListItemAvatar>
-                  <ListItemText
-                    primary="Marka"
-                    secondary={device.brand || "Nieznana"}
-                    secondaryTypographyProps={{ variant: "body1" }}
-                  />
-                </InfoListItem>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <InfoListItem>
-                  <ListItemAvatar>
-                    <Avatar sx={{ bgcolor: theme.palette.secondary.light, mr: 2 }}>
-                      <QrCodeIcon sx={{ color: theme.palette.secondary.contrastText }} />
-                    </Avatar>
-                  </ListItemAvatar>
-                  <ListItemText
-                    primary="Nr. seryjny"
-                    secondary={device.serial_number || "Nieznana"}
-                    secondaryTypographyProps={{ variant: "body1" }}
-                  />
-                </InfoListItem>
-              </Grid>
-            </Grid>
 
             <Grid container spacing={3}>
               <Grid item xs={12} sm={6}>
@@ -258,11 +237,6 @@ const DevicePage = () => {
           </List>
 
           <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end' }}>
-            <Button variant="outlined" startIcon={<RestartAlt />}
-                    sx={{ borderRadius: 2, mx: 1 }}
-            >
-              Restart
-            </Button>
 
             <Button
               component={Link}

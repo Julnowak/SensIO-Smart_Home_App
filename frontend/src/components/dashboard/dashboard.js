@@ -24,6 +24,7 @@ import { Chart, registerables } from "chart.js";
 import { styled } from "@mui/material/styles";
 import client from "../../client";
 import {API_BASE_URL} from "../../config";
+import {da} from "date-fns/locale";
 
 Chart.register(...registerables);
 
@@ -106,6 +107,7 @@ const Dashboard = () => {
 
   const token = localStorage.getItem("access");
   const [num, setNum] = useState(0);
+  const [temperatureData, setTemperatureData] = useState([]);
 
   const fetchNum = async () => {
     try {
@@ -118,33 +120,79 @@ const Dashboard = () => {
     }
   };
 
-  useEffect(() => {
-    // ustaw interwał do cyklicznego pobierania
-    const intervalId = setInterval(fetchNum, 5000); // co 5 sekund
+  // useEffect(() => {
+  //   // ustaw interwał do cyklicznego pobierania
+  //   const intervalId = setInterval(fetchNum, 5000); // co 5 sekund
+  //
+  //   // opcjonalnie: pobierz od razu przy starcie
+  //   fetchNum();
+  //
+  //   // wyczyść interwał przy odmontowaniu komponentu
+  //   return () => clearInterval(intervalId);
+  // }, []);
 
-    // opcjonalnie: pobierz od razu przy starcie
-    fetchNum();
+useEffect(() => {
+  const ws = new WebSocket(`ws://127.0.0.1:8000/ws/chart_updates/12/3/`);
 
-    // wyczyść interwał przy odmontowaniu komponentu
-    return () => clearInterval(intervalId);
-  }, []);
+  ws.onopen = () => {
+    console.log("✅ WebSocket connected");
+  };
+
+  ws.onmessage = (event) => {
+    try {
+      const message = JSON.parse(event.data);
+
+      if (message.type === "sensor_update") {
+        const sensorData = message.data;
+        const tempSensor = sensorData.filter((d) => d.sensor === 6);
+        setTemperatureData({
+          labels: tempSensor.map((td) => new Date(td.created_at).toLocaleDateString()),
+          datasets: [{
+            label: 'Temperature (°C)',
+            data: tempSensor.map((td) => parseFloat(td.value)),
+            borderColor: '#FF6384',
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            tension: 0.4,
+            fill: true
+          }]
+        })
+      }
+    } catch (error) {
+      console.error("❌ Błąd przy przetwarzaniu wiadomości WebSocket:", error);
+    }
+  };
+
+  ws.onclose = () => {
+    console.log("❌ WebSocket disconnected");
+  };
+
+  ws.onerror = (error) => {
+    console.error("❌ WebSocket error:", error);
+  };
+
+  return () => {
+    ws.close();
+  };
+}, []);
+
+
 
 
   const locations = ['Living Room', 'Kitchen', 'Bedroom', 'Bathroom'];
   const timeRanges = ['12h', '24h', '7d', '30d'];
 
   // Chart data
-  const temperatureData = {
-    labels: Array.from({ length: 24 }, (_, i) => `${i}:00`),
-    datasets: [{
-      label: 'Temperature (°C)',
-      data: generateTimeData(24, 18, 28),
-      borderColor: '#FF6384',
-      backgroundColor: 'rgba(255, 99, 132, 0.2)',
-      tension: 0.4,
-      fill: true
-    }]
-  };
+  // const temperatureData = {
+  //   labels: Array.from({ length: 24 }, (_, i) => `${i}:00`),
+  //   datasets: [{
+  //     label: 'Temperature (°C)',
+  //     data: generateTimeData(24, 18, 28),
+  //     borderColor: '#FF6384',
+  //     backgroundColor: 'rgba(255, 99, 132, 0.2)',
+  //     tension: 0.4,
+  //     fill: true
+  //   }]
+  // };
 
   const humidityData = {
     labels: Array.from({ length: 24 }, (_, i) => `${i}:00`),
@@ -211,10 +259,10 @@ const Dashboard = () => {
     <Container maxWidth="xl" sx={{ py: 4 }}>
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" component="h1" sx={{ fontWeight: 700, mb: 1 }}>
-          Smart Building Analytics {num}
+          Wykresy i analityka
         </Typography>
         <Typography variant="subtitle1" color="text.secondary">
-          Real-time monitoring and predictive analysis for {selectedLocation}
+          Wszystkie istotne dane z Twoich czujników w jednym miejscu.
         </Typography>
 
         <Box sx={{ display: 'flex', gap: 2, mt: 3 }}>
@@ -260,15 +308,7 @@ const Dashboard = () => {
                   <ChartComponent
                     type="line"
                     data={temperatureData}
-                    options={{
-                      scales: {
-                        y: {
-                          beginAtZero: false,
-                          min: 15,
-                          max: 30
-                        }
-                      }
-                    }}
+
                   />
                 </ChartContainer>
               </CardContent>

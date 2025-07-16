@@ -86,6 +86,7 @@ class Home(models.Model):
     isActive = models.BooleanField(default=True)
     lng = models.CharField(max_length=100, null=True, blank=True)
     lat = models.CharField(max_length=100, null=True, blank=True)
+    isFavorite = models.BooleanField(default=False)
 
     def __str__(self):
         return "Dom " + str(self.home_id)
@@ -110,6 +111,7 @@ class Room(models.Model):
     parent = models.IntegerField(null=True, blank=True)
     position = models.JSONField()
     color = models.CharField(max_length=20, default="#42adf5")
+    isFavorite = models.BooleanField(default=False)
 
     def __str__(self):
         return "Pokój " + str(self.room_id)
@@ -127,6 +129,8 @@ class Device(models.Model):
 
     device_id = models.AutoField(primary_key=True)
     owner = models.ForeignKey(AppUser, on_delete=models.CASCADE, blank=True, null=True)
+    location = models.ForeignKey(Home, on_delete=models.CASCADE)
+    floor = models.ForeignKey(Floor, on_delete=models.CASCADE, blank=True, null=True)
     room = models.ForeignKey(Room, on_delete=models.CASCADE, blank=True, null=True)
     name = models.CharField(max_length=200)
     serial_number = models.CharField(max_length=200, blank=True, null=True)
@@ -134,7 +138,9 @@ class Device(models.Model):
     info = models.TextField(max_length=1000, blank=True, null=True)
     brand = models.CharField(max_length=200, blank=True, null=True)
     isActive = models.BooleanField(default=True)
+    color = models.CharField(max_length=20, default="#42adf5")
     data_type = models.CharField(max_length=20, choices=DATA_TYPES, default="CONTINUOUS", blank=True, null=True)
+    isFavorite = models.BooleanField(default=False)
 
     def __str__(self):
         return "Urządzenie " + str(self.device_id)
@@ -152,6 +158,7 @@ class Sensor(models.Model):
     sensor_id = models.AutoField(primary_key=True)
     room = models.ForeignKey(Room, on_delete=models.CASCADE, blank=True, null=True)
     name = models.CharField(max_length=200)
+    visibleName = models.CharField(max_length=200, default=name)
     serial_number = models.CharField(max_length=200, blank=True, null=True)
     device = models.ForeignKey(Device, on_delete=models.CASCADE)
     data_type = models.CharField(max_length=20, choices=DATA_TYPES, default="CONTINUOUS")

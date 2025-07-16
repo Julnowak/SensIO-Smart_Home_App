@@ -28,6 +28,9 @@ import {
   Room as RoomIcon,
   BrandingWatermark as BrandIcon, CheckCircle
 } from "@mui/icons-material";
+import {CgColorPicker} from "react-icons/cg";
+import ColorPickerInput from "./colorPicker";
+import {de} from "date-fns/locale";
 
 const NewDevice = () => {
   const navigate = useNavigate();
@@ -41,6 +44,7 @@ const NewDevice = () => {
     building: "",
     room: "",
     floor: "",
+    color: ""
   });
 
   const [loading, setLoading] = useState(false);
@@ -49,7 +53,7 @@ const NewDevice = () => {
   const [buildings, setBuildings] = useState([]);
   const [rooms, setRooms] = useState([]);
   const [floors, setFloors] = useState([]);
-
+  const [selectedColor, setSelectedColor] = useState("#ff0000");
   const handleChange = async (e) => {
   const { name, value } = e.target;
 
@@ -110,6 +114,7 @@ const NewDevice = () => {
     setLoading(true);
     setError(null);
 
+    deviceData.color = selectedColor
     try {
       const response = await client.post(
         API_BASE_URL + "myDevices/",
@@ -184,44 +189,7 @@ const NewDevice = () => {
                 />
               </Grid>
 
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label="Numer seryjny"
-                  name="serial_number"
-                  value={deviceData.serial_number}
-                  onChange={handleChange}
-                  required
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <QrCodeIcon color="action" />
-                      </InputAdornment>
-                    ),
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton size="small">
-                          <InfoIcon fontSize="small" />
-                        </IconButton>
-                      </InputAdornment>
-                    )
-                  }}
-                />
-              </Grid>
-
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Temat"
-                  name="topic"
-                  value={deviceData.topic}
-                  onChange={handleChange}
-                  helperText="Nazwa tematu MQTT do przesyłania danych"
-                  required
-                />
-              </Grid>
-
-              <Grid item xs={12} md={12}>
+              <Grid item xs={6} md={6}>
                 <TextField
                   fullWidth
                   label="Marka"
@@ -236,6 +204,38 @@ const NewDevice = () => {
                       </InputAdornment>
                     ),
                   }}
+                />
+              </Grid>
+
+              <Grid item xs={6} md={6}>
+                <TextField
+                  fullWidth
+                  label="Numer seryjny"
+                  name="serial_number"
+                  value={deviceData.serial_number}
+                  onChange={handleChange}
+                  required
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <QrCodeIcon color="action" />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Grid>
+
+
+
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Temat"
+                  name="topic"
+                  value={deviceData.topic}
+                  onChange={handleChange}
+                  helperText="Nazwa tematu MQTT do przesyłania danych"
+                  required
                 />
               </Grid>
 
@@ -261,7 +261,7 @@ const NewDevice = () => {
 
               <Grid item xs={4} md={4}>
                 <FormControl fullWidth>
-                  <InputLabel id="floorLabel">Piętro*</InputLabel>
+                  <InputLabel id="floorLabel">Piętro</InputLabel>
                   <Select
                     labelId="floorLabel"
                     id="floor"
@@ -270,7 +270,6 @@ const NewDevice = () => {
                     label="Lokacja"
                     disabled={!deviceData.building}
                     onChange={handleChange}
-                    required
                   >
                     {floors?.map((b) =>
                         <MenuItem value={b.floor_id}>
@@ -282,7 +281,7 @@ const NewDevice = () => {
 
               <Grid item xs={4} md={4}>
                 <FormControl fullWidth>
-                  <InputLabel id="roomLabel">Pomieszczenie*</InputLabel>
+                  <InputLabel id="roomLabel">Pomieszczenie</InputLabel>
                   <Select
                     labelId="roomLabel"
                     id="room"
@@ -291,7 +290,6 @@ const NewDevice = () => {
                     value={deviceData.room}
                     label="Pokój"
                     onChange={handleChange}
-                    required
                   >
                     {rooms?.map((b) =>
                         <MenuItem value={b.room_id}>
@@ -299,6 +297,14 @@ const NewDevice = () => {
                         </MenuItem>)}
                   </Select>
                 </FormControl>
+              </Grid>
+
+              <Grid item xs={12}>
+              <ColorPickerInput
+                      label="Background Color"
+                      value={selectedColor}
+                      onChange={(color) => setSelectedColor(color)}
+                    />
               </Grid>
 
               <Grid item xs={12}>
