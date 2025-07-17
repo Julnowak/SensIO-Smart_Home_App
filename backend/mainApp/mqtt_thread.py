@@ -28,14 +28,13 @@ def start_mqtt_thread(topic: str, deviceId: int):
             sensors = Sensor.objects.filter(device=device)
 
             for k, v in payload.items():
-                if k != "device_data" and k != "created_at":
-                    if not sensors.filter(serial_number=v["SN"]).exists():
-                        Sensor.objects.create(serial_number=v["SN"], device=device, name=k)
+                if not sensors.filter(serial_number=k).exists():
+                    Sensor.objects.create(serial_number=k, device=device, name=k)
 
-                    Measurement.objects.create(value=payload[k]["value"],
-                                               saved_at=datetime.now(),
-                                               created_at=payload['created_at'],
-                                               sensor=sensors.get(serial_number=v["SN"]))
+                Measurement.objects.create(value=v["value"],
+                                           saved_at=datetime.now(),
+                                           created_at=v['created_at'],
+                                           sensor=sensors.get(serial_number=k))
 
         except Exception as e:
             print(f"[MQTT] Błąd w przetwarzaniu danych: {e}")

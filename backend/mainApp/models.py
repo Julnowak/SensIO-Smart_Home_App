@@ -134,16 +134,29 @@ class Device(models.Model):
     room = models.ForeignKey(Room, on_delete=models.CASCADE, blank=True, null=True)
     name = models.CharField(max_length=200)
     serial_number = models.CharField(max_length=200, blank=True, null=True)
-    topic = models.CharField(max_length=200, blank=True, null=True)
+    topic = models.CharField(max_length=200, blank=True)
     info = models.TextField(max_length=1000, blank=True, null=True)
     brand = models.CharField(max_length=200, blank=True, null=True)
     isActive = models.BooleanField(default=True)
     color = models.CharField(max_length=20, default="#42adf5")
     data_type = models.CharField(max_length=20, choices=DATA_TYPES, default="CONTINUOUS", blank=True, null=True)
     isFavorite = models.BooleanField(default=False)
+    isConfigured = models.BooleanField(default=False)
 
     def __str__(self):
         return "Urządzenie " + str(self.device_id)
+
+    def save(self, *args, **kwargs):
+        if not self.topic:  # Only generate topic if it's not set
+            components = [
+                str(self.serial_number) if self.serial_number else '',
+                str(self.location) if self.location else '',
+                str(self.owner) if self.owner else '',
+                str(self.device_id) if self.device_id else ''
+            ]
+            self.topic = "_".join(filter(None, components))  # Join non-empty components
+
+        super().save(*args, **kwargs)
 
 
 class Sensor(models.Model):
@@ -158,7 +171,7 @@ class Sensor(models.Model):
     sensor_id = models.AutoField(primary_key=True)
     room = models.ForeignKey(Room, on_delete=models.CASCADE, blank=True, null=True)
     name = models.CharField(max_length=200)
-    visibleName = models.CharField(max_length=200, default=name)
+    visibleName = models.CharField(max_length=200, blank=True)
     serial_number = models.CharField(max_length=200, blank=True, null=True)
     device = models.ForeignKey(Device, on_delete=models.CASCADE)
     data_type = models.CharField(max_length=20, choices=DATA_TYPES, default="CONTINUOUS")
@@ -167,6 +180,11 @@ class Sensor(models.Model):
     def __str__(self):
         return "Czujnik " + str(self.sensor_id)
 
+    def save(self, *args, **kwargs):
+        if not self.visibleName:  # Only generate topic if it's not set
+            self.topic = str(self.name) if self.serial_number else ''
+
+        super().save(*args, **kwargs)
 
 class Measurement(models.Model):
     measurement_id = models.AutoField(primary_key=True)

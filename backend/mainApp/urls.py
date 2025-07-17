@@ -18,11 +18,10 @@ urlpatterns = [
     path('roomsNewDevice/<int:home_id>/', views.RoomsNewDeviceApi.as_view(), name='roomsNewDevice'),
     path('notifications/', views.NotificationsAPI.as_view(), name='notifications'),
     path('notifications/<int:pk>/', NotificationsAPI.as_view(), name='notification-detail'),
-
+    path('sensor/<int:sensor_id>/', views.SensorDataAPI.as_view(), name='sensor'),
     path("room/<int:room_id>/light/", get_light_status, name="get_light_status"),
     path("room/<int:room_id>/", views.RoomData.as_view(), name="room"),
     path("device/<int:device_id>/", views.DeviceData.as_view(), name="device"),
     path("actions/", views.ActionData.as_view(), name="actions"),
-    path("test/", views.TestData.as_view(), name="test"),
     path("layout_handler/", views.LayoutHandler.as_view(), name="layout_handler"),
 ]

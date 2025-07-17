@@ -39,7 +39,7 @@ import {
   MoreVert,
   Timeline,
   History,
-  Settings, Business
+  Settings, Business, EventNote
 } from '@mui/icons-material';
 import client from "../../../client";
 import { API_BASE_URL } from "../../../config";
@@ -66,7 +66,6 @@ const DeviceCard = styled(Paper)(({ theme, active }) => ({
 }));
 
 const RoomPage = () => {
-  const { id } = useParams();
   const [room, setRoom] = useState(null);
   const [loading, setLoading] = useState(true);
   const [wsStatus, setWsStatus] = useState('connecting');
@@ -77,25 +76,21 @@ const RoomPage = () => {
     month: 420.8
   });
   const token = localStorage.getItem("access");
+  const params = useParams();
 
   // Mock device data
-  const [devices, setDevices] = useState([
-    { id: 1, name: "Smart Lighting", type: "light", status: true, lastActive: new Date() },
-    { id: 2, name: "HVAC System", type: "thermostat", status: true, temp: 22.5, lastActive: new Date(Date.now() - 3600000) },
-    { id: 3, name: "Door Lock", type: "security", status: false, lastActive: new Date(Date.now() - 86400000) },
-    { id: 4, name: "Occupancy Sensor", type: "sensor", status: true, lastActive: new Date() },
-    { id: 5, name: "Air Quality Monitor", type: "sensor", status: true, lastActive: new Date() }
-  ]);
+  const [devices, setDevices] = useState([]);
+  const [sensors, setSensors] = useState([]);
 
   // WebSocket setup
   const [ws, setWs] = useState(null);
 
   useEffect(() => {
-    const newWs = new WebSocket(`ws://127.0.0.1:8000/ws/room_updates/${id}/`);
+    const newWs = new WebSocket(`ws://127.0.0.1:8000/ws/room_updates/${params.id}/`);
     setWs(newWs);
 
     return () => newWs.close();
-  }, [id]);
+  }, [params]);
 
   useEffect(() => {
     if (!ws) return;
@@ -124,14 +119,16 @@ const RoomPage = () => {
     };
   }, [ws]);
 
-  // Fetch initial room data
-  useEffect(() => {
-    const fetchRoom = async () => {
+  const fetchRoom = async () => {
       try {
-        const response = await client.get(`${API_BASE_URL}room/${id}`, {
+        const response = await client.get(`${API_BASE_URL}room/${params.id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        setRoom(response.data);
+        setRoom(response.data.roomData);
+        setDevices(response.data.devicesData)
+        setSensors(response.data.sensorsData)
+        console.log(response.data.devicesData)
+
       } catch (error) {
         console.error("Failed to fetch room data", error);
       } finally {
@@ -139,37 +136,25 @@ const RoomPage = () => {
       }
     };
 
+  // Fetch initial room data
+  useEffect(() => {
     if (token) fetchRoom();
-  }, [token, id]);
+  }, [token, params]);
 
   const handleDeviceToggle = (deviceId) => {
-    const updatedDevices = devices.map(device =>
-      device.id === deviceId ? { ...device, status: !device.status } : device
-    );
-    setDevices(updatedDevices);
-
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      const device = updatedDevices.find(d => d.id === deviceId);
-      ws.send(JSON.stringify({
-        type: "device_update",
-        device_id: deviceId,
-        state: device.status
-      }));
-    }
-  };
-
-  const handleRefresh = async () => {
-    setLoading(true);
-    try {
-      const response = await client.get(`${API_BASE_URL}room/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setRoom(response.data);
-    } catch (error) {
-      console.error("Failed to refresh room data", error);
-    } finally {
-      setLoading(false);
-    }
+    // const updatedDevices = devices?.map(device =>
+    //   device.id === deviceId ? { ...device, status: !device.status } : device
+    // );
+    // // setDevices(updatedDevices);
+    //
+    // if (ws && ws.readyState === WebSocket.OPEN) {
+    //   const device = updatedDevices.find(d => d.id === deviceId);
+    //   ws.send(JSON.stringify({
+    //     type: "device_update",
+    //     device_id: deviceId,
+    //     state: device.status
+    //   }));
+    // }
   };
 
   if (loading || !room) {
@@ -196,13 +181,13 @@ const RoomPage = () => {
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 1 }}>
             <Chip
-              label={`Floor ${room.floor_number || 'N/A'}`}
+              label={`Piętro ${room.floor?.floor_number || 'N/A'}`}
               icon={<MeetingRoom />}
               size="small"
               variant="outlined"
             />
             <Chip
-              label={room.building?.name || 'N/A'}
+              label={room.home?.name || 'N/A'}
               icon={<Business />}
               size="small"
               variant="outlined"
@@ -226,23 +211,20 @@ const RoomPage = () => {
             startIcon={<Timeline />}
             sx={{ px: 3 }}
           >
-            Analytics
+            Analityka
           </Button>
           <Button
             variant="outlined"
             startIcon={<History />}
             sx={{ px: 3 }}
           >
-            History
+            Historia
           </Button>
-          <Tooltip title="Refresh">
-            <IconButton onClick={handleRefresh} color="primary">
+          <Tooltip title="Odśwież">
+            <IconButton onClick={()=>fetchRoom()} color="primary">
               <Refresh />
             </IconButton>
           </Tooltip>
-          <IconButton>
-            <MoreVert />
-          </IconButton>
         </Box>
       </Box>
 
@@ -252,46 +234,16 @@ const RoomPage = () => {
         onChange={(e, newValue) => setActiveTab(newValue)}
         sx={{ mb: 3 }}
       >
-        <Tab label="Overview" icon={<Sensors />} />
-        <Tab label="Devices" icon={<Lightbulb />} />
-        <Tab label="Energy" icon={<EnergySavingsLeaf />} />
-        <Tab label="Security" icon={<Security />} />
-        <Tab label="Settings" icon={<Settings />} />
+        <Tab label="Ogólne" icon={<Sensors />} />
+        <Tab label="Urządzenia" icon={<Lightbulb />} />
+        <Tab label="Zużycie energii" icon={<EnergySavingsLeaf />} />
+        <Tab label="Zasady" icon={<EventNote />} />
+        <Tab label="Ustawienia" icon={<Settings />} />
       </Tabs>
 
       {/* Main Content */}
       {activeTab === 0 && (
         <Grid container spacing={3}>
-          {/* Status Cards */}
-          <Grid item xs={12} md={4}>
-            <StatusCard>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <Avatar sx={{ bgcolor: 'primary.light', color: 'primary.main', mr: 2 }}>
-                    <People />
-                  </Avatar>
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Current Occupancy
-                    </Typography>
-                    <Typography variant="h4">
-                      {room.occupancy || 0}
-                    </Typography>
-                  </Box>
-                </Box>
-                <LinearProgress
-                  variant="determinate"
-                  value={Math.min((room.occupancy || 0) / room.capacity * 100, 100)}
-                  color={room.occupancy === room.capacity ? 'error' : 'primary'}
-                  sx={{ height: 8, borderRadius: 4 }}
-                />
-                <Typography variant="caption" color="text.secondary">
-                  Capacity: {room.capacity || 'N/A'} people
-                </Typography>
-              </CardContent>
-            </StatusCard>
-          </Grid>
-
           <Grid item xs={12} md={4}>
             <StatusCard>
               <CardContent>
@@ -351,24 +303,24 @@ const RoomPage = () => {
           {/* Devices Overview */}
           <Grid item xs={12}>
             <Typography variant="h5" gutterBottom sx={{ mb: 2 }}>
-              Active Devices
+              Aktywne urządzenia
             </Typography>
             <Grid container spacing={2}>
-              {devices.filter(d => d.status).map(device => (
-                <Grid item xs={12} sm={6} md={4} lg={3} key={device.id}>
-                  <DeviceCard active={device.status}>
+              {devices?.map((device)=> (
+                <Grid item xs={12} sm={6} md={4} lg={3} key={device.device_id}>
+                  <DeviceCard active={device.isActive}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                       <Box>
                         <Typography variant="subtitle1" fontWeight={600}>
                           {device.name}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          Last active: {new Date(device.lastActive).toLocaleTimeString()}
+                          Last active: {new Date(device.lastUpdated).toLocaleTimeString()}
                         </Typography>
                       </Box>
                       <Switch
-                        checked={device.status}
-                        onChange={() => handleDeviceToggle(device.id)}
+                        checked={device.isActive}
+                        onChange={() => handleDeviceToggle(device.device_id)}
                         color="primary"
                         size="small"
                       />
@@ -389,15 +341,15 @@ const RoomPage = () => {
             </Typography>
             <Paper sx={{ p: 3, borderRadius: 3 }}>
               <Grid container spacing={3}>
-                {devices.map(device => (
-                  <Grid item xs={12} sm={6} md={4} key={device.id}>
+                {devices?.map(device => (
+                  <Grid item xs={12} sm={6} md={4} key={device.device_id}>
                     <Card variant="outlined">
                       <CardContent>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                             <Avatar sx={{
-                              bgcolor: device.status ? 'success.light' : 'grey.100',
-                              color: device.status ? 'success.main' : 'grey.500'
+                              bgcolor: device.isActive ? 'success.light' : 'grey.100',
+                              color: device.isActive ? 'success.main' : 'grey.500'
                             }}>
                               {device.type === 'light' && <Lightbulb />}
                               {device.type === 'thermostat' && <Thermostat />}
@@ -414,8 +366,8 @@ const RoomPage = () => {
                             </Box>
                           </Box>
                           <Switch
-                            checked={device.status}
-                            onChange={() => handleDeviceToggle(device.id)}
+                            checked={device.isActive}
+                            onChange={() => handleDeviceToggle(device.device_id)}
                             color="primary"
                           />
                         </Box>
@@ -427,7 +379,7 @@ const RoomPage = () => {
                           </Box>
                         )}
                         <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                          Last active: {new Date(device.lastActive)}
+                          Last active: {new Date(device.lastUpdated).toLocaleDateString()}, {new Date(device.lastUpdated).toLocaleTimeString()}
                         </Typography>
                       </CardContent>
                     </Card>

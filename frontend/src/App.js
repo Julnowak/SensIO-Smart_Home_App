@@ -34,6 +34,7 @@ import Rules from "./components/rules/rules";
 import EnergyDashboard from "./components/dashboard/EnergyDashboard";
 import Settings from "./components/settings/settings";
 import ScrollToTop from "./components/stt";
+import SensorPage from "./components/sensors/sensorPage";
 
 function App() {
     const { mode } = useContext(ThemeContext);
@@ -66,6 +67,8 @@ function App() {
                         <Route path="/device/:id" element={<DevicePage/>}/>
                         <Route path="/home/:id" element={<BuildingPage/>}/>
                         <Route path="/room/:id" element={<RoomPage/>}/>
+
+                        <Route path="/sensor/:id" element={<SensorPage/>}/>
                         <Route path="/notifications" element={<Notifications/>}/>
                         <Route path="/rules" element={<Rules/>}/>
 

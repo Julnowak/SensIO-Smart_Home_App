@@ -94,15 +94,23 @@ class NotificationSerializer(serializers.ModelSerializer):
 
 
 class SensorSerializer(serializers.ModelSerializer):
+    lastValue = serializers.SerializerMethodField()
+
     class Meta:
         model = Sensor
-        fields = '__all__'
+        fields = [field.name for field in Sensor._meta.fields] + ['lastValue']
+        depth = 2
 
+    def get_lastValue(self, obj):
+        measurement = Measurement.objects.filter(sensor=obj).order_by("-saved_at").first()
+        serializer = MeasurementSerializer(measurement)
+        return serializer.data
 
 class MeasurementSerializer(serializers.ModelSerializer):
     class Meta:
         model = Measurement
         fields = '__all__'
+        depth = 2
 
 
 class ActionSerializer(serializers.ModelSerializer):

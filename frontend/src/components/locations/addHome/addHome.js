@@ -255,11 +255,6 @@ const AddHome = () => {
                 <CardContent>
                     {activeStep === 0 && (
                         <Grid container spacing={3}>
-                            <Grid item xs={12}>
-                                <Typography variant="h6" gutterBottom sx={{fontWeight: 600}}>
-                                    Informacje podstawowe
-                                </Typography>
-                            </Grid>
 
                             <Grid item xs={12} md={6}>
                                 <TextField

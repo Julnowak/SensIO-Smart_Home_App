@@ -32,7 +32,7 @@ import {
     Home,
     ExpandMore,
     CloseRounded,
-    ExpandLess, Settings, HomeWork,
+    ExpandLess, Settings, HomeWork, ListAlt,
 } from '@mui/icons-material';
 import {ThemeContext} from "../../Theme";
 import {AuthContext} from "../../AuthContext";
@@ -243,28 +243,6 @@ const CustomNavbar = () => {
                             <Devices sx={{fontSize: 20, mr: 1.5}}/>
                             Moje urządzenia
                         </MenuItem>
-
-                        <Divider sx={{my: 0.5}}/>
-
-                        <MenuItem
-                            href="/rules"
-                            component="a"
-                            sx={{
-                                py: 1.2,
-                                px: 2,
-                                borderRadius: 1,
-                                '&:hover': {
-                                    backgroundColor:
-                                        theme.palette.mode === 'dark'
-                                            ? 'rgba(255, 255, 255, 0.08)'
-                                            : 'rgba(0, 123, 255, 0.1)',
-                                    color: theme.palette.primary.main,
-                                },
-                            }}
-                        >
-                            <Rule sx={{fontSize: 20, mr: 1.5}}/>
-                            Reguły
-                        </MenuItem>
                     </Menu>
 
 
@@ -281,6 +259,24 @@ const CustomNavbar = () => {
                         },
                     }}>
                         <Typography variant="body1">Wykresy</Typography>
+                    </IconButton>
+
+                    <IconButton
+                        href="/rules"
+                        sx={{
+                            color: 'text.primary',
+                            borderRadius: 1,
+                            transition: 'all 0.2s ease',
+                            '&:hover': {
+                                bgcolor: 'action.hover',
+                                transform: 'translateY(-2px)',
+                            },
+                            '&.Mui-focusVisible': {
+                                bgcolor: 'action.selected',
+                            }
+                        }}
+                    >
+                        <Typography variant="body1">Reguły</Typography>
                     </IconButton>
 
                     <IconButton
@@ -312,7 +308,7 @@ const CustomNavbar = () => {
                             bgcolor: 'action.selected',
                         },
                     }}>
-                        <Badge badgeContent={num} color="error">
+                        <Badge badgeContent={num} color="primary">
                             <NotificationsRounded sx={{fontSize: '22px'}}/>
                         </Badge>
                     </IconButton>
@@ -475,28 +471,27 @@ const CustomNavbar = () => {
                                     <ListItemText sx={{color: theme.palette.mode === 'dark' ? 'white' : 'black'}}
                                                   primary="Moje pomieszczenia"/>
                                 </ListItem>
-
-                                <ListItem href="/rules" component="a" sx={{
-                                    pl: 4,
-                                    color: 'text.primary',
-                                    borderRadius: 1,
-                                    transition: 'all 0.2s ease',
-                                    '&:hover': {
-                                        bgcolor: 'action.hover',
-                                        transform: 'translateY(-1px)',
-                                    },
-                                    '&.Mui-focusVisible': {
-                                        bgcolor: 'action.selected',
-                                    },
-                                }}>
-                                    <ListItemIcon>
-                                        <Rule/>
-                                    </ListItemIcon>
-                                    <ListItemText sx={{color: theme.palette.mode === 'dark' ? 'white' : 'black'}}
-                                                  primary="Reguły"/>
-                                </ListItem>
                             </List>
                         </Collapse>
+
+                        <ListItem sx={{
+                            color: 'text.primary',
+                            borderRadius: 1,
+                            transition: 'all 0.2s ease',
+                            '&:hover': {
+                                bgcolor: 'action.hover',
+                                transform: 'translateY(-1px)',
+                            },
+                            '&.Mui-focusVisible': {
+                                bgcolor: 'action.selected',
+                            },
+                        }} href="/rules" component="a">
+                            <ListItemIcon>
+                                <ListAlt/>
+                            </ListItemIcon>
+                            <ListItemText sx={{color: theme.palette.mode === 'dark' ? 'white' : 'black'}}
+                                          primary="Reguły"/>
+                        </ListItem>
 
                         <ListItem sx={{
                             color: 'text.primary',
@@ -549,7 +544,7 @@ const CustomNavbar = () => {
                             },
                         }} href="/notifications" component="a">
                             <ListItemIcon>
-                                <Badge badgeContent={num} color="error">
+                                <Badge badgeContent={num} color="primary">
                                     <NotificationsRounded/>
                                 </Badge>
                             </ListItemIcon>

@@ -87,7 +87,7 @@ const Register = () => {
           }
         }}>
           <img
-            src="/images/auth-register-illustration.svg"
+            src="https://cdni.iconscout.com/illustration/premium/thumb/boy-using-wireless-technology-illustration-download-in-svg-png-gif-file-formats--wifi-logo-connection-smarthome-smartphone-pack-e-commerce-shopping-illustrations-3443561.png"
             alt="Registration Illustration"
             style={{ width: '100%', maxWidth: 300 }}
           />

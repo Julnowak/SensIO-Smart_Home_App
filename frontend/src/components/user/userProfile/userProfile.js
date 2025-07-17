@@ -398,7 +398,32 @@ export default function UserProfile() {
         </CardContent>
       </ProfileCard>
 
-      {/* Support Card */}
+      <ProfileCard sx={{ borderLeft: '4px solid', borderLeftColor: 'error.main' }}>
+        <CardContent>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+            <DeleteIcon color="error" sx={{ fontSize: 40, mr: 2 }} />
+            <Box>
+              <Typography variant="h6" component="h3">
+                Usuwanie konta
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Usunięcie konta jest nieodwracalne. Wszystkie Twoje dane zostaną trwale usunięte.
+              </Typography>
+            </Box>
+          </Box>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <Button
+              variant="outlined"
+              color="error"
+              startIcon={<DeleteIcon />}
+              onClick={handleClickOpen}
+            >
+              Usuń konto
+            </Button>
+          </Box>
+        </CardContent>
+      </ProfileCard>
+
       <ProfileCard sx={{ borderLeft: '4px solid', borderLeftColor: 'primary.main' }}>
         <CardContent>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -431,34 +456,6 @@ export default function UserProfile() {
         </CardContent>
       </ProfileCard>
 
-      {/* Delete Account Card */}
-      <ProfileCard sx={{ borderLeft: '4px solid', borderLeftColor: 'error.main' }}>
-        <CardContent>
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-            <DeleteIcon color="error" sx={{ fontSize: 40, mr: 2 }} />
-            <Box>
-              <Typography variant="h6" component="h3">
-                Usuwanie konta
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Usunięcie konta jest nieodwracalne. Wszystkie Twoje dane zostaną trwale usunięte.
-              </Typography>
-            </Box>
-          </Box>
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <Button
-              variant="outlined"
-              color="error"
-              startIcon={<DeleteIcon />}
-              onClick={handleClickOpen}
-            >
-              Usuń konto
-            </Button>
-          </Box>
-        </CardContent>
-      </ProfileCard>
-
-      {/* Crop Modal */}
       <Modal open={showCropModal} onClose={() => setShowCropModal(false)}>
         <Box sx={{
           position: 'absolute',
