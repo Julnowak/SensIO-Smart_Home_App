@@ -274,16 +274,15 @@ const UserLocationsPage = () => {
                                                 if (!a.lastUpdated && !b.lastUpdated) return 0;
                                                 if (!a.lastUpdated) return 1;
                                                 if (!b.lastUpdated) return -1;
-                                                return b.lastUpdated.localeCompare(a.lastUpdated);
+                                                return new Date(b.lastUpdated) - new Date(a.lastUpdated);
                                             }));
                                         } else if (e.target.value === "date_asc") {
                                             setFilteredLocations([...filteredLocations].sort((a, b) => {
                                                 if (!a.lastUpdated && !b.lastUpdated) return 0;
-                                                if (!a.lastUpdated) return -1;
-                                                if (!b.lastUpdated) return 1;
-                                                return b.lastUpdated.localeCompare(a.lastUpdated);
+                                                if (!a.lastUpdated) return 1;
+                                                if (!b.lastUpdated) return -1;
+                                                return new Date(a.lastUpdated) - new Date(b.lastUpdated); // Ascending
                                             }));
-
                                         }
                                     }}
                                     label="Sortuj według"

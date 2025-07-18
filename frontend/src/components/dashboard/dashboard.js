@@ -10,7 +10,7 @@ import {
   MenuItem,
   Divider,
   Chip,
-  CircularProgress
+  CircularProgress, Tabs, Tab, IconButton, Tooltip, FormControl, InputLabel, useMediaQuery, Paper, useTheme
 } from "@mui/material";
 import {
   Thermostat,
@@ -18,7 +18,7 @@ import {
   Lightbulb,
   Air,
   ShowChart,
-  PieChart
+  PieChart, MapsHomeWork, Star, Warning, Refresh, FilterAltOff, FilterAlt
 } from "@mui/icons-material";
 import { Chart, registerables } from "chart.js";
 import { styled } from "@mui/material/styles";
@@ -107,18 +107,11 @@ const Dashboard = () => {
 
   const token = localStorage.getItem("access");
   const [num, setNum] = useState(0);
+  const theme = useTheme()
   const [temperatureData, setTemperatureData] = useState([]);
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const [activeTab, setActiveTab] = useState(0);
 
-  const fetchNum = async () => {
-    try {
-      const response = await client.get(API_BASE_URL + "test/", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setNum(response.data.num);
-    } catch (error) {
-      console.error("Error fetching number:", error);
-    }
-  };
 
   // useEffect(() => {
   //   // ustaw interwał do cyklicznego pobierania
@@ -265,27 +258,77 @@ useEffect(() => {
           Wszystkie istotne dane z Twoich czujników w jednym miejscu.
         </Typography>
 
-        <Box sx={{ display: 'flex', gap: 2, mt: 3 }}>
-          <Select
-            value={selectedLocation}
-            onChange={(e) => setSelectedLocation(e.target.value)}
-            sx={{ minWidth: 200 }}
-          >
-            {locations.map(location => (
-              <MenuItem key={location} value={location}>{location}</MenuItem>
-            ))}
-          </Select>
+        <Grid item xs={12}>
+                <Paper elevation={0}
+                       sx={{
+                           p: {xs: 1, sm: 2},
+                           border: "1px solid #00000020",
+                           boxShadow: '0px 2px 12px rgba(0,0,0,0.05)'
+                       }}>
 
-          <Select
-            value={timeRange}
-            onChange={(e) => setTimeRange(e.target.value)}
-            sx={{ minWidth: 120 }}
-          >
-            {timeRanges.map(range => (
-              <MenuItem key={range} value={range}>{range}</MenuItem>
-            ))}
-          </Select>
-        </Box>
+                    <Box
+                        display="flex"
+                        flexDirection={{xs: 'column', md: 'row'}}
+                        justifyContent="space-between"
+                        alignItems={{xs: 'stretch', sm: 'center'}}
+                        gap={2}
+                        mb={1}
+                    >
+                        <Tabs
+                            value={activeTab}
+                            onChange={(e, newValue) => setActiveTab(newValue)}
+                            sx={{
+                                width: '100%',
+                                maxWidth: '100%',
+                                '& .MuiTab-root': {
+                                    minHeight: 48,
+                                    minWidth: 'unset',
+                                    px: 1.5,
+                                    fontSize: {xs: '0.7rem', sm: '0.8125rem'}
+                                },
+                                mb: 1
+                            }}
+                        >
+                            <Tab label="Ogólne" icon={<MapsHomeWork fontSize="small"/>} iconPosition="start"/>
+                            <Tab label="Lokalizacja" icon={<MapsHomeWork fontSize="small"/>} iconPosition="start"/>
+                            <Tab label="Pokój" icon={<Star fontSize="small"/>} iconPosition="start"/>
+                            <Tab label="Urządzenie" icon={<Warning fontSize="small"/>} iconPosition="start"/>
+                            <Tab label="Czujnik" icon={<Warning fontSize="small"/>} iconPosition="start"/>
+                        </Tabs>
+
+                        <Box
+                            display="flex"
+                            flexDirection={{
+                                xs: 'row',
+                                sm: 'row'
+                            }}  // Zawsze w rzędzie, niezależnie od rozmiaru ekranu
+                            gap={1}  // Mniejszy gap na małych ekranach
+                            alignItems="center"
+                            sx={!isMobile ? {width: {xs: '100%', md: 'auto'}} : null}
+                        >
+                            <IconButton
+                                sx={{
+                                    borderRadius: '10px',
+                                    border: '1px solid',
+                                    borderColor: 'divider',
+                                    p: 1.2,
+                                    '&:hover': {
+                                        backgroundColor: 'action.hover',
+                                        borderColor: 'primary.light'
+                                    }
+                                }}
+                            >
+                                <Tooltip title={"Odśwież"}>
+                                    <Refresh color="action" fontSize="small"/>
+                                </Tooltip>
+
+                            </IconButton>
+
+                        </Box>
+                    </Box>
+                </Paper>
+        </Grid>
+
       </Box>
 
       {isLoading ? (

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from "react-router-dom";
+import {useNavigate, useParams} from "react-router-dom";
 import {
   Box,
   Button,
@@ -39,7 +39,7 @@ import {
   MoreVert,
   Timeline,
   History,
-  Settings, Business, EventNote
+  Settings, Business, EventNote, Room
 } from '@mui/icons-material';
 import client from "../../../client";
 import { API_BASE_URL } from "../../../config";
@@ -77,6 +77,7 @@ const RoomPage = () => {
   });
   const token = localStorage.getItem("access");
   const params = useParams();
+  const navigate = useNavigate()
 
   // Mock device data
   const [devices, setDevices] = useState([]);
@@ -180,18 +181,24 @@ const RoomPage = () => {
             {room.name}
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 1 }}>
+
             <Chip
-              label={`Piętro ${room.floor?.floor_number || 'N/A'}`}
-              icon={<MeetingRoom />}
-              size="small"
-              variant="outlined"
+                icon={<MeetingRoom fontSize="small"/>}
+                label={`Piętro ${room?.floor?.floor_number || 'N/A'}`}
+                variant="outlined"
+                size="small"
+                sx={{borderRadius: 1}}
             />
+
             <Chip
-              label={room.home?.name || 'N/A'}
-              icon={<Business />}
-              size="small"
-              variant="outlined"
+                icon={<Business fontSize="small"/>}
+                onClick={() => navigate(`/home/${room?.home.home_id}`)}
+                label={room?.home?.name || 'N/A'}
+                variant="outlined"
+                size="small"
+                sx={{borderRadius: 1}}
             />
+
             <Box sx={{ display: 'flex', alignItems: 'center', ml: 1 }}>
               {wsStatus === 'connected' ? (
                 <Wifi color="success" fontSize="small" />
@@ -206,20 +213,6 @@ const RoomPage = () => {
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Button
-            variant="outlined"
-            startIcon={<Timeline />}
-            sx={{ px: 3 }}
-          >
-            Analityka
-          </Button>
-          <Button
-            variant="outlined"
-            startIcon={<History />}
-            sx={{ px: 3 }}
-          >
-            Historia
-          </Button>
           <Tooltip title="Odśwież">
             <IconButton onClick={()=>fetchRoom()} color="primary">
               <Refresh />
@@ -236,8 +229,9 @@ const RoomPage = () => {
       >
         <Tab label="Ogólne" icon={<Sensors />} />
         <Tab label="Urządzenia" icon={<Lightbulb />} />
-        <Tab label="Zużycie energii" icon={<EnergySavingsLeaf />} />
+        <Tab label="Analityka" icon={<Timeline />} />
         <Tab label="Zasady" icon={<EventNote />} />
+        <Tab label="Historia" icon={<History />} />
         <Tab label="Ustawienia" icon={<Settings />} />
       </Tabs>
 
@@ -310,7 +304,7 @@ const RoomPage = () => {
                 <Grid item xs={12} sm={6} md={4} lg={3} key={device.device_id}>
                   <DeviceCard active={device.isActive}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Box>
+                      <Box sx={{cursor: "pointer"}} onClick={()=>navigate(`/device/${device.device_id}`)}>
                         <Typography variant="subtitle1" fontWeight={600}>
                           {device.name}
                         </Typography>
@@ -394,7 +388,7 @@ const RoomPage = () => {
       {activeTab === 2 && (
         <Box>
           <Typography variant="h5" gutterBottom sx={{ mb: 3 }}>
-            Energy Consumption
+            Analityka
           </Typography>
           <Paper sx={{ p: 3, borderRadius: 3, minHeight: 400 }}>
             <Typography color="text.secondary">
@@ -407,7 +401,7 @@ const RoomPage = () => {
       {activeTab === 3 && (
         <Box>
           <Typography variant="h5" gutterBottom sx={{ mb: 3 }}>
-            Security Settings
+            Zasady
           </Typography>
           <Paper sx={{ p: 3, borderRadius: 3, minHeight: 400 }}>
             <Typography color="text.secondary">
@@ -420,11 +414,24 @@ const RoomPage = () => {
       {activeTab === 4 && (
         <Box>
           <Typography variant="h5" gutterBottom sx={{ mb: 3 }}>
-            Room Settings
+            Historia
           </Typography>
           <Paper sx={{ p: 3, borderRadius: 3, minHeight: 400 }}>
             <Typography color="text.secondary">
               Room configuration coming soon
+            </Typography>
+          </Paper>
+        </Box>
+      )}
+
+      {activeTab === 5 && (
+        <Box>
+          <Typography variant="h5" gutterBottom sx={{ mb: 3 }}>
+            Ustawienia
+          </Typography>
+          <Paper sx={{ p: 3, borderRadius: 3, minHeight: 400 }}>
+            <Typography color="text.secondary">
+              Energy analytics coming soon
             </Typography>
           </Paper>
         </Box>

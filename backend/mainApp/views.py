@@ -358,6 +358,17 @@ class SensorDataAPI(APIView):
         measurementSerialzier = MeasurementSerializer(measurements, many=True)
         return Response({"sensorData": serializer.data, "measurementData": measurementSerialzier.data}, status=status.HTTP_200_OK)
 
+    def put(self, request, sensor_id):
+        sensor = Sensor.objects.get(sensor_id=sensor_id)
+        sensor.visibleName = request.data["visibleName"]
+        sensor.name = request.data["name"]
+        sensor.serial_number = request.data["serial_number"]
+        sensor.data_type = request.data["data_type"]
+        sensor.unit = request.data["unit"]
+        sensor.save()
+
+        serializer = SensorSerializer(sensor)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class LayoutHandler(APIView):

@@ -163,11 +163,13 @@ class Sensor(models.Model):
     DATA_TYPES = [
         ("LIGHT", "światło"),
         ("HUMIDITY", "wilgotność"),
-        ("CONTINUOUS", "inne ciągłe"),
-        ("DISCRETE", "inne dyskretne"),
-        ("FUNCTIONAL", "inne funkcyjne"),
+        ("ENERGY", "zużycie energii"),
+        ("TEMPERATURE", "temperatura"),
+        ("CONTINUOUS", "ciągłe"),
+        ("DISCRETE", "dyskretne"),
         ("OTHER", "inne/różne"),
     ]
+
     sensor_id = models.AutoField(primary_key=True)
     room = models.ForeignKey(Room, on_delete=models.CASCADE, blank=True, null=True)
     name = models.CharField(max_length=200)
@@ -182,9 +184,10 @@ class Sensor(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.visibleName:  # Only generate topic if it's not set
-            self.topic = str(self.name) if self.serial_number else ''
+            self.visibleName = str(self.name) if self.serial_number else ''
 
         super().save(*args, **kwargs)
+
 
 class Measurement(models.Model):
     measurement_id = models.AutoField(primary_key=True)

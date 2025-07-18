@@ -432,6 +432,26 @@ const CustomNavbar = () => {
                                                   primary="Moje lokacje"/>
                                 </ListItem>
 
+                                <ListItem href="/myRooms" component="a" sx={{
+                                    pl: 4,
+                                    color: 'text.primary',
+                                    borderRadius: 1,
+                                    transition: 'all 0.2s ease',
+                                    '&:hover': {
+                                        bgcolor: 'action.hover',
+                                        transform: 'translateY(-1px)',
+                                    },
+                                    '&.Mui-focusVisible': {
+                                        bgcolor: 'action.selected',
+                                    },
+                                }}>
+                                    <ListItemIcon>
+                                        <DoorBack/>
+                                    </ListItemIcon>
+                                    <ListItemText sx={{color: theme.palette.mode === 'dark' ? 'white' : 'black'}}
+                                                  primary="Moje pomieszczenia"/>
+                                </ListItem>
+
                                 <ListItem href="/myDevices" component="a" sx={{
                                     pl: 4,
                                     color: 'text.primary',
@@ -452,25 +472,6 @@ const CustomNavbar = () => {
                                                   primary="Moje urządzenia"/>
                                 </ListItem>
 
-                                <ListItem href="/myRooms" component="a" sx={{
-                                    pl: 4,
-                                    color: 'text.primary',
-                                    borderRadius: 1,
-                                    transition: 'all 0.2s ease',
-                                    '&:hover': {
-                                        bgcolor: 'action.hover',
-                                        transform: 'translateY(-1px)',
-                                    },
-                                    '&.Mui-focusVisible': {
-                                        bgcolor: 'action.selected',
-                                    },
-                                }}>
-                                    <ListItemIcon>
-                                        <DoorBack/>
-                                    </ListItemIcon>
-                                    <ListItemText sx={{color: theme.palette.mode === 'dark' ? 'white' : 'black'}}
-                                                  primary="Moje pomieszczenia"/>
-                                </ListItem>
                             </List>
                         </Collapse>
 

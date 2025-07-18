@@ -13,7 +13,6 @@ class RoomConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.home_id = self.scope["url_route"]["kwargs"]["home_id"]
         self.room_group_name = f"room_updates_{self.home_id}"
-        print(self.room_group_name)
         await self.channel_layer.group_add(self.room_group_name, self.channel_name)
         await self.accept()
 
@@ -92,9 +91,6 @@ class HomeFloorConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
 
     async def receive(self, text_data):
-
-        print(text_data)
-        print("fffffffffffffff")
         # Można zaimplementować filtrowanie po stronie klienta, ale niekonieczne
         pass
 
@@ -107,9 +103,6 @@ class HomeFloorConsumer(AsyncWebsocketConsumer):
 
     @sync_to_async
     def get_serialized_sensor_data(self):
-
-        print(self.floor_id)
-        print(self.home_id)
 
         sensors = Sensor.objects.filter(device__room__floor_id=int(self.floor_id))
         measurements = Measurement.objects.filter(sensor__in=sensors)
