@@ -99,7 +99,7 @@ class HomeFloorConsumer(AsyncWebsocketConsumer):
             data = await self.get_serialized_sensor_data()
             if data:
                 await self.send(text_data=json.dumps(data))
-            await asyncio.sleep(5)  # np. co 3 sekundy
+            await asyncio.sleep(20)  # np. co 3 sekundy
 
     @sync_to_async
     def get_serialized_sensor_data(self):

@@ -51,9 +51,12 @@ def generate_data():
     light = random.choice([True, False])  # Simulate on/off
     now = datetime.now(UTC)
 
-    data = {TEMP_SN: {"value": temperature, "type": "continuous", "created_at": now.isoformat()},
-            HUMIDITY_SN: {"value": humidity, "type": "continuous", "created_at": now.isoformat()},
-            LIGHT_SN: {"value": light, "type": "binary", "SN": LIGHT_SN, "created_at": now.isoformat()}}
+    data = {
+            TEMP_SN: {"value": temperature, "type": "continuous", "created_at": now.isoformat()} if random.randint(0, 1) == 0 else {},
+            HUMIDITY_SN: {"value": humidity, "type": "continuous", "created_at": now.isoformat()} if random.randint(0, 3) == 0 else {},
+            LIGHT_SN: {"value": light, "type": "binary", "SN": LIGHT_SN, "created_at": now.isoformat()} if random.randint(0, 5) == 0 else {}
+    }
+
     return data
 
 try:

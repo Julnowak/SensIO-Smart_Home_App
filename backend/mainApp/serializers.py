@@ -4,7 +4,7 @@ from rest_framework import serializers
 # from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, get_user_model
 
-from mainApp.models import Home, Device, Room, Notification, Action, Floor, Sensor, Measurement
+from mainApp.models import Home, Device, Room, Notification, Action, Floor, Sensor, Measurement, Rule
 
 UserModel = get_user_model()
 
@@ -106,11 +106,12 @@ class SensorSerializer(serializers.ModelSerializer):
         serializer = MeasurementSerializer(measurement)
         return serializer.data
 
+
 class MeasurementSerializer(serializers.ModelSerializer):
     class Meta:
         model = Measurement
         fields = '__all__'
-        depth = 2
+        depth = 3
 
 
 class ActionSerializer(serializers.ModelSerializer):
@@ -122,12 +123,22 @@ class ActionSerializer(serializers.ModelSerializer):
         depth = 4
 
 
+class RuleSerializer(serializers.ModelSerializer):
+    # device_id = serializers.IntegerField(source='device.device_id', read_only=True)
+
+    class Meta:
+        model = Rule
+        fields = '__all__'
+        depth = 2
+
+
 class DeviceSerializer(serializers.ModelSerializer):
     lastUpdated = serializers.SerializerMethodField()
+    sensorNum = serializers.SerializerMethodField()
 
     class Meta:
         model = Device
-        fields = [field.name for field in Device._meta.fields] + ['lastUpdated']
+        fields = [field.name for field in Device._meta.fields] + ['sensorNum', 'lastUpdated']
         depth = 2
 
     def get_lastUpdated(self, obj):
@@ -138,6 +149,10 @@ class DeviceSerializer(serializers.ModelSerializer):
         else:
             last = measurements.order_by("-saved_at").values_list("saved_at")[0]
             return last
+
+    def get_sensorNum(self, obj):
+        sensors = Sensor.objects.filter(device=obj)
+        return sensors.count()
 
 
 class RoomSerializer(serializers.ModelSerializer):

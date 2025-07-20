@@ -6,7 +6,9 @@ from datetime import datetime
 import paho.mqtt.client as paho
 from paho import mqtt
 
-from .models import Device, Measurement, Sensor
+from .algorithms.anomalyDetection import detect_anomaly
+from .models import Device, Measurement, Sensor, Action
+import pandas as pd
 
 mqtt_threads = {}  # topic -> {"thread": t, "stop_event": e, "client": c}
 
@@ -30,11 +32,36 @@ def start_mqtt_thread(topic: str, deviceId: int):
             for k, v in payload.items():
                 if not sensors.filter(serial_number=k).exists():
                     Sensor.objects.create(serial_number=k, device=device, name=k)
+                    Measurement.objects.create(value=v["value"],
+                                               saved_at=datetime.now(),
+                                               created_at=v['created_at'],
+                                               sensor=sensors.get(serial_number=k))
+                else:
+                    s = sensors.get(serial_number=k)
+                    Measurement.objects.create(value=float(v["value"]),
+                                               saved_at=datetime.now(),
+                                               created_at=v['created_at'],
+                                               sensor=sensors.get(serial_number=k))
+                    if s.data_type == "ENERGY":
+                        print("ssssss")
+                        allMes = Measurement.objects.filter(sensor=s)
+                        last_measurement = allMes.last()
+                        mes = allMes.values_list("saved_at", "value")
+                        df = pd.DataFrame(mes, columns=["timestamp", "energy_consumption"])
+                        df['energy_consumption'] = df['energy_consumption'].astype(float)
+                        detRes = detect_anomaly(df)
 
-                Measurement.objects.create(value=v["value"],
-                                           saved_at=datetime.now(),
-                                           created_at=v['created_at'],
-                                           sensor=sensors.get(serial_number=k))
+                        print(detRes['lastMedium'], detRes['lastLow'])
+
+                        if detRes['lastMedium']:
+                            last_measurement.warning = "MEDIUM"
+                        elif detRes['lastLow']:
+                            last_measurement.warning = "LOW"
+                        last_measurement.save()
+                        Action.objects.create(measurement=last_measurement, device_id=deviceId,
+                                              description="Pomiar zużycia energii.", status=last_measurement.warning)
+
+
 
         except Exception as e:
             print(f"[MQTT] Błąd w przetwarzaniu danych: {e}")

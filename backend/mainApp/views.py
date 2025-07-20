@@ -6,9 +6,10 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth import get_user_model
 from django.http import JsonResponse, HttpResponse
 from django.core.cache import cache
+from fontTools.designspaceLib.types import Rules
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 
-from .models import Room, Device, Floor, Notification, Action, Sensor, Measurement
+from .models import Room, Device, Floor, Notification, Action, Sensor, Measurement, Rule
 
 # Create your views here.
 from rest_framework import permissions, status
@@ -18,7 +19,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from mainApp.models import AppUser, Home
 from mainApp.serializers import UserRegisterSerializer, HomeSerializer, DeviceSerializer, UserSerializer, \
-    RoomSerializer, NotificationSerializer, ActionSerializer, FloorSerializer, SensorSerializer, MeasurementSerializer
+    RoomSerializer, NotificationSerializer, ActionSerializer, FloorSerializer, SensorSerializer, MeasurementSerializer, \
+    RuleSerializer
 from .mqtt_thread import start_mqtt_thread, stop_mqtt_thread
 
 UserModel = get_user_model()
@@ -94,8 +96,6 @@ class OneUserData(APIView):
         profile_picture = request.FILES.get('profile_picture')  # Use 'avatar' as the field name for the image
         if profile_picture:
             user.profile_picture = profile_picture  # Assuming 'avatar' is a field on your User model
-            print(profile_picture)
-            print(user.profile_picture)
             user.save()
             serializer = UserSerializer(user)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -103,7 +103,6 @@ class OneUserData(APIView):
 
     def put(self, request):
         user = request.user
-        print(request.data)
         user.email = request.data.get("email")
         user.name = request.data.get("name")
         user.telephone = request.data.get("telephone")
@@ -192,9 +191,13 @@ class HomeData(APIView):
             floor = Floor.objects.filter(home_id=home_id)[0]
 
         rooms = Room.objects.filter(home=home, floor=floor)
+        alarms = Action.objects.filter(device__location=home)
+
         roomsSerializer = RoomSerializer(rooms, many=True)
         serializer = HomeSerializer(home)
-        return Response({"homeData": serializer.data, "roomsData": roomsSerializer.data}, status=status.HTTP_200_OK)
+        alarmSerializer = ActionSerializer(alarms, many=True)
+        return Response({"homeData": serializer.data, "roomsData": roomsSerializer.data,
+                         "alarmsData": alarmSerializer.data}, status=status.HTTP_200_OK)
 
     def delete(self, request, home_id):
         home = Home.objects.get(home_id=home_id)
@@ -228,13 +231,12 @@ class DevicesData(APIView):
                          "locationsData": locationSerializer.data, "devicesData": serializer.data}, status=status.HTTP_200_OK)
 
     def post(self, request):
-        device = Device.objects.create(name=request.data["name"],
-                                       owner=request.user,
-                                       serial_number=request.data["serial_number"],
-                                       topic=request.data["topic"], info=request.data["info"], brand=request.data["brand"],
-                                       room_id=request.data["room"], color=request.data["color"], floor_id=request.data["floor"], location_id=request.data["building"])
-
-        serializer = DeviceSerializer(device)
+        # Device.objects.create(name=request.data["name"],
+        #                                owner=request.user,
+        #                                serial_number=request.data["serial_number"],
+        #                                topic=request.data["topic"], info=request.data["info"], brand=request.data["brand"],
+        #                                room_id=request.data["room"], color=request.data["color"], floor_id=request.data["floor"], location_id=request.data["building"])
+        print(request.data)
         return Response(status=status.HTTP_200_OK)
 
 
@@ -258,13 +260,19 @@ class RoomData(APIView):
     def get(self, request, room_id):
         room = Room.objects.get(room_id=room_id)
         devices = Device.objects.filter(room=room)
-        print(devices)
         sensors = Sensor.objects.filter(room=room)
+        rules = Rule.objects.filter(rooms=room)
+
+        energySen = sensors.filter(data_type="ENERGY")
+
+
+
         serializer = RoomSerializer(room)
         devicesSerializer = DeviceSerializer(devices, many=True)
         sensorsSerializer = SensorSerializer(sensors, many=True)
+        ruleSerializer = RuleSerializer(rules, many=True)
         return Response({"roomData": serializer.data, "devicesData": devicesSerializer.data,
-                         "sensorsData": sensorsSerializer.data}, status=status.HTTP_200_OK)
+                         "sensorsData": sensorsSerializer.data, "rulesData": ruleSerializer.data}, status=status.HTTP_200_OK)
 
 
 class DeviceData(APIView):
@@ -273,10 +281,24 @@ class DeviceData(APIView):
     def get(self, request, device_id):
         device = Device.objects.get(device_id=device_id)
         sensors = Sensor.objects.filter(device=device)
+        rooms = Room.objects.filter(home__owner=request.user)
+        floors = Floor.objects.filter(home__owner=request.user)
+        locations = Home.objects.filter(owner=request.user)
+        actions = Action.objects.filter(device=device)
+
         serializer = DeviceSerializer(device)
         sensorSerializer = SensorSerializer(sensors, many=True)
+        locationSerializer = HomeSerializer(locations, many=True)
+        roomSerializer = RoomSerializer(rooms, many=True)
+        floorSerializer = FloorSerializer(floors, many=True)
+        actionsSerializer = ActionSerializer(actions, many=True)
         return Response({"deviceData":serializer.data,
-                                "sensorsData": sensorSerializer.data}, status=status.HTTP_200_OK)
+                              "sensorsData": sensorSerializer.data,
+                              "locationsData": locationSerializer.data,
+                              "roomsData": roomSerializer.data,
+                              "floorsData": floorSerializer.data,
+                              "actionsData": actionsSerializer.data,
+                         }, status=status.HTTP_200_OK)
 
     def post(self, request, device_id):
         device = Device.objects.get(device_id=device_id)
@@ -291,6 +313,25 @@ class DeviceData(APIView):
 
         serializer=DeviceSerializer(device)
 
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def put(self, request, device_id):
+        device = Device.objects.get(device_id=device_id)
+        device.isFavorite = request.data["isFavorite"]
+        try:
+            device.name = request.data["name"]
+            device.serial_number = request.data["serial_number"]
+            device.info = request.data["info"]
+            device.color = request.data["color"]
+            device.data_type = request.data["data_type"]
+            device.brand = request.data["brand"]
+            device.floor = Floor.objects.get(floor_id=request.data["floor"])
+            device.room = Room.objects.get(room_id=request.data["room"])
+            device.location = Home.objects.get(home_id=request.data["location"])
+        except:
+            pass
+        device.save()
+        serializer = DeviceSerializer(device)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -353,10 +394,23 @@ class SensorDataAPI(APIView):
 
     def get(self, request, sensor_id):
         sensor = Sensor.objects.get(sensor_id=sensor_id)
-        measurements = Measurement.objects.filter(sensor=sensor)
+        measurements = Measurement.objects.filter(sensor=sensor).order_by("-created_at")
+        home = sensor.device.location
+        floors = Floor.objects.filter(home=home)
+        rooms = Room.objects.filter(floor__in=floors)
+
+        rules = Rule.objects.filter(sensors=sensor).order_by("-created_at")
+
+        actions = Action.objects.filter(measurement__in=measurements).order_by("-created_at")
         serializer = SensorSerializer(sensor)
         measurementSerialzier = MeasurementSerializer(measurements, many=True)
-        return Response({"sensorData": serializer.data, "measurementData": measurementSerialzier.data}, status=status.HTTP_200_OK)
+        actionSerializer = ActionSerializer(actions, many=True)
+        ruleSerializer = RuleSerializer(rules, many=True)
+        roomSerializer = RoomSerializer(rooms, many=True)
+        floorSerializer = FloorSerializer(floors, many=True)
+        return Response({"sensorData": serializer.data, "measurementData": measurementSerialzier.data,
+                         "actionsData": actionSerializer.data, "rulesData": ruleSerializer.data,
+                         "roomsData": roomSerializer.data, "floorsData": floorSerializer.data}, status=status.HTTP_200_OK)
 
     def put(self, request, sensor_id):
         sensor = Sensor.objects.get(sensor_id=sensor_id)
@@ -482,3 +536,55 @@ class NotificationsAPI(APIView):
             {"message": "Notification deleted successfully"},
             status=status.HTTP_204_NO_CONTENT
         )
+
+
+class ChartsDataAPI(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get(self, request):
+
+        devices = Device.objects.filter(owner=request.user)
+        sensors = Sensor.objects.filter(device__owner=request.user)
+
+        rooms = Room.objects.filter(home__owner=request.user)
+        floors = Floor.objects.filter(home__owner=request.user)
+        locations = Home.objects.filter(owner=request.user)
+
+        measurements = Measurement.objects.filter(sensor__device__owner=request.user)
+
+        roomsSerializer = RoomSerializer(rooms, many=True)
+        floorSerializer = FloorSerializer(floors, many=True)
+        locationSerializer = HomeSerializer(locations, many=True)
+        serializer = DeviceSerializer(devices, many=True)
+        sensorSerializer = SensorSerializer(sensors, many=True)
+        measurementSerializer = MeasurementSerializer(measurements, many=True)
+
+        # print(measurementSerializer.data)
+
+        return Response({"roomsData": roomsSerializer.data, "floorsData": floorSerializer.data,
+                         "locationsData": locationSerializer.data, "devicesData": serializer.data,
+                         "sensorsData": sensorSerializer.data, "measurementsData": measurementSerializer.data},
+                          status=status.HTTP_200_OK)
+
+
+    def post(self, request):
+
+        print(request.data)
+        t = request.data['type']
+
+        if t == "device":
+            device = Device.objects.get(pk=request.data['device'])
+            measurements = Measurement.objects.filter(device=device)
+            serializer = MeasurementSerializer(measurements, many=True)
+
+
+        # sensor = Sensor.objects.get(sensor_id=sensor_id)
+        # sensor.visibleName = request.data["visibleName"]
+        # sensor.name = request.data["name"]
+        # sensor.serial_number = request.data["serial_number"]
+        # sensor.data_type = request.data["data_type"]
+        # sensor.unit = request.data["unit"]
+        # sensor.save()
+
+        # serializer = SensorSerializer(sensor)
+        return Response(serializer.data, status=status.HTTP_200_OK)

@@ -87,6 +87,7 @@ class Home(models.Model):
     lng = models.CharField(max_length=100, null=True, blank=True)
     lat = models.CharField(max_length=100, null=True, blank=True)
     isFavorite = models.BooleanField(default=False)
+    isArchived = models.BooleanField(default=False)
 
     def __str__(self):
         return "Dom " + str(self.home_id)
@@ -96,6 +97,7 @@ class Floor(models.Model):
     floor_id = models.AutoField(primary_key=True)
     home = models.ForeignKey(Home, on_delete=models.CASCADE)
     floor_number = models.IntegerField()
+    isArchived = models.BooleanField(default=False)
 
     def __str__(self):
         return "Piętro " + str(self.floor_id)
@@ -112,6 +114,7 @@ class Room(models.Model):
     position = models.JSONField()
     color = models.CharField(max_length=20, default="#42adf5")
     isFavorite = models.BooleanField(default=False)
+    isArchived = models.BooleanField(default=False)
 
     def __str__(self):
         return "Pokój " + str(self.room_id)
@@ -121,9 +124,10 @@ class Device(models.Model):
     DATA_TYPES = [
         ("LIGHT", "światło"),
         ("HUMIDITY", "wilgotność"),
-        ("CONTINUOUS", "inne ciągłe"),
-        ("DISCRETE", "inne dyskretne"),
-        ("FUNCTIONAL", "inne funkcyjne"),
+        ("ENERGY", "zużycie energii"),
+        ("TEMPERATURE", "temperatura"),
+        ("CONTINUOUS", "ciągłe"),
+        ("DISCRETE", "dyskretne"),
         ("OTHER", "inne/różne"),
     ]
 
@@ -142,6 +146,7 @@ class Device(models.Model):
     data_type = models.CharField(max_length=20, choices=DATA_TYPES, default="CONTINUOUS", blank=True, null=True)
     isFavorite = models.BooleanField(default=False)
     isConfigured = models.BooleanField(default=False)
+    isArchived = models.BooleanField(default=False)
 
     def __str__(self):
         return "Urządzenie " + str(self.device_id)
@@ -167,6 +172,7 @@ class Sensor(models.Model):
         ("TEMPERATURE", "temperatura"),
         ("CONTINUOUS", "ciągłe"),
         ("DISCRETE", "dyskretne"),
+        ("WORKER", "sterowanie"),
         ("OTHER", "inne/różne"),
     ]
 
@@ -178,6 +184,9 @@ class Sensor(models.Model):
     device = models.ForeignKey(Device, on_delete=models.CASCADE)
     data_type = models.CharField(max_length=20, choices=DATA_TYPES, default="CONTINUOUS")
     unit = models.CharField(max_length=200, blank=True, null=True)
+    isSameTypeAsDevice = models.BooleanField(default=False)
+    isSamePlaceAsDevice = models.BooleanField(default=False)
+    isArchived = models.BooleanField(default=False)
 
     def __str__(self):
         return "Czujnik " + str(self.sensor_id)
@@ -190,11 +199,18 @@ class Sensor(models.Model):
 
 
 class Measurement(models.Model):
+    WARNING_TYPES = [
+        ("LOW", "niskie"),
+        ("MEDIUM", "średnie"),
+        ("HIGH", "wysokie"),
+        ("NORMAL", "brak"),
+    ]
     measurement_id = models.AutoField(primary_key=True)
     sensor = models.ForeignKey(Sensor, on_delete=models.CASCADE)
     value = models.DecimalField(default=0.00, decimal_places=10, max_digits=20)
     created_at = models.DateTimeField()
     saved_at = models.DateTimeField(auto_now_add=True)
+    warning = models.CharField(max_length=200, choices=WARNING_TYPES, default="NORMAL")
 
     def __str__(self):
         return "Pomiar " + str(self.measurement_id)
@@ -207,10 +223,10 @@ class Action(models.Model):
     ]
 
     STATUS_TYPES = [
-        ("1", "krytyczny"),
-        ("2", "ostrzeżenie"),
-        ("3", "informacja"),
-        ("4", "inne"),
+        ("LOW", "niskie"),
+        ("MEDIUM", "średnie"),
+        ("HIGH", "wysokie"),
+        ("NORMAL", "brak"),
     ]
 
     action_id = models.AutoField(primary_key=True)
@@ -219,8 +235,9 @@ class Action(models.Model):
     measurement = models.ForeignKey(Measurement, on_delete=models.CASCADE, blank=True, null=True)
     type = models.CharField(max_length=20, choices=ACTION_TYPES, default="AUTO")
     created_at = models.DateTimeField(auto_now_add=True)
-    status = models.CharField(max_length=20, choices=STATUS_TYPES, default="3")
+    status = models.CharField(max_length=20, choices=STATUS_TYPES, default="NORMAL")
     priority = models.IntegerField(default=1)
+    isAcknowledged = models.BooleanField(default=False)
 
     def __str__(self):
         return "Akcja " + str(self.action_id)
@@ -237,3 +254,30 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"Powiadomienie ID-{self.id}: {self.title}"
+
+
+class Rule(models.Model):
+    RECURRENCY_TYPES = [
+        ("1", "godzinowo"),
+        ("2", "dziennie"),
+        ("3", "tygodniowo"),
+        ("4", "miesięcznie"),
+        ("5", "rocznie"),
+    ]
+
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=300)
+    created_at = models.DateTimeField(auto_now_add=True)
+    locations = models.ManyToManyField(Home, blank=True)
+    rooms = models.ManyToManyField(Room, blank=True)
+    floors = models.ManyToManyField(Floor, blank=True)
+    sensors = models.ManyToManyField(Sensor, blank=True)
+    start_date = models.DateTimeField(default=timezone.now)
+    end_date = models.DateTimeField(blank=True, null=True)
+    value_low = models.CharField(max_length=10, blank=True, null=True)
+    value_high = models.CharField(max_length=10, blank=True, null=True)
+    isRecurrent = models.BooleanField(default=False)
+    recurrentTime = models.CharField(blank=True, null=True, choices=RECURRENCY_TYPES, max_length=20)
+
+    def __str__(self):
+        return f"Reguła ID-{self.id}: {self.name}"
