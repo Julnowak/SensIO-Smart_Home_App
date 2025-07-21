@@ -43,6 +43,7 @@ const Settings = () => {
           }
           label="Powiadomienia e-mail"
         />
+          <br/>
         <FormControlLabel
           control={
             <Switch
@@ -50,7 +51,7 @@ const Settings = () => {
               onChange={() => handleToggle('smsNotifications')}
             />
           }
-          label="Powiadomienia SMS"
+          label="Usuwanie bez potwierdzenia"
         />
       </Paper>
 
@@ -66,36 +67,6 @@ const Settings = () => {
             />
           }
           label="Publiczny profil"
-        />
-      </Paper>
-
-      <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
-        <Typography variant="h6" gutterBottom>
-          Bezpieczeństwo
-        </Typography>
-        <FormControlLabel
-          control={
-            <Switch
-              checked={settings.twoFactorAuth}
-              onChange={() => handleToggle('twoFactorAuth')}
-            />
-          }
-          label="Uwierzytelnianie dwuskładnikowe"
-        />
-      </Paper>
-
-      <Paper variant="outlined" sx={{ p: 2 }}>
-        <Typography variant="h6" gutterBottom>
-          Wygląd
-        </Typography>
-        <FormControlLabel
-          control={
-            <Switch
-              checked={settings.darkMode}
-              onChange={() => handleToggle('darkMode')}
-            />
-          }
-          label="Tryb ciemny"
         />
       </Paper>
     </Box>

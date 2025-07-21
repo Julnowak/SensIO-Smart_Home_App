@@ -72,7 +72,7 @@ try:
         json_payload = json.dumps(payload)
         print("Publishing:", json_payload)
         client.publish(MQTT_TOPIC, json_payload)
-        time.sleep(10)
+        time.sleep(300)
 
 except KeyboardInterrupt:
     print("Stopped by user.")

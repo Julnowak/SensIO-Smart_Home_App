@@ -83,7 +83,6 @@ class Home(models.Model):
     building_area = models.IntegerField(default=0, null=True, blank=True)
     current = models.BooleanField(default=False)
     created_at = models.DateField(default=datetime.date.today)
-    isActive = models.BooleanField(default=True)
     lng = models.CharField(max_length=100, null=True, blank=True)
     lat = models.CharField(max_length=100, null=True, blank=True)
     isFavorite = models.BooleanField(default=False)

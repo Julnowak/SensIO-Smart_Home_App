@@ -191,13 +191,33 @@ class HomeData(APIView):
             floor = Floor.objects.filter(home_id=home_id)[0]
 
         rooms = Room.objects.filter(home=home, floor=floor)
-        alarms = Action.objects.filter(device__location=home)
+        alarms = Action.objects.filter(device__location=home).order_by("-created_at")
 
         roomsSerializer = RoomSerializer(rooms, many=True)
         serializer = HomeSerializer(home)
         alarmSerializer = ActionSerializer(alarms, many=True)
         return Response({"homeData": serializer.data, "roomsData": roomsSerializer.data,
                          "alarmsData": alarmSerializer.data}, status=status.HTTP_200_OK)
+
+    def put(self, request, home_id):
+        home = Home.objects.get(home_id=home_id)
+
+        if 'changeCurrent' in request.data:
+            try:
+                home_tc = Home.objects.filter(owner=request.user, current=True).first()
+                home_tc.current = False
+                home_tc.save()
+            except:
+                pass
+
+            home.current = True
+        if 'archive' in request.data:
+            home.isArchived = not home.isArchived
+
+        home.save()
+
+        serializer = HomeSerializer(home)
+        return Response(status=status.HTTP_200_OK)
 
     def delete(self, request, home_id):
         home = Home.objects.get(home_id=home_id)
@@ -265,14 +285,18 @@ class RoomData(APIView):
 
         energySen = sensors.filter(data_type="ENERGY")
 
+        actions = Action.objects.filter(device__room=room).order_by("-created_at")
+
 
 
         serializer = RoomSerializer(room)
         devicesSerializer = DeviceSerializer(devices, many=True)
         sensorsSerializer = SensorSerializer(sensors, many=True)
         ruleSerializer = RuleSerializer(rules, many=True)
+        actionsSerializer = ActionSerializer(actions, many=True)
         return Response({"roomData": serializer.data, "devicesData": devicesSerializer.data,
-                         "sensorsData": sensorsSerializer.data, "rulesData": ruleSerializer.data}, status=status.HTTP_200_OK)
+                         "sensorsData": sensorsSerializer.data, "rulesData": ruleSerializer.data,
+                         "actionsData": actionsSerializer.data}, status=status.HTTP_200_OK)
 
 
 class DeviceData(APIView):
@@ -284,7 +308,7 @@ class DeviceData(APIView):
         rooms = Room.objects.filter(home__owner=request.user)
         floors = Floor.objects.filter(home__owner=request.user)
         locations = Home.objects.filter(owner=request.user)
-        actions = Action.objects.filter(device=device)
+        actions = Action.objects.filter(device=device).order_by("-created_at")
 
         serializer = DeviceSerializer(device)
         sensorSerializer = SensorSerializer(sensors, many=True)

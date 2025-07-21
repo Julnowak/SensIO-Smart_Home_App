@@ -1,8 +1,8 @@
 import React, {useState} from 'react';
 import {
-    Box,
+    Box, Button,
     Card,
-    CardContent, Chip,
+    CardContent, Checkbox, Chip, IconButton,
     Skeleton,
     Table, TableBody,
     TableCell, TableContainer,
@@ -11,7 +11,16 @@ import {
     TableRow,
     Typography
 } from "@mui/material";
-import {CheckCircleOutline, InfoOutlined, RadioButtonChecked, RemoveCircleOutline, Warning} from "@mui/icons-material";
+import {
+    CheckBoxOutlineBlank,
+    CheckBoxOutlined,
+    CheckCircleOutline,
+    CheckCircleOutlineOutlined, Dangerous,
+    InfoOutlined,
+    RadioButtonChecked,
+    RemoveCircleOutline,
+    Warning
+} from "@mui/icons-material";
 import {format} from "date-fns";
 import {pl} from "date-fns/locale";
 import {styled} from "@mui/material/styles";
@@ -65,7 +74,7 @@ const AlarmsTab = ({alarms, loading, type}) => {
                                     <TableCell>Wartość</TableCell>
                                     <TableCell>Alarm</TableCell>
                                     <TableCell>Data pomiaru</TableCell>
-                                    {type === "device"? <TableCell>Czujnik</TableCell>: null}
+                                    <TableCell>Czujnik</TableCell>
                                     <TableCell>Powód</TableCell>
                                     <TableCell>Akcje</TableCell>
                                 </TableRow>
@@ -79,30 +88,44 @@ const AlarmsTab = ({alarms, loading, type}) => {
                                     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                                     .map((alarm) => (<TableRow key={alarm.action_id}>
                                         <TableCell>
-                                            {Math.round(alarm?.measurement.value * 100) / 100} {alarm?.measurement?.sensor.unit}
+                                            {Math.round(alarm?.measurement?.value * 100) / 100} {alarm?.measurement?.sensor.unit}
                                         </TableCell>
                                         <TableCell>
                                             {alarm.status === "MEDIUM" ?
                                                 <Warning color="warning"/> : (alarm.status === "LOW" ?
-                                                    <Warning color="yellow"/> : "---")}
+                                                    <Warning sx={{color: "#f2c42b"}}/> : (alarm.status === "HIGH" ?
+                                                        <Warning color={"error"}/> : "---"))}
 
                                         </TableCell>
                                         <TableCell>
                                             {format(new Date(alarm.created_at), 'PPpp', {locale: pl})}
                                         </TableCell>
-                                        {type === "device"?
+
                                             <TableCell>
-                                                <Chip label={alarm.measurement.sensor.visibleName} variant={"outlined"} size={"small"} onClick={()=> navigate(`/sensor/${alarm.measurement.sensor.sensor_id}`)}/>
-                                            </TableCell>:null}
+                                                <Chip label={alarm.measurement.sensor.visibleName} variant={"outlined"}
+                                                      size={"small"}
+                                                      onClick={() => navigate(`/sensor/${alarm.measurement.sensor.sensor_id}`)}/>
+                                            </TableCell>
                                         <TableCell>
                                             {alarm.description}
                                         </TableCell>
-                                        <TableCell>
-                                            {alarm.status !== "NORMAL" ? <>
-                                                <RemoveCircleOutline color="error"/>
-                                                {!alarm.isAcknowledged ? <RadioButtonChecked/> :
-                                                    <CheckCircleOutline/>}
-                                            </> : null}
+                                        <TableCell sx={{padding: '4px', width: '80px'}}>
+                                            {alarm.status !== "NORMAL"? (
+                                                <Box sx={{display: 'flex'}}>
+                                                    <IconButton size="small">
+                                                        <RemoveCircleOutline fontSize="small" color="error"/>
+                                                    </IconButton>
+                                                    <IconButton size="small">
+                                                        <Checkbox sx={{'& svg': {fontSize: '16px'}}} fontSize="small" color="error"/>
+                                                    </IconButton>
+                                                </Box>
+                                            ):
+                                                <Box sx={{display: 'flex', gap: '4px'}}>
+                                                    <IconButton size="small">
+                                                        <Dangerous fontSize="small" color="error"/>
+                                                    </IconButton>
+                                                </Box>
+                                            }
                                         </TableCell>
                                     </TableRow>))) : (<TableRow>
                                     <TableCell colSpan={3} align="center">
@@ -115,15 +138,40 @@ const AlarmsTab = ({alarms, loading, type}) => {
                         </Table>
                     </TableContainer>
                     <TablePagination
-                        rowsPerPageOptions={[5, 10, 25]}
+                        rowsPerPageOptions={[10, 25, 50]}
                         component="div"
                         count={alarms.length}
                         rowsPerPage={rowsPerPage}
                         page={page}
                         onPageChange={handleChangePage}
                         onRowsPerPageChange={handleChangeRowsPerPage}
-                        labelRowsPerPage="Wierszy na stronę:"
-                        labelDisplayedRows={({from, to, count}) => `${from}-${to} z ${count}`}
+                        sx={{
+                            borderTop: "1px solid",
+                            borderColor: "divider",
+                            // Styles applied directly to the toolbar using its class
+                            '& .MuiTablePagination-toolbar': {
+                                display: 'flex',      // Make it a flex container
+                                alignItems: 'center', // Vertically center all items within this toolbar
+
+                            },
+                            '& .MuiTablePagination-selectLabel': {
+                                margin: 0,
+                                padding: 0,
+                            }, '& .MuiTablePagination-displayedRows': {
+                                margin: 0,
+                                padding: 0,
+                            },
+                            // Opcjonalne dla samego select'a, jeśli ma dziwny offset
+                            '& .MuiTablePagination-select': {
+                                // margin: 0,
+                                // padding: 0,
+                            }
+
+                        }}
+                        labelRowsPerPage={"Wyniki na stronę:"}
+                        labelDisplayedRows={({from, to, count}) =>
+                            `${from}–${to} z ${count !== -1 ? count : `ponad ${to}`}`
+                        }
                     />
                 </CardContent>
             )}

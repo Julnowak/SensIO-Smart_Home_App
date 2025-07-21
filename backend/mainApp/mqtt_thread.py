@@ -51,9 +51,9 @@ def start_mqtt_thread(topic: str, deviceId: int):
                         df['energy_consumption'] = df['energy_consumption'].astype(float)
                         detRes = detect_anomaly(df)
 
-                        print(detRes['lastMedium'], detRes['lastLow'])
-
-                        if detRes['lastMedium']:
+                        if detRes['lastHigh']:
+                            last_measurement.warning = "HIGH"
+                        elif detRes['lastMedium']:
                             last_measurement.warning = "MEDIUM"
                         elif detRes['lastLow']:
                             last_measurement.warning = "LOW"

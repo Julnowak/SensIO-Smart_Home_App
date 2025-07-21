@@ -19,7 +19,7 @@ import {
     LinearProgress,
     Tooltip,
     Tabs,
-    Tab
+    Tab, Container, FormControlLabel
 } from '@mui/material';
 import {
     Lightbulb,
@@ -39,10 +39,24 @@ import {
     MoreVert,
     Timeline,
     History,
-    Settings, Business, EventNote, Room, InfoOutlined, RuleFolderOutlined, AddCircleOutline
+    Settings,
+    Business,
+    EventNote,
+    Room,
+    InfoOutlined,
+    RuleFolderOutlined,
+    AddCircleOutline,
+    Memory as MemoryIcon,
+    Star,
+    RefreshOutlined, EditOutlined, Layers, ExpandLess, ExpandMore, ListAlt, BarChartOutlined
 } from '@mui/icons-material';
 import client from "../../../client.jsx";
 import {API_BASE_URL} from "../../../config.jsx";
+import AlarmsTab from "../../tabs/alarmsTab.jsx";
+import {lightGreen} from "@mui/material/colors";
+import {format} from "date-fns";
+import {pl} from "date-fns/locale";
+import RulesTab from "../../tabs/rulesTab.jsx";
 
 
 const StatusCard = styled(Card)(({theme}) => ({
@@ -82,6 +96,7 @@ const RoomPage = () => {
     // Mock device data
     const [devices, setDevices] = useState([]);
     const [sensors, setSensors] = useState([]);
+    const [alarms, setAlarms] = useState([]);
     const [rules, setRules] = useState([]);
 
     // WebSocket setup
@@ -130,6 +145,7 @@ const RoomPage = () => {
             setDevices(response.data.devicesData)
             setSensors(response.data.sensorsData)
             setRules(response.data.rulesData)
+            setAlarms(response.data.actionsData)
 
         } catch (error) {
             console.error("Failed to fetch room data", error);
@@ -168,78 +184,178 @@ const RoomPage = () => {
         );
     }
 
+    function handleRefresh() {
+
+    }
+
     return (
-        <Box sx={{p: 3, maxWidth: 1400, mx: 'auto'}}>
-            {/* Header Section */}
-            <Box sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                mb: 4,
-                gap: 2
-            }}>
-                <Box>
-                    <Typography variant="h3" component="h1" fontWeight={700}>
-                        {room.name}
-                    </Typography>
-                    <Box sx={{display: 'flex', alignItems: 'center', gap: 2, mt: 1}}>
+        <Container maxWidth="xl">
+            <Box sx={{p: 3}}>
+                <Box sx={{
+                    p: 3,
+                    mb: 2,
+                    border: "1px solid #00000020",
+                    borderRadius: 3,
+                    backgroundColor: 'background.paper',
+                    boxShadow: '0px 2px 10px rgba(0, 0, 0, 0.05)',
+                    display: 'flex',
+                    gap: 3,
+                    alignItems: 'flex-start',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                        boxShadow: '0px 4px 15px rgba(0, 0, 0, 0.1)'
+                    }
+                }}>
+                    {/* Lewa sekcja - avatar i podstawowe informacje */}
+                    <Box sx={{display: 'flex', gap: 3, flex: 1}}>
+                        <Badge
+                            anchorOrigin={{vertical: 'top', horizontal: 'left'}}
+                            badgeContent={" "}
+                            invisible={!room?.isActive}
+                            sx={{
+                                '& .MuiBadge-badge': {
+                                    transform: 'scale(1) translate(5%, 5%)',
+                                    backgroundColor: lightGreen[600],
+                                    border: "1px solid green"
+                                }
+                            }}
+                        >
+                            <Avatar sx={{
+                                width: 80,
+                                height: 80,
+                                bgcolor: room?.color || 'primary.main',
+                                color: 'primary.contrastText',
+                                fontSize: 32,
+                                position: 'relative'
+                            }}>
+                                <MeetingRoom fontSize="inherit"/>
+                            </Avatar>
+                        </Badge>
 
-                        <Chip
-                            icon={<MeetingRoom fontSize="small"/>}
-                            label={`Piętro ${room?.floor?.floor_number || 'N/A'}`}
-                            variant="outlined"
-                            size="small"
-                            sx={{borderRadius: 1}}
-                        />
+                        <Box sx={{flex: 1}}>
+                            <Box sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                gap: 2,
+                                mb: 1
+                            }}>
+                                <Box sx={{display: 'flex', alignItems: 'center', gap: 2}}>
+                                    <Typography variant="h4" fontWeight={600}>
+                                        {room?.name || 'Ładowanie...'}
+                                    </Typography>
+                                    {/*<IconButton*/}
+                                    {/*    onClick={handleToggleFavorite}*/}
+                                    {/*    size="small"*/}
+                                    {/*    sx={{*/}
+                                    {/*        color: device?.isFavorite ? 'warning.main' : 'text.disabled',*/}
+                                    {/*        '&:hover': {*/}
+                                    {/*            color: 'warning.main'*/}
+                                    {/*        }*/}
+                                    {/*    }}*/}
+                                    {/*>*/}
+                                    {/*    <Star fontSize="small"/>*/}
+                                    {/*</IconButton>*/}
+                                </Box>
 
-                        <Chip
-                            icon={<Business fontSize="small"/>}
-                            onClick={() => navigate(`/home/${room?.home.home_id}`)}
-                            label={room?.home?.name || 'N/A'}
-                            variant="outlined"
-                            size="small"
-                            sx={{borderRadius: 1}}
-                        />
+                                <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
+                                    <Tooltip title="Odśwież">
+                                        <IconButton
+                                            onClick={() => fetchRoom()}
+                                            size="small"
+                                            sx={{
+                                                color: 'text.secondary',
+                                                '&:hover': {
+                                                    color: 'primary.main',
+                                                    bgcolor: 'rgba(25, 118, 210, 0.04)'
+                                                }
+                                            }}
+                                        >
+                                            <RefreshOutlined fontSize="small"/>
+                                        </IconButton>
+                                    </Tooltip>
+                                    <Tooltip title="Edytuj">
+                                        <IconButton
+                                            // onClick={() => {
+                                            //     setOpenDeviceModal(!openDeviceModal);
+                                            //     setFormDataDevice({
+                                            //         ...device,
+                                            //         location: device?.location.home_id,
+                                            //         floor: device.floor ? device.floor.floor_id : device.floor,
+                                            //         room: device.room ? device.room.room_id : device.room
+                                            //     });
+                                            // }}
+                                            size="small"
+                                            sx={{
+                                                color: 'text.secondary',
+                                                '&:hover': {
+                                                    color: 'primary.main',
+                                                    bgcolor: 'rgba(25, 118, 210, 0.04)'
+                                                }
+                                            }}
+                                        >
+                                            <EditOutlined fontSize="small"/>
+                                        </IconButton>
+                                    </Tooltip>
+                                </Box>
+                            </Box>
 
-                        <Box sx={{display: 'flex', alignItems: 'center', ml: 1}}>
-                            {wsStatus === 'connected' ? (
-                                <Wifi color="success" fontSize="small"/>
-                            ) : (
-                                <WifiOff color="error" fontSize="small"/>
-                            )}
-                            <Typography variant="caption" color="text.secondary" sx={{ml: 1}}>
-                                {wsStatus.charAt(0).toUpperCase() + wsStatus.slice(1)}
+                            <Typography color="text.secondary" sx={{mb: 2}}>
+                                Ostatnia aktywność: {room?.lastUpdated ? format(new Date(room?.lastUpdated), "PPpp", {locale: pl}) : format(new Date(), "PPpp", {locale: pl})}
                             </Typography>
+
+                            <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+                                <Box sx={{display: 'flex', gap: 1.5, flexWrap: 'wrap'}}>
+                                    <Chip
+                                        icon={<Layers fontSize="small"/>}
+                                        label={`Piętro ${room?.floor?.floor_number || 'N/A'}`}
+                                        variant="outlined"
+                                        size="small"
+                                        sx={{borderRadius: 1}}
+                                    />
+                                    <Chip
+                                        icon={<Business fontSize="small"/>}
+                                        onClick={() => navigate(`/home/${room?.home.home_id}`)}
+                                        label={room?.home?.name || 'N/A'}
+                                        variant="outlined"
+                                        size="small"
+                                        sx={{borderRadius: 1}}
+                                    />
+                                </Box>
+                            </Box>
                         </Box>
                     </Box>
                 </Box>
 
-                <Box sx={{display: 'flex', alignItems: 'center', gap: 2}}>
-                    <Tooltip title="Odśwież">
-                        <IconButton onClick={() => fetchRoom()} color="primary">
-                            <Refresh/>
-                        </IconButton>
-                    </Tooltip>
-                </Box>
-            </Box>
+            <Paper elevation={0}
+                   sx={{
+                       width: "100%",
+                       border: "1px solid #00000020",
+                       borderRadius: 2,
+                       overflow: 'hidden',
+                       mt: 2,
+                       mb: 2
+                   }}>
+                <Tabs
+                    value={activeTab}
+                    onChange={(e, newValue) => setActiveTab(newValue)}
+                    variant="scrollable"
+                    scrollButtons="auto"
+                    allowScrollButtonsMobile
+                >
+                    <Tab label="Ogólne" icon={<Sensors/>}/>
+                    <Tab label="Urządzenia" icon={<Lightbulb/>}/>
+                    <Tab label="Alarmy" icon={<Warning/>}/>
+                    <Tab label="Zasady" icon={<EventNote/>}/>
+                    <Tab label="Wykresy" icon={<Timeline/>}/>
+                </Tabs>
+            </Paper>
 
-            {/* Tabs */}
-            <Tabs
-                value={activeTab}
-                onChange={(e, newValue) => setActiveTab(newValue)}
-                sx={{mb: 3}}
-            >
-                <Tab label="Ogólne" icon={<Sensors/>}/>
-                <Tab label="Urządzenia" icon={<Lightbulb/>}/>
-                <Tab label="Analityka" icon={<Timeline/>}/>
-                <Tab label="Zasady" icon={<EventNote/>}/>
-                <Tab label="Historia" icon={<History/>}/>
-            </Tabs>
 
             {/* Main Content */}
             {activeTab === 0 && (
                 <Grid container spacing={3}>
-                    <Grid item xs={12} md={4}>
+                    <Grid size={{xs: 12, md: 4}}>
                         <StatusCard>
                             <CardContent>
                                 <Box sx={{display: 'flex', alignItems: 'center', mb: 2}}>
@@ -267,7 +383,7 @@ const RoomPage = () => {
                         </StatusCard>
                     </Grid>
 
-                    <Grid item xs={12} md={4}>
+                    <Grid size={{xs: 12, md: 4}}>
                         <StatusCard>
                             <CardContent>
                                 <Box sx={{display: 'flex', alignItems: 'center', mb: 2}}>
@@ -318,10 +434,6 @@ const RoomPage = () => {
             ) : (
                 <Grid container spacing={3}>
                     <Grid size={{xs: 12}}>
-                        <Typography variant="h5" gutterBottom sx={{mb: 2}}>
-                            Wszystkie urządzenia
-                        </Typography>
-
                         <Grid container spacing={3}>
                             {devices?.map(device => (
                                 <Grid size={{xs: 12, sm: 6, md: 4, lg: 3}} key={device.device_id}>
@@ -333,7 +445,7 @@ const RoomPage = () => {
                                                     {device.name}
                                                 </Typography>
                                                 <Typography variant="caption" color="text.secondary">
-                                                    Last active: {new Date(device.lastUpdated).toLocaleTimeString()}
+                                                    Ostatnio aktywne: {new Date(device.lastUpdated).toLocaleTimeString()}
                                                 </Typography>
                                             </Box>
                                             <Switch
@@ -352,54 +464,12 @@ const RoomPage = () => {
             ))}
 
             {activeTab === 2 && (
-                <Box>
-                    <Typography variant="h5" gutterBottom sx={{mb: 3}}>
-                        Analityka
-                    </Typography>
-                    <Paper sx={{p: 3, borderRadius: 3, minHeight: 400}}>
-                        <Typography color="text.secondary">
-                            Energy analytics coming soon
-                        </Typography>
-                    </Paper>
-                </Box>
+                <AlarmsTab alarms={alarms}/>
             )}
 
-            {activeTab === 3 && (devices.length === 0 ? (
-                <Box mt={0.5} sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    height: '200px',
-                    textAlign: 'center'
-
-                }}>
-                    <InfoOutlined color="disabled" sx={{fontSize: 48, mb: 2}}/>
-                    <Typography variant="h6" color="text.secondary">
-                        Brak zasad do wyświetlenia
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                        Dodaj zasady aby móc je przeglądać
-                    </Typography>
-                </Box>
-            ):(
-                <Box>
-                    <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3}}>
-                        <Button
-                            variant="contained"
-                            startIcon={<AddCircleOutline/>}
-                            onClick={() => setOpenDialog(true)}
-                        >
-                            Nowa zasada
-                        </Button>
-                    </Box>
-                    <Paper sx={{p: 3, borderRadius: 3, minHeight: 400}}>
-                        <Typography color="text.secondary">
-                            Security settings coming soon
-                        </Typography>
-                    </Paper>
-                </Box>
-            ))}
+            {activeTab === 3 && (
+                <RulesTab rules={rules}/>
+            )}
 
             {activeTab === 4 && (
                 <Box>
@@ -414,6 +484,7 @@ const RoomPage = () => {
                 </Box>
             )}
         </Box>
+</Container>
     );
 };
 

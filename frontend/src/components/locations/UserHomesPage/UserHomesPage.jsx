@@ -58,7 +58,7 @@ import {
     MeetingRoom,
     Warning,
     Check,
-    MapsHomeWork, Refresh, FilterAltOff, FilterAlt, Layers, Close
+    MapsHomeWork, Refresh, FilterAltOff, FilterAlt, Layers, Close, Archive, PublishedWithChanges, Unarchive
 } from "@mui/icons-material";
 import client from "../../../client.jsx";
 import {API_BASE_URL} from "../../../config.jsx";
@@ -119,7 +119,8 @@ const UserLocationsPage = () => {
             (statusFilter === "all" || statusFilter === room.isActive) &&
             (activeTab === 0 ||
                 (activeTab === 1 && room.isFavorite) ||
-                (activeTab === 2 && room.warning)));
+                (activeTab === 2 && room.warning)||
+                (activeTab === 3 && room.isArchived)));
         setFilteredLocations(filtered);
 
     }, [statusFilter, warningFilter, search, activeTab, locations]);
@@ -129,11 +130,60 @@ const UserLocationsPage = () => {
     const endIndex = startIndex + perPage;
     const paginatedLocations = filteredLocations.slice(startIndex, endIndex);
     const totalPages = Math.ceil(Math.max(filteredLocations.length, 1) / perPage);
-
     const navigate = useNavigate();
 
     function handleSearch() {
 
+    }
+
+    const handleArchive = async (homeId) => {
+        try {
+            await client.put(`${API_BASE_URL}home/${homeId}/`, {
+                "archive": true
+            },{
+                headers: {Authorization: `Bearer ${token}`},
+            });
+
+            setLocations(prevLocations =>
+                prevLocations.map(location =>
+                  location.home_id === homeId
+                    ? { ...location, isArchived: !location.isArchived }
+                    : location
+                )
+              );
+
+        } catch (error) {
+            console.error("Failed to delete location", error);
+        }
+    }
+
+    const handleChangeCurrent = async (homeId) => {
+        try {
+            await client.put(`${API_BASE_URL}home/${homeId}/`, {
+                "changeCurrent": true
+            }, {
+                headers: {Authorization: `Bearer ${token}`},
+            });
+
+            setLocations(prevLocations =>
+                prevLocations.map(location =>
+                    location.current === true
+                        ? {...location, current: false}
+                        : location
+                )
+            );
+
+            setLocations(prevLocations =>
+                prevLocations.map(location =>
+                    location.home_id === homeId
+                        ? {...location, current: true}
+                        : location
+                )
+            );
+
+        } catch (error) {
+            console.error("Failed to delete location", error);
+        }
     }
 
     return (
@@ -193,6 +243,7 @@ const UserLocationsPage = () => {
                             <Tab label="Wszystkie" icon={<MapsHomeWork fontSize="small"/>} iconPosition="start"/>
                             <Tab label="Ulubione" icon={<Star fontSize="small"/>} iconPosition="start"/>
                             <Tab label="Ostrzeżenia" icon={<Warning fontSize="small"/>} iconPosition="start"/>
+                            <Tab label="Zarchiwizowane" icon={<Archive fontSize="small"/>} iconPosition="start"/>
                         </Tabs>
 
                         <Box
@@ -307,8 +358,7 @@ const UserLocationsPage = () => {
                             borderRadius: '12px',
                         }}>
                             <Grid container spacing={2}>
-
-                                <Grid item xs={12} sm={6} md={4}>
+                                <Grid size={{xs: 12, sm: 6, md: 4}}>
                                     <FormControl fullWidth>
                                         <InputLabel>Status ostrzeżenia</InputLabel>
                                         <Select
@@ -323,7 +373,7 @@ const UserLocationsPage = () => {
                                     </FormControl>
                                 </Grid>
 
-                                <Grid item xs={12} sm={6} md={4}>
+                                <Grid size={{xs: 12, sm: 6, md: 4}}>
                                     <FormControl fullWidth>
                                         <InputLabel>Status pokoju</InputLabel>
                                         <Select
@@ -415,7 +465,7 @@ const UserLocationsPage = () => {
 
             {loading && <LinearProgress sx={{mb: 2}}/>}
 
-            <Grid item xs={12}>
+            <Grid size={{xs: 12}}>
                 <Paper elevation={0}
                        sx={{
                            width: "100%",
@@ -434,9 +484,10 @@ const UserLocationsPage = () => {
                                             <TableCell
                                                 sx={{fontWeight: 'bold', textAlign: "center"}}>Alarm</TableCell>
                                             <TableCell sx={{fontWeight: 'bold'}}>Status</TableCell>
-                                            <TableCell sx={{fontWeight: 'bold'}}>Urządzenia</TableCell>
+                                            <TableCell sx={{fontWeight: 'bold', maxWidth: 60}}>Wybrany</TableCell>
                                             <TableCell sx={{fontWeight: 'bold', minWidth: 150}}>Ostatnia
                                                 aktualizacja</TableCell>
+                                            <TableCell sx={{fontWeight: 'bold', maxWidth: 80}}>Akcje</TableCell>
                                         </>
                                     )}
                                 </TableRow>
@@ -446,11 +497,10 @@ const UserLocationsPage = () => {
                                     <TableRow
                                         key={location.home_id}
                                         hover
-                                        onClick={() => navigate(`/home/${location.home_id}`)}
                                         sx={{cursor: 'pointer', '&:last-child td': {borderBottom: 0}}}
                                     >
 
-                                        <TableCell>
+                                        <TableCell onClick={() => navigate(`/home/${location.home_id}`)}>
                                             <Box sx={{display: 'flex', alignItems: 'center', gap: 2}}>
                                                 <Badge
                                                     overlap="circular"
@@ -501,14 +551,15 @@ const UserLocationsPage = () => {
                                             </Box>
                                         </TableCell>
 
-                                        <TableCell sx={{textAlign: 'center'}}>
+                                        <TableCell onClick={() => navigate(`/home/${location.home_id}`)}
+                                                   sx={{textAlign: 'center'}}>
                                             {location.warning ? <Warning size={"large"} color={"warning"}/> :
-                                                <Check size={"large"} color={"action"}/>}
+                                                "---"}
                                         </TableCell>
 
                                         {!isMobile && (
                                             <>
-                                                <TableCell>
+                                                <TableCell onClick={() => navigate(`/home/${location.home_id}`)}>
                                                     {location.isActive ?
                                                         <Tooltip title={"Aktywny"}>
                                                             <WifiTethering color={"success"}
@@ -520,22 +571,44 @@ const UserLocationsPage = () => {
                                                         </Tooltip>
                                                     }
                                                 </TableCell>
-                                                <TableCell>
-                                                    <Chip
-                                                        label={`${location.devicesCount} urządzeń`}
-                                                        variant="outlined"
-                                                        size="small"
-                                                    />
+                                                <TableCell onClick={() => navigate(`/home/${location.home_id}`)}>
+                                                    {location.current ? <Check color={"success"}/> : "---"}
                                                 </TableCell>
                                                 {location?.lastUpdated ? (
-                                                        <TableCell>
+                                                        <TableCell onClick={() => navigate(`/home/${location.home_id}`)}>
                                                             {new Date(location.lastUpdated).toLocaleDateString()}, {new Date(location.lastUpdated).toLocaleTimeString()}
                                                         </TableCell>
                                                     ) :
-                                                    <TableCell>
+                                                    <TableCell onClick={() => navigate(`/home/${location.home_id}`)}>
                                                         <em>Brak aktywności</em>
                                                     </TableCell>
                                                 }
+                                                <TableCell sx={{
+                                                    maxWidth: 80,
+
+                                                    justifyContent: 'center'
+                                                }}>
+                                                    {!location.isArchived?
+                                                    <Tooltip title="Archiwizuj">
+                                                        <IconButton size="small" sx={{padding: '4px'}} onClick={()=>handleArchive(location.home_id)}>
+                                                            <Archive fontSize="small"/>
+                                                        </IconButton>
+                                                    </Tooltip>:
+                                                    <Tooltip title="Przywróć">
+                                                        <IconButton size="small" sx={{padding: '4px'}} onClick={()=>handleArchive(location.home_id)}>
+                                                            <Unarchive fontSize="small"/>
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                    }
+
+                                                    {!location.current && (
+                                                        <Tooltip title="Zmień na wybrany" >
+                                                            <IconButton size="small" sx={{padding: '4px'}} onClick={()=> handleChangeCurrent(location.home_id)}>
+                                                                <PublishedWithChanges fontSize="small"/>
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                    )}
+                                                </TableCell>
 
                                             </>
                                         )}

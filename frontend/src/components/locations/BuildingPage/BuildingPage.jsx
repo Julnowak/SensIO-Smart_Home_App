@@ -24,7 +24,11 @@ import {
     Memory as MemoryIcon,
     Star,
     RefreshOutlined,
-    EditOutlined, MeetingRoom, Business, ExpandLess, ExpandMore
+    EditOutlined,
+    MeetingRoom,
+    Business,
+    ExpandLess,
+    ExpandMore, Archive, Unarchive, Check, HomeWork, SquareFoot, CalendarToday
 } from "@mui/icons-material";
 import {
     Box,
@@ -45,41 +49,63 @@ import {
     Dialog,
     DialogActions,
     DialogContent,
-    DialogTitle, DialogContentText, Tabs, Tab, Badge, Avatar, FormControlLabel, Switch, Tooltip, Chip
+    DialogTitle,
+    DialogContentText,
+    Tabs,
+    Tab,
+    Badge,
+    Avatar,
+    FormControlLabel,
+    Switch,
+    Tooltip,
+    Chip
 } from "@mui/material";
 import {MapContainer, TileLayer, Marker, useMapEvents} from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import {format} from "date-fns";
 import {pl} from "date-fns/locale";
 import AlarmsTab from "../../tabs/alarmsTab.jsx";
+import {lightGreen} from "@mui/material/colors";
+import RulesTab from "../../tabs/rulesTab.jsx";
 
+
+const InfoItem = ({icon, label, value}) => (
+    <Box sx={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 2,
+        mb: 2,
+        minHeight: 40
+    }}>
+        {React.cloneElement(icon, {fontSize: 'small'})}
+        <Typography variant="body1">
+            <Box component="span" sx={{fontWeight: 500}}>{label}</Box> {value}
+        </Typography>
+    </Box>
+);
 
 const LocationMarker = ({location, setLocation}) => {
     const map = useMapEvents({
         click(e) {
             setLocation({
-                lat: e.latlng.lat,
-                lng: e.latlng.lng
+                lat: e.latlng.lat, lng: e.latlng.lng
             });
         },
     });
 
-    return location === null ? null : (
-        <Marker
-            position={[location.lat, location.lng]}
-            draggable={true}
-            eventHandlers={{
-                dragend: (e) => {
-                    const marker = e.target;
-                    const position = marker.getLatLng();
-                    setLocation({
-                        lat: position.lat,
-                        lng: position.lng
-                    });
-                },
-            }}
-        />
-    );
+    return location === null ? null : (<Marker
+        position={[location.lat, location.lng]}
+        draggable={true}
+        eventHandlers={{
+            dragend: (e) => {
+                const marker = e.target;
+                const position = marker.getLatLng();
+                setLocation({
+                    lat: position.lat, lng: position.lng
+                });
+            },
+        }}
+    />);
 };
 
 const MapDialog = ({open, onClose, location, setLocation}) => {
@@ -90,30 +116,28 @@ const MapDialog = ({open, onClose, location, setLocation}) => {
         onClose();
     };
 
-    return (
-        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-            <DialogTitle>Wybierz lokalizację na mapie</DialogTitle>
-            <DialogContent sx={{height: '500px'}}>
-                <MapContainer
-                    center={tempLocation || [52.237, 21.017]} // Default to Warsaw center
-                    zoom={tempLocation ? 15 : 5}
-                    style={{height: '100%', width: '100%', borderRadius: '8px'}}
-                >
-                    <TileLayer
-                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                    />
-                    <LocationMarker location={tempLocation} setLocation={setTempLocation}/>
-                </MapContainer>
-            </DialogContent>
-            <DialogActions>
-                <Button onClick={onClose}>Anuluj</Button>
-                <Button onClick={handleSave} variant="contained" color="primary">
-                    Zapisz lokalizację
-                </Button>
-            </DialogActions>
-        </Dialog>
-    );
+    return (<Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+        <DialogTitle>Wybierz lokalizację na mapie</DialogTitle>
+        <DialogContent sx={{height: '500px'}}>
+            <MapContainer
+                center={tempLocation || [52.237, 21.017]} // Default to Warsaw center
+                zoom={tempLocation ? 15 : 5}
+                style={{height: '100%', width: '100%', borderRadius: '8px'}}
+            >
+                <TileLayer
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                />
+                <LocationMarker location={tempLocation} setLocation={setTempLocation}/>
+            </MapContainer>
+        </DialogContent>
+        <DialogActions>
+            <Button onClick={onClose}>Anuluj</Button>
+            <Button onClick={handleSave} variant="contained" color="primary">
+                Zapisz lokalizację
+            </Button>
+        </DialogActions>
+    </Dialog>);
 };
 
 const BuildingPage = () => {
@@ -131,6 +155,7 @@ const BuildingPage = () => {
     const [activeTab, setActiveTab] = useState(0);
     const [openEdit, setOpenEdit] = useState(false);
     const [alarms, setAlarms] = useState([]);
+    const [rules, setRules] = useState([]);
 
     const token = localStorage.getItem("access");
     const params = useParams();
@@ -172,11 +197,10 @@ const BuildingPage = () => {
 
         ws.onmessage = (event) => {
             const data = JSON.parse(event.data);
-            setLayout((prevLayout) =>
-                prevLayout.map((room) =>
-                    room.room_id === data.room_id ? {...room, light: data.light} : room
-                )
-            );
+            setLayout((prevLayout) => prevLayout.map((room) => room.room_id === data.room_id ? {
+                ...room,
+                light: data.light
+            } : room));
         };
 
         return () => ws.close();
@@ -194,8 +218,7 @@ const BuildingPage = () => {
     const handleChangeFloor = async (e) => {
         setSelectedFloor(e.target.value)
         const response = await client.get(API_BASE_URL + "home/" + params.id, {
-            headers: {Authorization: `Bearer ${token}`},
-            params: {floorId: e.target.value},
+            headers: {Authorization: `Bearer ${token}`}, params: {floorId: e.target.value},
         });
         setLayout(response.data.roomsData);
         console.log(response.data.roomsData)
@@ -203,18 +226,14 @@ const BuildingPage = () => {
 
     const handleLocationChange = (newLocation) => {
         setFormData(prev => ({
-            ...prev,
-            lat: newLocation.lat,
-            lng: newLocation.lng
+            ...prev, lat: newLocation.lat, lng: newLocation.lng
         }));
     };
 
     if (!location) {
-        return (
-            <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
-                <CircularProgress size={60}/>
-            </Box>
-        );
+        return (<Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+            <CircularProgress size={60}/>
+        </Box>);
     }
 
     const handleOpenDialog = (homeId) => {
@@ -252,10 +271,10 @@ const BuildingPage = () => {
 
     };
 
-    return (
-        <Container maxWidth="xl">
-            <Box sx={{pt: 3}}>
-                <Box sx={{
+    return (<Container maxWidth="xl">
+        <Box sx={{pt: 3}}>
+            <Box
+                sx={{
                     p: 3,
                     mb: 2,
                     border: "1px solid #00000020",
@@ -269,238 +288,261 @@ const BuildingPage = () => {
                     '&:hover': {
                         boxShadow: '0px 4px 15px rgba(0, 0, 0, 0.1)'
                     }
-                }}>
-                    <Box sx={{display: 'flex', gap: 3, flex: 1}}>
-                        <Avatar sx={{
+                }}
+            >
+                <Badge
+                    anchorOrigin={{vertical: 'top', horizontal: 'left'}}
+                    badgeContent={<Check fontSize="small"/>}
+                    invisible={!location?.current}
+                    sx={{
+                        '& .MuiBadge-badge': {
+                            transform: 'scale(1) translate(1%, 1%)',
+                            backgroundColor: lightGreen[600],
+                            border: "1px solid green",
+                            borderRadius: '50%', // Makes it circular
+                            width: 25,
+                            height: 25,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            padding: 0
+                        }
+                    }}
+                >
+                    <Avatar
+                        sx={{
                             width: 80,
                             height: 80,
                             color: 'primary.contrastText',
                             fontSize: 32,
-                            position: 'relative'
-                        }}>
-                            <img src={location.image?.slice(15)}/>
-                        </Avatar>
+                            position: 'relative',
+                            '& img': {
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'cover',
+                                position: 'absolute',
+                                top: 0,
+                                left: 0
+                            }
+                        }}
+                    >
+                        <img src={location.image?.slice(15)} alt={location?.name || 'Location image'}/>
+                    </Avatar>
+                </Badge>
 
-                        <Box sx={{flex: 1}}>
-                            <Box sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                gap: 2,
-                                mb: 1
-                            }}>
-                                <Box sx={{display: 'flex', alignItems: 'center', gap: 2}}>
-                                    <Typography variant="h4" fontWeight={600}>
-                                        {location?.name || 'Ładowanie...'}
-                                    </Typography>
+                <Box sx={{flex: 1, display: 'flex', flexDirection: 'column'}}>
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            justifyContent: 'space-between',
+                            gap: 2,
+                            mb: 1
+                        }}
+                    >
+                        <Box>
+                            <Box sx={{display: 'flex', alignItems: 'center', gap: 2, mb: 1}}>
+                                <Typography variant="h4" fontWeight={600}>
+                                    {location?.name || 'Ładowanie...'}
+                                </Typography>
+                                <IconButton
+                                    onClick={handleToggleFavorite}
+                                    size="small"
+                                    sx={{
+                                        color: location?.isFavorite ? 'warning.main' : 'text.disabled', '&:hover': {
+                                            color: 'warning.main'
+                                        }
+                                    }}
+                                >
+                                    <Star fontSize="small"/>
+                                </IconButton>
+                            </Box>
+
+                            <Typography variant="body2" color="text.secondary">
+                                {location?.address || 'Brak adresu'}
+                            </Typography>
+
+                            <Typography variant="body2" color="text.secondary" sx={{mt: 0.5}}>
+                                Ostatnia
+                                aktywność: {location?.lastUpdated ? format(new Date(location?.lastUpdated), "PPpp", {locale: pl}) : format(new Date(), "PPpp", {locale: pl})}
+                            </Typography>
+                        </Box>
+
+                        <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
+                            <Tooltip title="Odśwież">
+                                <IconButton
+                                    onClick={handleRefresh}
+                                    size="small"
+                                    sx={{
+                                        color: 'text.secondary', '&:hover': {
+                                            color: 'primary.main', bgcolor: 'rgba(25, 118, 210, 0.04)'
+                                        }
+                                    }}
+                                >
+                                    <RefreshOutlined fontSize="small"/>
+                                </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Edytuj">
+                                <IconButton
+                                    onClick={() => setOpenEdit(!openEdit)}
+                                    size="small"
+                                    sx={{
+                                        color: 'text.secondary', '&:hover': {
+                                            color: 'primary.main', bgcolor: 'rgba(25, 118, 210, 0.04)'
+                                        }
+                                    }}
+                                >
+                                    <EditOutlined fontSize="small"/>
+                                </IconButton>
+                            </Tooltip>
+                            {!location.isArchived ?
+                                <Tooltip title="Archiwizuj">
                                     <IconButton
-                                        onClick={handleToggleFavorite}
+                                        onClick={() => handleOpenDialog(location.home_id)}
                                         size="small"
                                         sx={{
-                                            color: location?.isFavorite ? 'warning.main' : 'text.disabled',
-                                            '&:hover': {
-                                                color: 'warning.main'
+                                            color: 'text.secondary', '&:hover': {
+                                                color: 'primary.main', bgcolor: 'rgba(25, 118, 210, 0.04)'
                                             }
                                         }}
                                     >
-                                        <Star fontSize="small"/>
+                                        <Archive fontSize="small"/>
                                     </IconButton>
-                                </Box>
+                                </Tooltip> :
+                                <Tooltip title="Przywróć">
+                                    <IconButton
+                                        onClick={() => handleOpenDialog(location.home_id)}
+                                        size="small"
+                                        sx={{
+                                            color: 'text.secondary', '&:hover': {
+                                                color: 'primary.main', bgcolor: 'rgba(25, 118, 210, 0.04)'
+                                            }
+                                        }}
+                                    >
+                                        <Unarchive fontSize="small"/>
+                                    </IconButton>
+                                </Tooltip>
+                            }
 
-                                <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
-                                    <Tooltip title="Odśwież">
-                                        <IconButton
-                                            onClick={handleRefresh}
-                                            size="small"
-                                            sx={{
-                                                color: 'text.secondary',
-                                                '&:hover': {
-                                                    color: 'primary.main',
-                                                    bgcolor: 'rgba(25, 118, 210, 0.04)'
-                                                }
-                                            }}
-                                        >
-                                            <RefreshOutlined fontSize="small"/>
-                                        </IconButton>
-                                    </Tooltip>
-                                    <Tooltip title="Edytuj">
-                                        <IconButton
-                                            onClick={() => {
-                                                setOpenEdit(!openEdit);
-                                                // setFormDataDevice({
-                                                //     ...device,
-                                                //     location: device?.location.home_id,
-                                                //     floor: device.floor ? device.floor.floor_id : device.floor,
-                                                //     room: device.room ? device.room.room_id : device.room
-                                                // });
-                                            }}
-                                            size="small"
-                                            sx={{
-                                                color: 'text.secondary',
-                                                '&:hover': {
-                                                    color: 'primary.main',
-                                                    bgcolor: 'rgba(25, 118, 210, 0.04)'
-                                                }
-                                            }}
-                                        >
-                                            <EditOutlined fontSize="small"/>
-                                        </IconButton>
-                                    </Tooltip>
-
-                                    <Tooltip title={"Usuń"}>
-                                        <IconButton
-                                            onClick={() => {
-                                                handleOpenDialog(location.home_id)
-                                            }}
-                                            size="small"
-                                            sx={{
-                                                color: 'text.secondary',
-                                                '&:hover': {
-                                                    color: 'primary.main',
-                                                    bgcolor: 'rgba(25, 118, 210, 0.04)'
-                                                }
-                                            }}
-                                        >
-                                            <Delete/>
-                                        </IconButton>
-                                    </Tooltip>
-
-                                </Box>
-
-                                <Typography color="text.secondary" sx={{mb: 2}}>
-                                    Ostatnia
-                                    aktywność: {location?.lastUpdated ? format(new Date(location?.lastUpdated), "PPpp", {locale: pl}) : format(new Date(), "PPpp", {locale: pl})}
-                                </Typography>
-
-
-                                {/*    <Button*/}
-                                {/*        onClick={toggleDetails}*/}
-                                {/*        variant="text"*/}
-                                {/*        size="small"*/}
-                                {/*        endIcon={showDetails ? <ExpandLess/> : <ExpandMore/>}*/}
-                                {/*        sx={{*/}
-                                {/*            color: 'text.secondary',*/}
-                                {/*            '&:hover': {*/}
-                                {/*                bgcolor: 'transparent',*/}
-                                {/*                color: 'primary.main'*/}
-                                {/*            }*/}
-                                {/*        }}*/}
-                                {/*    >*/}
-                                {/*        {showDetails ? 'Ukryj szczegóły' : 'Pokaż szczegóły'}*/}
-                                {/*    </Button>*/}
-                            </Box>
+                            <Tooltip title="Usuń">
+                                <IconButton
+                                    onClick={() => handleOpenDialog(location.home_id)}
+                                    size="small"
+                                    sx={{
+                                        color: 'text.secondary', '&:hover': {
+                                            color: 'primary.main', bgcolor: 'rgba(25, 118, 210, 0.04)'
+                                        }
+                                    }}
+                                >
+                                    <Delete fontSize="small"/>
+                                </IconButton>
+                            </Tooltip>
                         </Box>
                     </Box>
                 </Box>
             </Box>
+        </Box>
 
 
-            <Paper elevation={0}
-                   sx={{
-                       width: "100%",
-                       border: "1px solid #00000020",
-                       borderRadius: 2,
-                       overflow: 'hidden',
-                       mt: 2
-                   }}>
-                <Tabs
-                    value={activeTab}
-                    onChange={handleTabChange}
-                    variant="scrollable"
-                    scrollButtons="auto"
-                    allowScrollButtonsMobile
-                >
-                    <Tab label="Ogólne" value={0} icon={<Home/>} iconPosition="start"/>
-                    <Tab label="Rozmieszczenie" value={1} icon={<Layers/>} iconPosition="start"/>
-                    <Tab label="Alarmy" value={2} icon={<Warning/>} iconPosition="start"/>
-                    <Tab label="Zasady" value={3} icon={<ListAlt/>} iconPosition="start"/>
-                    <Tab label="Wykresy" value={4} icon={<BarChartOutlined/>} iconPosition="start"/>
-                </Tabs>
-            </Paper>
+        <Paper elevation={0}
+               sx={{
+                   width: "100%", border: "1px solid #00000020", borderRadius: 2, overflow: 'hidden', mt: 2,
+               }}>
+            <Tabs
+                value={activeTab}
+                onChange={handleTabChange}
+                variant="scrollable"
+                scrollButtons="auto"
+                allowScrollButtonsMobile
+            >
+                <Tab label="Ogólne" value={0} icon={<Home/>} iconPosition="start"/>
+                <Tab label="Rozmieszczenie" value={1} icon={<Layers/>} iconPosition="start"/>
+                <Tab label="Alarmy" value={2} icon={<Warning/>} iconPosition="start"/>
+                <Tab label="Zasady" value={3} icon={<ListAlt/>} iconPosition="start"/>
+                <Tab label="Wykresy" value={4} icon={<BarChartOutlined/>} iconPosition="start"/>
+            </Tabs>
+        </Paper>
 
-            <Paper elevation={3} sx={{
-                       width: "100%",
-                       border: "1px solid #00000020",
-                       borderRadius: 2,
-                       overflow: 'hidden',
-                       mt: 2,
-                       p:3
-                   }}>
-                {activeTab === 0 && (
-
-                    <Box sx={{mb: 4}}>
-                        <Box sx={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            mb: 3
-                        }}>
-
-                            <Typography variant="h3" component="h1" sx={{fontWeight: 700}}>
-                                {formData.name}
-                            </Typography>
-
-                        </Box>
-
-
-                        <Grid container spacing={3}>
-                            <Grid item xs={6} md={6}>
-                                <Box sx={{mb: 2, mt: 2, display: 'flex', alignItems: 'center', gap: 2}}>
-                                    <LocationOn color="action"/>
-                                    <Typography variant="body1">
-                                        <strong>Adres:</strong> {location.address || "Nie określono"}
-                                    </Typography>
+        <Paper elevation={3} sx={{
+            width: "100%", border: "1px solid #00000020", borderRadius: 2, overflow: 'hidden', mt: 2, p: 3,
+            mb: 3
+        }}>
+            {activeTab === 0 && (
+                <Box sx={{mt: 2}}>
+                    <Grid container spacing={3}>
+                        {/* Sekcja informacji */}
+                        <Grid size={{xs: 12, md: 6}} sx={{alignContent: "center"}}>
+                            <Box sx={{
+                                display: 'grid',
+                                gridTemplateColumns: {xs: '1fr', sm: '1fr 1fr'},
+                                gap: 2,
+                            }}>
+                                {/* Informacje o budynku - lewa kolumna */}
+                                <Box>
+                                    <InfoItem
+                                        icon={<Layers color="action"/>}
+                                        label="Liczba pięter:"
+                                        value={location.floor_num}
+                                    />
+                                    <InfoItem
+                                        icon={<LocationOn color="action"/>}
+                                        label="Liczba pomieszczeń:"
+                                        value={location.roomsCount || "Nie określono"}
+                                    />
+                                    <InfoItem
+                                        icon={<MemoryIcon color="action"/>}
+                                        label="Liczba urządzeń:"
+                                        value={location.activeDevices || "Nie określono"}
+                                    />
                                 </Box>
-                                <Box sx={{mb: 2, mt: 2, display: 'flex', alignItems: 'center', gap: 2}}>
-                                    <Layers color="action"/>
-                                    <Typography variant="body1">
-                                        <strong>Liczba pięter:</strong> {location.floor_num}
-                                    </Typography>
-                                </Box>
-                                <Box sx={{mb: 2, mt: 2, display: 'flex', alignItems: 'center', gap: 2}}>
-                                    <Layers color="action"/>
-                                    <Typography variant="body1">
-                                        <strong>Rok
-                                            budowy:</strong> {location.year_of_construction ? location.year_of_construction : "Brak danych"}
-                                    </Typography>
-                                </Box>
-                                <Box sx={{mb: 2, mt: 2, display: 'flex', alignItems: 'center', gap: 2}}>
-                                    <Layers color="action"/>
-                                    <Typography variant="body1">
-                                        <strong>Powierzchnia budynku:</strong> {location.building_area ? (
-                                        <>
-                                            {location.building_area} m<sup>2</sup>
-                                        </>
-                                    ) : (
-                                        'Brak danych'
-                                    )}
 
-                                    </Typography>
+                                {/* Informacje o budynku - prawa kolumna */}
+                                <Box>
+                                    <InfoItem
+                                        icon={<CalendarToday color="action"/>}
+                                        label="Rok budowy:"
+                                        value={location.year_of_construction || "Brak danych"}
+                                    />
+                                    <InfoItem
+                                        icon={<SquareFoot color="action"/>}
+                                        label="Powierzchnia budynku:"
+                                        value={location.building_area ? `${location.building_area} m²` : "Brak danych"}
+                                    />
+                                    <InfoItem
+                                        icon={<HomeWork color="action"/>}
+                                        label="Typ budynku:"
+                                        value={location.building_type || "Nieznany"}
+                                    />
                                 </Box>
-                                <Box sx={{mb: 2, mt: 2, display: 'flex', alignItems: 'center', gap: 2}}>
-                                    <Layers color="action"/>
-                                    <Typography variant="body1">
-                                        <strong>Typ
-                                            budynku:</strong> {location.building_type ? location.building_type : "Nieznany"}
-                                    </Typography>
-                                </Box>
-                                <Button onClick={() => setOpenNotes(true)} variant={"outlined"}
-                                        sx={{mb: 2, mt: 2, display: 'flex', alignItems: 'center', gap: 2}}>
-                                    <Notes/>
-                                    <Typography>
-                                        Zobacz uwagi
-                                    </Typography>
+                            </Box>
+
+                            {location.notes && (
+                                <Button
+                                    onClick={() => setOpenNotes(true)}
+                                    variant="outlined"
+                                    startIcon={<Notes/>}
+                                    sx={{mt: 2}}
+                                >
+                                    Zobacz uwagi
                                 </Button>
-                            </Grid>
+                            )}
                         </Grid>
-                        <Grid item xs={12} md={6}>
-                            {(location.lat && location.lng) ? (
-                                <Box sx={{mt: 2}}>
-                                    <Typography variant="body1" sx={{mb: 1, fontWeight: 500}}>
-                                        <LocationOn sx={{verticalAlign: 'middle', mr: 1}}/>
+
+                        {/* Sekcja mapy */}
+                        <Grid size={{xs: 12, md: 6}}>
+                            {location.lat && location.lng ? (
+                                <Box>
+                                    <Typography variant="subtitle1" sx={{mb: 1, display: 'flex', alignItems: 'center'}}>
+                                        <LocationOn sx={{mr: 1}}/>
                                         Lokalizacja na mapie
                                     </Typography>
-                                    <Box sx={{height: '200px', borderRadius: 2, overflow: 'hidden'}}>
+                                    <Box sx={{
+                                        height: 300,
+                                        borderRadius: 2,
+                                        overflow: 'hidden',
+                                        border: '1px solid',
+                                        borderColor: 'divider'
+                                    }}>
                                         <MapContainer
                                             center={[location.lat, location.lng]}
                                             zoom={15}
@@ -519,319 +561,306 @@ const BuildingPage = () => {
                                     </Box>
                                 </Box>
                             ) : (
-                                <Alert severity="info" color={"gray"} sx={{mt: 2, border: '1px solid gray'}}>
+                                <Alert
+                                    severity="info"
+                                    sx={{
+                                        mt: 2,
+                                        border: '1px solid',
+                                        borderColor: 'divider'
+                                    }}
+                                >
                                     Lokalizacja nie została ustawiona
                                 </Alert>
                             )}
                         </Grid>
-                    </Box>
-                )}
+                    </Grid>
+                </Box>
+            )}
 
-                {activeTab === 1 && (
-                    <Box sx={{mb: 4}}>
-                        <Box sx={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            mb: 3
-                        }}>
-                            <Box sx={{display: 'flex', alignItems: 'center', gap: 2}}>
-                                <Typography variant="h5" sx={{fontWeight: 600}}>
-                                    Rozkład pomieszczeń
-                                </Typography>
-                                <Select
-                                    value={selectedFloor}
-                                    onChange={(e) => handleChangeFloor(e)}
-                                    size="small"
-                                    sx={{
-                                        minWidth: 120,
-                                        backgroundColor: theme.palette.background.paper
-                                    }}
-                                >
-                                    {location.floors.sort((a, b) => a.floor_number - b.floor_number) // upewnij się, że są posortowane
-                                        .map(floor => (
-                                            <MenuItem key={floor?.floor_id} value={floor?.floor_id}>
-                                                Piętro {floor?.floor_number}
-                                            </MenuItem>
-                                        ))}
-                                </Select>
-                            </Box>
 
-                            {layout.length > 0 && (<Button
-                                variant="outlined"
-                                startIcon={<Schema/>}
-                                sx={{
-                                    px: 3,
-                                    py: 1
-                                }}
-                                onClick={() => {
-                                    navigate("/editor", {
-                                        state: {
-                                            floorId: selectedFloor,
-                                            layout: layout,
-                                        }
-                                    });
-                                }}
-                            >
-                                Tryb edycji
-                            </Button>)}
-                        </Box>
-
-                        <Paper
-                            elevation={2}
+            {activeTab === 1 && (<Box>
+                <Box sx={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3
+                }}>
+                    <Box sx={{display: 'flex', alignItems: 'center', gap: 2}}>
+                        <Typography variant="h5" sx={{fontWeight: 600}}>
+                            Rozkład pomieszczeń
+                        </Typography>
+                        <Select
+                            value={selectedFloor}
+                            onChange={(e) => handleChangeFloor(e)}
+                            size="small"
                             sx={{
-                                p: 2,
-                                borderRadius: 3,
-                                backgroundColor: theme.palette.background.default
+                                minWidth: 120, backgroundColor: theme.palette.background.paper
                             }}
                         >
-                            <LayoutViewer layout={layout} floorId={selectedFloor}/>
-                        </Paper>
+                            {location.floors.sort((a, b) => a.floor_number - b.floor_number) // upewnij się, że są posortowane
+                                .map(floor => (<MenuItem key={floor?.floor_id} value={floor?.floor_id}>
+                                    Piętro {floor?.floor_number}
+                                </MenuItem>))}
+                        </Select>
                     </Box>
-                )}
 
-                {activeTab === 2 && (
-                    <AlarmsTab alarms={alarms} loading={loading}/>
-                )}
+                    {layout.length > 0 && (<Button
+                        variant="outlined"
+                        startIcon={<Schema/>}
+                        sx={{
+                            px: 3, py: 1
+                        }}
+                        onClick={() => {
+                            navigate("/editor", {
+                                state: {
+                                    floorId: selectedFloor, layout: layout,
+                                }
+                            });
+                        }}
+                    >
+                        Tryb edycji
+                    </Button>)}
+                </Box>
+
+                <Paper
+                    elevation={2}
+                    sx={{
+                        p: 2, borderRadius: 3, backgroundColor: theme.palette.background.default
+                    }}
+                >
+                    <LayoutViewer layout={layout} floorId={selectedFloor}/>
+                </Paper>
+            </Box>)}
+
+            {activeTab === 2 && (<AlarmsTab alarms={alarms} loading={loading}/>)}
+            {activeTab === 3 && (<RulesTab rules={rules}/>)}
 
 
-            </Paper>
+        </Paper>
 
 
-            <Dialog
-                open={openNotes}
-                onClose={() => setOpenNotes(false)}
-                maxWidth="sm"
-                fullWidth
+        <Dialog
+            open={openNotes}
+            onClose={() => setOpenNotes(false)}
+            maxWidth="sm"
+            fullWidth
+        >
+            <Box
+                sx={{
+                    display: 'flex', flexDirection: 'column', maxHeight: '70vh', overflow: 'hidden'
+                }}
             >
                 <Box
                     sx={{
+                        p: 3,
+                        position: 'sticky',
+                        top: 0,
+                        background: 'linear-gradient(to bottom, #ffffff, rgba(255,255,255,0.9))',
+                        zIndex: 1,
+                        borderBottom: '1px solid rgba(0,0,0,0.08)',
                         display: 'flex',
-                        flexDirection: 'column',
-                        maxHeight: '70vh',
-                        overflow: 'hidden'
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
                     }}
                 >
-                    <Box
-                        sx={{
-                            p: 3,
-                            position: 'sticky',
-                            top: 0,
-                            background: 'linear-gradient(to bottom, #ffffff, rgba(255,255,255,0.9))',
-                            zIndex: 1,
-                            borderBottom: '1px solid rgba(0,0,0,0.08)',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center'
-                        }}
-                    >
-                        <Typography variant="h6" fontWeight={600}>
-                            Uwagi
-                        </Typography>
-                        <IconButton onClick={() => setOpenNotes(false)} sx={{color: 'text.secondary'}}>
-                            <Close/>
-                        </IconButton>
-                    </Box>
+                    <Typography variant="h6" fontWeight={600}>
+                        Uwagi
+                    </Typography>
+                    <IconButton onClick={() => setOpenNotes(false)} sx={{color: 'text.secondary'}}>
+                        <Close/>
+                    </IconButton>
+                </Box>
 
-                    <Box
+                <Box
+                    sx={{
+                        p: 3, pt: 2, overflowY: 'auto', '&::-webkit-scrollbar': {
+                            width: '6px'
+                        }, '&::-webkit-scrollbar-thumb': {
+                            backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: '3px'
+                        }
+                    }}
+                >
+                    <Typography
+                        variant="body1"
                         sx={{
-                            p: 3,
-                            pt: 2,
-                            overflowY: 'auto',
-                            '&::-webkit-scrollbar': {
-                                width: '6px'
-                            },
-                            '&::-webkit-scrollbar-thumb': {
-                                backgroundColor: 'rgba(0,0,0,0.2)',
-                                borderRadius: '3px'
+                            textAlign: 'justify',
+                            lineHeight: 1.6,
+                            color: 'text.secondary',
+                            whiteSpace: 'pre-line',
+                            '& p': {marginBottom: 2},
+                            '& a': {
+                                color: 'primary.main',
+                                textDecoration: 'none',
+                                '&:hover': {textDecoration: 'underline'}
                             }
                         }}
                     >
-                        <Typography
-                            variant="body1"
-                            sx={{
-                                textAlign: 'justify',
-                                lineHeight: 1.6,
-                                color: 'text.secondary',
-                                whiteSpace: 'pre-line',
-                                '& p': {marginBottom: 2},
-                                '& a': {
-                                    color: 'primary.main',
-                                    textDecoration: 'none',
-                                    '&:hover': {textDecoration: 'underline'}
-                                }
-                            }}
-                        >
-                            {location.regards}
-                        </Typography>
-                    </Box>
+                        {location.regards}
+                    </Typography>
+                </Box>
 
-                    <Box
+                <Box
+                    sx={{
+                        p: 2,
+                        position: 'sticky',
+                        bottom: 0,
+                        background: 'linear-gradient(to top, #ffffff, rgba(255,255,255,0.9))',
+                        borderTop: '1px solid rgba(0,0,0,0.08)',
+                        display: 'flex',
+                        justifyContent: 'flex-end'
+                    }}
+                >
+                    <Button
+                        onClick={() => setOpenNotes(false)}
+                        variant="contained"
                         sx={{
-                            p: 2,
-                            position: 'sticky',
-                            bottom: 0,
-                            background: 'linear-gradient(to top, #ffffff, rgba(255,255,255,0.9))',
-                            borderTop: '1px solid rgba(0,0,0,0.08)',
-                            display: 'flex',
-                            justifyContent: 'flex-end'
+                            borderRadius: 2,
+                            px: 3,
+                            textTransform: 'none',
+                            boxShadow: 'none',
+                            '&:hover': {boxShadow: '0px 2px 8px rgba(0,0,0,0.1)'}
                         }}
                     >
-                        <Button
-                            onClick={() => setOpenNotes(false)}
-                            variant="contained"
-                            sx={{
-                                borderRadius: 2,
-                                px: 3,
-                                textTransform: 'none',
-                                boxShadow: 'none',
-                                '&:hover': {boxShadow: '0px 2px 8px rgba(0,0,0,0.1)'}
-                            }}
-                        >
-                            Zamknij
-                        </Button>
-                    </Box>
-                </Box>
-            </Dialog>
-
-            <MapDialog
-                open={mapDialogOpen}
-                onClose={() => setMapDialogOpen(false)}
-                location={formData.lat && formData.lng ? {lat: formData.lat, lng: formData.lng} : null}
-                setLocation={handleLocationChange}
-            />
-
-            <Dialog
-                open={open}
-                onClose={handleCloseDialog}
-                aria-labelledby="alert-dialog-title"
-                aria-describedby="alert-dialog-description"
-            >
-                <DialogTitle id="alert-dialog-title">{"Potwierdzenie usunięcia"}</DialogTitle>
-                <DialogContent>
-                    <DialogContentText id="alert-dialog-description">
-                        Czy na pewno chcesz usunąć ten budynek? Tej operacji nie można cofnąć.
-                    </DialogContentText>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleCloseDialog}>Anuluj</Button>
-                    <Button onClick={confirmDelete} color="error" variant="contained" autoFocus>
-                        Usuń
+                        Zamknij
                     </Button>
-                </DialogActions>
-            </Dialog>
+                </Box>
+            </Box>
+        </Dialog>
 
-            {/*<Dialog*/}
-            {/*    open={openEdit}*/}
-            {/*    onClose={handleCloseDialogEdit}*/}
-            {/*    aria-labelledby="alert-dialog-title"*/}
-            {/*    aria-describedby="alert-dialog-description"*/}
-            {/*>*/}
-            {/*    <DialogTitle id="alert-dialog-title">{"Potwierdzenie usunięcia"}</DialogTitle>*/}
-            {/*    <DialogContent>*/}
-            {/*        <Grid container spacing={3}>*/}
-            {/*                <Grid item xs={12} md={6}>*/}
-            {/*                    <TextField*/}
-            {/*                        fullWidth*/}
-            {/*                        label="Adres"*/}
-            {/*                        name="address"*/}
-            {/*                        value={formData.address || ''}*/}
-            {/*                        onChange={handleChange}*/}
-            {/*                        InputProps={{*/}
-            {/*                            startAdornment: (*/}
-            {/*                                <InputAdornment position="start">*/}
-            {/*                                    <LocationOn/>*/}
-            {/*                                </InputAdornment>*/}
-            {/*                            ),*/}
-            {/*                        }}*/}
-            {/*                    />*/}
-            {/*                </Grid>*/}
-            {/*                <Grid item xs={12} md={6}>*/}
-            {/*                    <TextField*/}
-            {/*                        fullWidth*/}
-            {/*                        label="Liczba pięter"*/}
-            {/*                        name="floor_num"*/}
-            {/*                        type="number"*/}
-            {/*                        value={formData.floor_num || ''}*/}
-            {/*                        onChange={handleChange}*/}
-            {/*                        InputProps={{*/}
-            {/*                            startAdornment: (*/}
-            {/*                                <InputAdornment position="start">*/}
-            {/*                                    <Layers/>*/}
-            {/*                                </InputAdornment>*/}
-            {/*                            ),*/}
-            {/*                        }}*/}
-            {/*                    />*/}
-            {/*                </Grid>*/}
-            {/*                <Grid item xs={12} md={6}>*/}
-            {/*                    <Box sx={{display: 'flex', flexDirection: 'column', gap: 1}}>*/}
-            {/*                        <Typography variant="body2" color="text.secondary">*/}
-            {/*                            Lokalizacja*/}
-            {/*                        </Typography>*/}
-            {/*                        <Box sx={{display: 'flex', gap: 2}}>*/}
-            {/*                            <TextField*/}
-            {/*                                label="Szerokość geogr."*/}
-            {/*                                name="lat"*/}
-            {/*                                value={formData.lat || ''}*/}
-            {/*                                onChange={handleChange}*/}
-            {/*                                fullWidth*/}
-            {/*                            />*/}
-            {/*                            <TextField*/}
-            {/*                                label="Długość geogr."*/}
-            {/*                                name="lng"*/}
-            {/*                                value={formData.lng || ''}*/}
-            {/*                                onChange={handleChange}*/}
-            {/*                                fullWidth*/}
-            {/*                            />*/}
-            {/*                        </Box>*/}
-            {/*                        <Button*/}
-            {/*                            variant="outlined"*/}
-            {/*                            startIcon={<Map/>}*/}
-            {/*                            onClick={() => setMapDialogOpen(true)}*/}
-            {/*                            sx={{mt: 1}}*/}
-            {/*                        >*/}
-            {/*                            Wybierz na mapie*/}
-            {/*                        </Button>*/}
-            {/*                        {(!formData.lat || !formData.lng) && (*/}
-            {/*                            <Alert severity="info" sx={{mt: 1}}>*/}
-            {/*                                Lokalizacja nie została jeszcze ustawiona*/}
-            {/*                            </Alert>*/}
-            {/*                        )}*/}
-            {/*                    </Box>*/}
-            {/*                </Grid>*/}
-            {/*                <Grid item xs={12}>*/}
-            {/*                    <Box sx={{display: 'flex', justifyContent: 'flex-end', gap: 2}}>*/}
-            {/*                        <Button*/}
-            {/*                            variant="outlined"*/}
-            {/*                            color="error"*/}
-            {/*                            onClick={() => setIsEditing(false)}*/}
-            {/*                            startIcon={<Cancel/>}*/}
-            {/*                            sx={{px: 3, py: 1}}*/}
-            {/*                        >*/}
-            {/*                            Anuluj*/}
-            {/*                        </Button>*/}
-            {/*                        <Button*/}
-            {/*                            variant="contained"*/}
-            {/*                            onClick={handleSave}*/}
-            {/*                            startIcon={<Save/>}*/}
-            {/*                            sx={{px: 3, py: 1}}*/}
-            {/*                        >*/}
-            {/*                            Zapisz zmiany*/}
-            {/*                        </Button>*/}
-            {/*                    </Box>*/}
-            {/*                </Grid>*/}
-            {/*            </Grid>*/}
-            {/*    </DialogContent>*/}
-            {/*    <DialogActions>*/}
-            {/*        <Button onClick={handleCloseDialogEdit}>Anuluj</Button>*/}
-            {/*        <Button onClick={} color="error" variant="contained" autoFocus>*/}
-            {/*            Zapisz*/}
-            {/*        </Button>*/}
-            {/*    </DialogActions>*/}
-            {/*</Dialog>*/}
+        <MapDialog
+            open={mapDialogOpen}
+            onClose={() => setMapDialogOpen(false)}
+            location={formData.lat && formData.lng ? {lat: formData.lat, lng: formData.lng} : null}
+            setLocation={handleLocationChange}
+        />
 
-        </Container>
-    );
+        <Dialog
+            open={open}
+            onClose={handleCloseDialog}
+            aria-labelledby="alert-dialog-title"
+            aria-describedby="alert-dialog-description"
+        >
+            <DialogTitle id="alert-dialog-title">{"Potwierdzenie usunięcia"}</DialogTitle>
+            <DialogContent>
+                <DialogContentText id="alert-dialog-description">
+                    Czy na pewno chcesz usunąć ten budynek? Tej operacji nie można cofnąć.
+                </DialogContentText>
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={handleCloseDialog}>Anuluj</Button>
+                <Button onClick={confirmDelete} color="error" variant="contained" autoFocus>
+                    Usuń
+                </Button>
+            </DialogActions>
+        </Dialog>
+
+        {/*<Dialog*/}
+        {/*    open={openEdit}*/}
+        {/*    onClose={handleCloseDialogEdit}*/}
+        {/*    aria-labelledby="alert-dialog-title"*/}
+        {/*    aria-describedby="alert-dialog-description"*/}
+        {/*>*/}
+        {/*    <DialogTitle id="alert-dialog-title">{"Potwierdzenie usunięcia"}</DialogTitle>*/}
+        {/*    <DialogContent>*/}
+        {/*        <Grid container spacing={3}>*/}
+        {/*                <Grid item xs={12} md={6}>*/}
+        {/*                    <TextField*/}
+        {/*                        fullWidth*/}
+        {/*                        label="Adres"*/}
+        {/*                        name="address"*/}
+        {/*                        value={formData.address || ''}*/}
+        {/*                        onChange={handleChange}*/}
+        {/*                        InputProps={{*/}
+        {/*                            startAdornment: (*/}
+        {/*                                <InputAdornment position="start">*/}
+        {/*                                    <LocationOn/>*/}
+        {/*                                </InputAdornment>*/}
+        {/*                            ),*/}
+        {/*                        }}*/}
+        {/*                    />*/}
+        {/*                </Grid>*/}
+        {/*                <Grid item xs={12} md={6}>*/}
+        {/*                    <TextField*/}
+        {/*                        fullWidth*/}
+        {/*                        label="Liczba pięter"*/}
+        {/*                        name="floor_num"*/}
+        {/*                        type="number"*/}
+        {/*                        value={formData.floor_num || ''}*/}
+        {/*                        onChange={handleChange}*/}
+        {/*                        InputProps={{*/}
+        {/*                            startAdornment: (*/}
+        {/*                                <InputAdornment position="start">*/}
+        {/*                                    <Layers/>*/}
+        {/*                                </InputAdornment>*/}
+        {/*                            ),*/}
+        {/*                        }}*/}
+        {/*                    />*/}
+        {/*                </Grid>*/}
+        {/*                <Grid item xs={12} md={6}>*/}
+        {/*                    <Box sx={{display: 'flex', flexDirection: 'column', gap: 1}}>*/}
+        {/*                        <Typography variant="body2" color="text.secondary">*/}
+        {/*                            Lokalizacja*/}
+        {/*                        </Typography>*/}
+        {/*                        <Box sx={{display: 'flex', gap: 2}}>*/}
+        {/*                            <TextField*/}
+        {/*                                label="Szerokość geogr."*/}
+        {/*                                name="lat"*/}
+        {/*                                value={formData.lat || ''}*/}
+        {/*                                onChange={handleChange}*/}
+        {/*                                fullWidth*/}
+        {/*                            />*/}
+        {/*                            <TextField*/}
+        {/*                                label="Długość geogr."*/}
+        {/*                                name="lng"*/}
+        {/*                                value={formData.lng || ''}*/}
+        {/*                                onChange={handleChange}*/}
+        {/*                                fullWidth*/}
+        {/*                            />*/}
+        {/*                        </Box>*/}
+        {/*                        <Button*/}
+        {/*                            variant="outlined"*/}
+        {/*                            startIcon={<Map/>}*/}
+        {/*                            onClick={() => setMapDialogOpen(true)}*/}
+        {/*                            sx={{mt: 1}}*/}
+        {/*                        >*/}
+        {/*                            Wybierz na mapie*/}
+        {/*                        </Button>*/}
+        {/*                        {(!formData.lat || !formData.lng) && (*/}
+        {/*                            <Alert severity="info" sx={{mt: 1}}>*/}
+        {/*                                Lokalizacja nie została jeszcze ustawiona*/}
+        {/*                            </Alert>*/}
+        {/*                        )}*/}
+        {/*                    </Box>*/}
+        {/*                </Grid>*/}
+        {/*                <Grid item xs={12}>*/}
+        {/*                    <Box sx={{display: 'flex', justifyContent: 'flex-end', gap: 2}}>*/}
+        {/*                        <Button*/}
+        {/*                            variant="outlined"*/}
+        {/*                            color="error"*/}
+        {/*                            onClick={() => setIsEditing(false)}*/}
+        {/*                            startIcon={<Cancel/>}*/}
+        {/*                            sx={{px: 3, py: 1}}*/}
+        {/*                        >*/}
+        {/*                            Anuluj*/}
+        {/*                        </Button>*/}
+        {/*                        <Button*/}
+        {/*                            variant="contained"*/}
+        {/*                            onClick={handleSave}*/}
+        {/*                            startIcon={<Save/>}*/}
+        {/*                            sx={{px: 3, py: 1}}*/}
+        {/*                        >*/}
+        {/*                            Zapisz zmiany*/}
+        {/*                        </Button>*/}
+        {/*                    </Box>*/}
+        {/*                </Grid>*/}
+        {/*            </Grid>*/}
+        {/*    </DialogContent>*/}
+        {/*    <DialogActions>*/}
+        {/*        <Button onClick={handleCloseDialogEdit}>Anuluj</Button>*/}
+        {/*        <Button onClick={} color="error" variant="contained" autoFocus>*/}
+        {/*            Zapisz*/}
+        {/*        </Button>*/}
+        {/*    </DialogActions>*/}
+        {/*</Dialog>*/}
+
+    </Container>);
 };
 
 export default BuildingPage;

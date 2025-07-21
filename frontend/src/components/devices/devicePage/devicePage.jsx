@@ -70,6 +70,7 @@ import {lightGreen} from "@mui/material/colors";
 import {ChromePicker} from "react-color";
 import AlarmsTab from "../../tabs/alarmsTab.jsx";
 import {BarChart, LineChart, PieChart} from "@mui/x-charts";
+import RulesTab from "../../tabs/rulesTab.jsx";
 
 const StyledCard = styled(Card)(({theme}) => ({
     transition: 'transform 0.3s, box-shadow 0.3s',
@@ -686,91 +687,8 @@ const DevicePage = () => {
                         )}
 
                         {activeTab === 1 && (<AlarmsTab loading={loading} alarms={alarms} type={"device"}/>)}
+                        {activeTab === 2 && (<RulesTab rules={rules}/>)}
 
-                        {activeTab === 2? (
-                                (rules.length === 0 ? (
-                                    <Box sx={{
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        height: '200px',
-                                        textAlign: 'center'
-
-                                    }}>
-                                        <InfoOutlined color="disabled" sx={{fontSize: 48, mb: 2}}/>
-                                        <Typography variant="h6" color="text.secondary">
-                                            Brak zasad do wyświetlenia
-                                        </Typography>
-                                        <Typography variant="body2" color="text.secondary">
-                                            Alarmy zostaną wyświetlone, gdy się pojawią
-                                        </Typography>
-                                    </Box>) : null)
-
-                        ) : (
-                            <Grid container spacing={3}>
-                                {rules.map((sensor) => (
-                                    <Grid size={{ xs: 12, sm: 6, md: 4 }} key={sensor.sensor_id}>
-                                        <StyledCard>
-                                            <CardContent sx={{flexGrow: 1}}>
-                                                <Box sx={{display: 'flex', justifyContent: 'space-between', mb: 2}}>
-                                                    <Box sx={{cursor: "pointer"}}
-                                                         onClick={() => navigate(`/sensor/${sensor.sensor_id}`)}>
-                                                        <Typography variant="h6" component="h2">
-                                                            {sensor.visibleName || sensor.name}
-                                                        </Typography>
-                                                        <Typography variant="body2" color="text.secondary">
-                                                            {sensor.room?.name || 'Brak lokalizacji'}
-                                                        </Typography>
-                                                    </Box>
-                                                    <Tooltip title={getDataTypeLabel(sensor.data_type)}>
-                                                        <Box sx={{display: 'flex', alignItems: 'center'}}>
-                                                            {getDataTypeIcon(sensor.data_type)}
-                                                        </Box>
-                                                    </Tooltip>
-                                                </Box>
-
-                                                <Divider sx={{my: 2}}/>
-
-                                                <Box sx={{mb: 3}}>
-                                                    <Typography variant="h4" component="div" align="center"
-                                                                fontWeight="fontWeightMedium">
-                                                        {Math.round(sensor.lastValue.value * 100) / 100 || '--'}
-                                                        <Typography variant="body1" component="span"
-                                                                    color="text.secondary">
-                                                            {sensor.unit ? ` ${sensor.unit}` : ''}
-                                                        </Typography>
-                                                    </Typography>
-                                                </Box>
-
-                                                <Box sx={{
-                                                    display: 'flex',
-                                                    justifyContent: 'space-between',
-                                                    alignItems: 'center'
-                                                }}>
-                                                    <Chip
-                                                        label={'Edytuj'}
-                                                        size="small"
-                                                        variant="outlined"
-                                                        onClick={() => {
-                                                            setOpen(!open)
-                                                            setCurrentSensor(sensor.sensor_id)
-                                                            setFormData(sensor)
-                                                        }}
-                                                    />
-                                                    <Typography variant="caption" color="text.secondary">
-                                                        {sensor.lastValue.saved_at ? formatDistance(new Date(sensor.lastValue.saved_at), new Date(), {
-                                                            addSuffix: true,
-                                                            locale: pl
-                                                        }) : 'Brak danych'}
-                                                    </Typography>
-                                                </Box>
-                                            </CardContent>
-                                        </StyledCard>
-                                    </Grid>
-                                ))}
-                            </Grid>
-                        )}
                     </>
                 )}
             </Box>
