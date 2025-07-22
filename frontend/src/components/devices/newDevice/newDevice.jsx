@@ -60,7 +60,8 @@ const NewDevice = () => {
                     headers: {Authorization: `Bearer ${token}`},
                 });
                 setFloors(response.data.floors);
-                setRooms([]); // clear rooms too
+                setRooms([]);
+                setDeviceData(prev => ({...prev, floor: '', room: ''}));
             } catch (error) {
                 console.error("Błąd podczas pobierania pięter", error);
             }
@@ -74,6 +75,7 @@ const NewDevice = () => {
                     params: {floorId: value},
                 });
                 setRooms(response.data.rooms);
+                setDeviceData(prev => ({...prev, room: ''}));
             } catch (error) {
                 console.error("Błąd podczas pobierania pokoi", error);
             }

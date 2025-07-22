@@ -37,7 +37,7 @@ const Footer = () => {
           sx={{ textAlign: { xs: 'center', md: 'left' } }}
         >
           {/* Szybkie linki */}
-          <Grid item xs={12} md={3} sx={{ display: 'flex', flexDirection: 'column' }}>
+          <Grid size={{xs: 12, md: 3}} sx={{ display: 'flex', flexDirection: 'column' }}>
             <Typography
               variant="h6"
               gutterBottom
@@ -92,7 +92,7 @@ const Footer = () => {
           </Grid>
 
           {/* Kontakt */}
-          <Grid item xs={12} md={4} sx={{
+          <Grid size={{xs: 12, md: 4}} sx={{
             display: 'flex',
             flexDirection: 'column',
             alignItems: { xs: 'center', md: 'flex-start' }
@@ -136,7 +136,7 @@ const Footer = () => {
           </Grid>
 
           {/* Social Media */}
-          <Grid item xs={12} md={3} sx={{
+          <Grid size={{xs: 12, md: 3}} sx={{
             display: 'flex',
             flexDirection: 'column',
             alignItems: { xs: 'center', md: 'flex-start' }

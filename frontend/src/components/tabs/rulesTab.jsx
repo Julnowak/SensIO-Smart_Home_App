@@ -14,21 +14,91 @@ import {
     FormControlLabel,
     Checkbox,
     Box,
-    Chip
+    Chip, Autocomplete, IconButton
 } from '@mui/material';
-import {styled} from '@mui/material/styles';
-import {InfoOutlined} from "@mui/icons-material";
 
+import {CheckBox, CheckBoxOutlineBlank, Grading, InfoOutlined, Layers, Memory} from "@mui/icons-material";
+import client from "../../client.jsx";
+import {API_BASE_URL} from "../../config.jsx";
 
+const icon = <CheckBoxOutlineBlank fontSize="small" />;
+const checkedIcon = <CheckBox fontSize="small" />;
 
-const RulesTab = ({rules}) => {
+const SensorMultiSelect = ({ sensors, selectedSensors, onSensorChange }) => {
+  const [inputValue, setInputValue] = useState('');
+
+  const allOption = { sensor_id: "all", visibleName: "Wszystkie" };
+  const options = [allOption, ...sensors];
+
+  const handleChange = (event, newValue) => {
+    // Jeśli wybrano "Wszystkie" i nie były wcześniej wszystkie wybrane
+    if (newValue.find(option => option.sensor_id === "all") && !selectedSensors.includes("all")) {
+      onSensorChange([allOption, ...sensors]);
+      return;
+    }
+
+    // Jeśli odznaczono "Wszystkie"
+    if (!newValue.find(option => option.sensor_id === "all") && selectedSensors.includes("all")) {
+      onSensorChange([]);
+      return;
+    }
+
+    // Normalna zmiana wyboru
+    onSensorChange(newValue);
+  };
+
+  return (
+    <Autocomplete
+      multiple
+      options={options}
+      disableCloseOnSelect
+      getOptionLabel={(option) => option.visibleName}
+      value={selectedSensors}
+      onChange={handleChange}
+      inputValue={inputValue}
+      onInputChange={(event, newInputValue) => {
+        setInputValue(newInputValue);
+      }}
+      renderOption={(props, option, { selected }) => (
+        <li {...props}>
+          <Checkbox
+            icon={icon}
+            checkedIcon={checkedIcon}
+            style={{ marginRight: 8 }}
+            checked={selected}
+          />
+          {option.visibleName}
+        </li>
+      )}
+      renderTags={(value, getTagProps) =>
+        value.map((option, index) => (
+          <Chip
+            {...getTagProps({ index })}
+            key={option.sensor_id}
+            label={option.visibleName}
+            size="small"
+            variant="outlined"
+          />
+        ))
+      }
+      renderInput={(params) => (
+        <TextField {...params} label="Wybierz czujniki" placeholder="Wyszukaj..." />
+      )}
+      sx={{ mt: 2 }}
+    />
+  );
+};
+
+const RulesTab = ({rules, devices, sensors}) => {
     const [openDialog, setOpenDialog] = useState(false);
+    const [selectedSensors, setSelectedSensors] = useState([]);
     const [newRule, setNewRule] = useState({
         name: '',
         locations: [],
         rooms: [],
         floors: [],
-        sensors: [],
+        sensors: sensors,
+        devices: devices,
         start_date: new Date().toISOString().slice(0, 16),
         end_date: '',
         value_low: '',
@@ -44,6 +114,7 @@ const RulesTab = ({rules}) => {
         {value: '4', label: 'miesięcznie'},
         {value: '5', label: 'rocznie'}
     ];
+    const token = localStorage.getItem("access");
 
     const handleInputChange = (e) => {
         const {name, value} = e.target;
@@ -62,8 +133,16 @@ const RulesTab = ({rules}) => {
         }));
     };
 
-    const handleSubmit = () => {
-        // Tutaj logika wysyłania nowej reguły do API
+    const handleSubmit = async () => {
+        await client.post(API_BASE_URL + `newRule/`,
+            {
+                newRule: newRule,
+            }, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            }
+        );
         console.log('New rule:', newRule);
         setOpenDialog(false);
         // Reset formularza
@@ -73,6 +152,7 @@ const RulesTab = ({rules}) => {
             rooms: [],
             floors: [],
             sensors: [],
+            devices: [],
             start_date: new Date().toISOString().slice(0, 16),
             end_date: '',
             value_low: '',
@@ -92,6 +172,7 @@ const RulesTab = ({rules}) => {
                                     <Typography gutterBottom variant="h5" component="h2">
                                         {rule.name}
                                     </Typography>
+
                                     <Typography variant="body2" color="text.secondary">
                                         <strong>Zakres
                                             wartości:</strong> {rule.value_low || '–'} - {rule.value_high || '–'}
@@ -191,7 +272,7 @@ const RulesTab = ({rules}) => {
                 <DialogTitle>Dodaj nową regułę</DialogTitle>
                 <DialogContent>
                     <Grid container spacing={2} sx={{mt: 1}}>
-                        <Grid item xs={12}>
+                        <Grid size={{xs: 12, sm: 6}}>
                             <TextField
                                 fullWidth
                                 label="Nazwa reguły"
@@ -201,6 +282,54 @@ const RulesTab = ({rules}) => {
                                 required
                             />
                         </Grid>
+                        <Grid size={{xs: 10}}>
+                            <Autocomplete
+                              multiple
+                              limitTags={2}
+                              id="sensors-multi-select"
+                              options={sensors}
+                              getOptionLabel={(option) => option.visibleName}
+                              defaultValue={[]}
+                              renderInput={(params) => (
+                                <TextField {...params} label="Wybierz czujniki" placeholder="Wyszukaj..." />
+                              )}
+                              sx={{ width: '100%'}}
+                              disableCloseOnSelect
+                              renderOption={(props, option, { selected }) => (
+                                <li {...props}>
+                                  <Checkbox
+                                    icon={<CheckBoxOutlineBlank fontSize="small" />}
+                                    checkedIcon={<CheckBox fontSize="small" />}
+                                    style={{ marginRight: 8 }}
+                                    checked={selected}
+                                  />
+                                  {option.visibleName}
+                                </li>
+                              )}
+                              onChange={(event, newValue) => {
+                                if (newValue.find(opt => opt.sensor_id === "all")) {
+                                  // Jeśli wybrano "Wszystkie" - zaznacz wszystkie sensory
+                                  setSelectedSensors([{ sensor_id: "all", visibleName: "Wszystkie" }, ...sensors]);
+                                } else {
+                                  setSelectedSensors(newValue);
+                                }
+                              }}
+                            />
+                        </Grid>
+
+                        <Grid size={{xs: 1}} sx={{alignContent: "center"}}>
+                            <IconButton>
+                                <Grading/>
+                            </IconButton>
+                        </Grid>
+
+                        <Grid size={{xs: 1}} sx={{alignContent: "center"}}>
+                            <IconButton>
+                                <Memory/>
+                            </IconButton>
+                        </Grid>
+
+
 
                         <Grid size={{xs: 12, sm: 6}}>
                             <TextField

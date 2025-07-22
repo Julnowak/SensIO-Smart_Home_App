@@ -175,3 +175,11 @@ MEDIA_ROOT = os.path.join(BASE_DIR, '../frontend/public/images/media/')
 
 USE_TZ = True
 TIME_ZONE = 'Europe/Warsaw'
+
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_TIMEZONE = 'Europe/Warsaw'
+
+# Celery Beat
+INSTALLED_APPS += [
+    'django_celery_beat',
+]

@@ -30,7 +30,6 @@ class RoomConsumer(AsyncWebsocketConsumer):
         data = json.loads(text_data)
         print(f"Received WebSocket message: {data}")
 
-
         if data["type"] == "toggle_light":
             room_id = data["room_id"]
             new_light_status = data["light"]

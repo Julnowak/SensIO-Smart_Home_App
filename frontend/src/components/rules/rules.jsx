@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   Box,
   Typography,
@@ -35,15 +35,19 @@ import {
   ScheduleOutlined,
   RuleFolderOutlined,
   DateRange,
-  AccessTime
+  AccessTime, WorkHistory, Info, InfoOutline
 } from '@mui/icons-material';
 import { LocalizationProvider, DateTimePicker } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { pl } from 'date-fns/locale';
+import client from "../../client.jsx";
+import {API_BASE_URL} from "../../config.jsx";
 
 const Rules = () => {
   const [activeTab, setActiveTab] = useState(0);
   const [rules, setRules] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const token = localStorage.getItem("access");
   const [openDialog, setOpenDialog] = useState(false);
   const [currentRule, setCurrentRule] = useState({
     name: '',
@@ -57,6 +61,33 @@ const Rules = () => {
     isRecurrent: false,
     recurrentTime: ''
   });
+
+  const fetchData = async () => {
+        setLoading(true);
+        try {
+            const response = await client.get(API_BASE_URL + "rules/", {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+
+            setRules(response.data);
+
+        } catch (error) {
+            console.error("Failed to fetch logs", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+
+    useEffect(() => {
+        fetchData();
+    }, [token]);
+
+
+  const activeRules = rules.filter((r)=> r.isActive? r: null)
+  const inactiveRules = rules.filter((r)=> !r.isActive? r: null)
 
   // Mock data
   const [locations, setLocations] = useState([
@@ -182,8 +213,7 @@ const Rules = () => {
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
           <Typography variant="h4" component="h1" sx={{ fontWeight: 600 }}>
-            <RuleFolderOutlined sx={{ mr: 1, verticalAlign: 'middle' }} />
-            Zarządzanie zasadami i harmonogramami
+            Zasady i harmonogramy
           </Typography>
           <Button
             variant="contained"
@@ -196,8 +226,8 @@ const Rules = () => {
 
         <Paper sx={{ p: 2 }}>
           <Tabs value={activeTab} onChange={handleTabChange}>
-            <Tab label="Aktywne zasady" icon={<RuleFolderOutlined />} />
-            <Tab label="Historia" icon={<ScheduleOutlined />} />
+            <Tab label="Aktywne" icon={<WorkHistory />} />
+            <Tab label="Nieaktywne" icon={<ScheduleOutlined />} />
           </Tabs>
           <Divider sx={{ mb: 2 }} />
 
@@ -217,6 +247,72 @@ const Rules = () => {
                   <Typography variant="h6">Brak zdefiniowanych zasad</Typography>
                   <Typography variant="body1" sx={{ mt: 1 }}>
                     Kliknij przycisk "Nowa zasada", aby dodać pierwszą zasadę
+                  </Typography>
+                </Box>
+              ) : (
+                <List>
+                  {activeRules.map(rule => (
+                    <ListItem
+                      key={rule.id}
+                      secondaryAction={
+                        <Box>
+                          <IconButton edge="end" onClick={() => editRule(rule)}>
+                            <EditOutlined />
+                          </IconButton>
+                          <IconButton edge="end" onClick={() => deleteRule(rule.id)}>
+                            <DeleteOutline />
+                          </IconButton>
+                        </Box>
+                      }
+                      sx={{
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        borderRadius: 1,
+                        mb: 1,
+                        bgcolor: 'background.paper'
+                      }}
+                    >
+                      <ListItemText
+                        primary={rule.name}
+                        secondary={
+                          <>
+                            <Box component="span" sx={{ display: 'block' }}>
+                              <DateRange fontSize="small" sx={{ verticalAlign: 'middle', mr: 0.5 }} />
+                              {new Date(rule.start_date)?.toLocaleDateString()}
+                              {rule.end_date && ` - ${new Date(rule.end_date).toLocaleDateString()}`}
+                            </Box>
+                            {rule.isRecurrent && (
+                              <Box component="span" sx={{ display: 'block' }}>
+                                <AccessTime fontSize="small" sx={{ verticalAlign: 'middle', mr: 0.5 }} />
+                                {recurrenceTypes.find(t => t.value === rule.recurrentTime)?.label}
+                              </Box>
+                            )}
+                          </>
+                        }
+                      />
+                    </ListItem>
+                  ))}
+                </List>
+              )}
+            </Box>
+          )}
+
+          {activeTab === 1 && (
+            <Box>
+              {inactiveRules.length === 0 ? (
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    py: 8,
+                    color: 'text.secondary'
+                  }}
+                >
+                  <InfoOutline sx={{ fontSize: 60, mb: 2 }} />
+                  <Typography variant="h6">Brak zasad do wyświetlenia</Typography>
+                  <Typography variant="body1" sx={{ mt: 1 }}>
+                    Po dodaniu i aktywowaniu zasady, pojawią się tu zakończone reguły
                   </Typography>
                 </Box>
               ) : (
@@ -248,8 +344,8 @@ const Rules = () => {
                           <>
                             <Box component="span" sx={{ display: 'block' }}>
                               <DateRange fontSize="small" sx={{ verticalAlign: 'middle', mr: 0.5 }} />
-                              {rule.start_date?.toLocaleDateString()}
-                              {rule.end_date && ` - ${rule.end_date.toLocaleDateString()}`}
+                              {new Date(rule.start_date)?.toLocaleDateString()}
+                              {rule.end_date && ` - ${new Date(rule.end_date).toLocaleDateString()}`}
                             </Box>
                             {rule.isRecurrent && (
                               <Box component="span" sx={{ display: 'block' }}>
@@ -264,13 +360,6 @@ const Rules = () => {
                   ))}
                 </List>
               )}
-            </Box>
-          )}
-
-          {activeTab === 1 && (
-            <Box sx={{ p: 2, textAlign: 'center', color: 'text.secondary' }}>
-              <Typography variant="h6">Historia wykonania zasad</Typography>
-              <Typography sx={{ mt: 2 }}>W tej sekcji będzie wyświetlana historia wykonania zasad</Typography>
             </Box>
           )}
         </Paper>

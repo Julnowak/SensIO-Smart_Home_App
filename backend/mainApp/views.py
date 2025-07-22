@@ -6,6 +6,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth import get_user_model
 from django.http import JsonResponse, HttpResponse
 from django.core.cache import cache
+from django.utils import timezone
 from fontTools.designspaceLib.types import Rules
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 
@@ -192,12 +193,15 @@ class HomeData(APIView):
 
         rooms = Room.objects.filter(home=home, floor=floor)
         alarms = Action.objects.filter(device__location=home).order_by("-created_at")
+        measurements = Measurement.objects.filter(sensor__device__location=home).order_by("-created_at")
 
         roomsSerializer = RoomSerializer(rooms, many=True)
         serializer = HomeSerializer(home)
         alarmSerializer = ActionSerializer(alarms, many=True)
+        measurementSerializer = MeasurementSerializer(measurements, many=True)
         return Response({"homeData": serializer.data, "roomsData": roomsSerializer.data,
-                         "alarmsData": alarmSerializer.data}, status=status.HTTP_200_OK)
+                         "alarmsData": alarmSerializer.data, 'measurementsData': measurementSerializer.data},
+                        status=status.HTTP_200_OK)
 
     def put(self, request, home_id):
         home = Home.objects.get(home_id=home_id)
@@ -214,10 +218,16 @@ class HomeData(APIView):
         if 'archive' in request.data:
             home.isArchived = not home.isArchived
 
+        print(request.data)
+        home.lat = request.data['lat']
+        home.lng = request.data['lng']
+        home.name = request.data['name']
+        home.address = request.data['address']
+        home.owner = request.user
         home.save()
 
         serializer = HomeSerializer(home)
-        return Response(status=status.HTTP_200_OK)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def delete(self, request, home_id):
         home = Home.objects.get(home_id=home_id)
@@ -251,11 +261,11 @@ class DevicesData(APIView):
                          "locationsData": locationSerializer.data, "devicesData": serializer.data}, status=status.HTTP_200_OK)
 
     def post(self, request):
-        # Device.objects.create(name=request.data["name"],
-        #                                owner=request.user,
-        #                                serial_number=request.data["serial_number"],
-        #                                topic=request.data["topic"], info=request.data["info"], brand=request.data["brand"],
-        #                                room_id=request.data["room"], color=request.data["color"], floor_id=request.data["floor"], location_id=request.data["building"])
+        Device.objects.create(name=request.data["name"],
+                                       owner=request.user,
+                                       serial_number=request.data["serial_number"],
+                                       topic=request.data["topic"], info=request.data["info"], brand=request.data["brand"],
+                                       room_id=request.data["room"], color=request.data["color"], floor_id=request.data["floor"], location_id=request.data["building"])
         print(request.data)
         return Response(status=status.HTTP_200_OK)
 
@@ -309,6 +319,8 @@ class DeviceData(APIView):
         floors = Floor.objects.filter(home__owner=request.user)
         locations = Home.objects.filter(owner=request.user)
         actions = Action.objects.filter(device=device).order_by("-created_at")
+        rules = Rule.objects.filter(devices=device).order_by("-created_at")
+        measurements = Measurement.objects.filter(sensor__in=sensors).order_by("-created_at")
 
         serializer = DeviceSerializer(device)
         sensorSerializer = SensorSerializer(sensors, many=True)
@@ -316,12 +328,16 @@ class DeviceData(APIView):
         roomSerializer = RoomSerializer(rooms, many=True)
         floorSerializer = FloorSerializer(floors, many=True)
         actionsSerializer = ActionSerializer(actions, many=True)
+        rulesSerializer = RuleSerializer(rules, many=True)
+        measurementSerializer = MeasurementSerializer(measurements, many=True)
         return Response({"deviceData":serializer.data,
                               "sensorsData": sensorSerializer.data,
                               "locationsData": locationSerializer.data,
                               "roomsData": roomSerializer.data,
                               "floorsData": floorSerializer.data,
                               "actionsData": actionsSerializer.data,
+                              "rulesData": rulesSerializer.data,
+                              "measurementsData": measurementSerializer.data,
                          }, status=status.HTTP_200_OK)
 
     def post(self, request, device_id):
@@ -382,7 +398,7 @@ class RoomsNewDeviceApi(APIView):
             return Response({"floors": serializer.data}, status=status.HTTP_200_OK)
 
 
-class ActionData(APIView):
+class ActionsData(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request):
@@ -413,6 +429,30 @@ class ActionData(APIView):
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
+class ActionData(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def put(self, request, action_id):
+        action = Action.objects.get(action_id=action_id)
+
+        if "isDanger" in request.data:
+            if action.status == "NORMAL":
+                action.measurement.warning = "HIGH"
+                action.measurement.save()
+                action.status = "HIGH"
+            else:
+                action.measurement.warning = "NORMAL"
+                action.measurement.save()
+                action.status = "NORMAL"
+            action.save()
+
+        if "isAcknowledged" in request.data:
+            action.isAcknowledged = not action.isAcknowledged
+            action.save()
+
+        return Response(status=status.HTTP_200_OK)
+
+
 class SensorDataAPI(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
@@ -438,11 +478,33 @@ class SensorDataAPI(APIView):
 
     def put(self, request, sensor_id):
         sensor = Sensor.objects.get(sensor_id=sensor_id)
+
+        if "type" in request.data:
+            if request.data["type"] == "lightChange":
+                measurement = Measurement.objects.create(
+                    value=int(request.data["value"]),
+                    saved_at=timezone.now(),
+                    created_at=timezone.now(),
+                    sensor=sensor,
+                )
+
+                Action.objects.create(
+                    measurement=measurement,
+                    device_id=sensor.device.device_id,
+                    description=f"Ręczna zmiana oświetlenia na {int(request.data["value"])}.",
+                    status=measurement.warning,
+                    type="MANUAL",
+                )
+
+                return Response(status=status.HTTP_200_OK)
+
+
         sensor.visibleName = request.data["visibleName"]
         sensor.name = request.data["name"]
         sensor.serial_number = request.data["serial_number"]
         sensor.data_type = request.data["data_type"]
         sensor.unit = request.data["unit"]
+        sensor.room = Room.objects.get(pk=int(request.data["room"]))
         sensor.save()
 
         serializer = SensorSerializer(sensor)
@@ -560,6 +622,47 @@ class NotificationsAPI(APIView):
             {"message": "Notification deleted successfully"},
             status=status.HTTP_204_NO_CONTENT
         )
+
+
+class RulesDataAPI(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get(self, request):
+        rules = Rule.objects.filter(owner=request.user)
+        serializer = RuleSerializer(rules, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class RuleDataAPI(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get(self, request, rule_id):
+        rule = Rule.objects.get(pk=rule_id)
+        serializer = RuleSerializer(rule)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        print(request.data)
+        # rule = Rule.objects.get(pk=rule_id)
+        # serializer = RuleSerializer(rule)
+        return Response(status=status.HTTP_200_OK)
+
+    def put(self, request, rule_id):
+        rule = Rule.objects.get(pk=rule_id)
+        serializer = RuleSerializer(rule)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class MainAPI(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get(self, request):
+        locations = Home.objects.filter(owner=request.user)
+        measurements = Measurement.objects.filter(sensor__device__owner=request.user, sensor__data_type="ENERGY")
+        measurementSerializer = MeasurementSerializer(measurements, many=True)
+        locationSerializer = HomeSerializer(locations, many=True)
+        return Response({"measurementsData": measurementSerializer.data,
+                              "locationsData": locationSerializer.data}, status=status.HTTP_200_OK)
 
 
 class ChartsDataAPI(APIView):

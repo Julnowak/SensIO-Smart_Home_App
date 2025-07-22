@@ -18,11 +18,18 @@ import {
     Chip,
     Grid,
     LinearProgress,
-    Tooltip,InputAdornment
+    Tooltip, InputAdornment, IconButton
 } from "@mui/material";
 import {
     Search as SearchIcon,
-    Warning as WarningIcon, SettingsSuggest, BackHand, Info
+    Warning as WarningIcon,
+    SettingsSuggest,
+    BackHand,
+    Info,
+    RemoveCircleOutline,
+    CheckBox,
+    CheckBoxOutlineBlank,
+    Dangerous, Download
 } from "@mui/icons-material";
 import client from "../../client.jsx";
 import {API_BASE_URL} from "../../config.jsx";
@@ -66,8 +73,10 @@ function History() {
     const [filters, setFilters] = useState({
         search: "",
         type: "",
-        dateRange: "",
-        status: ""
+        startDate: "",
+        endDate: "",
+        status: "",
+        isAcknowledged: ""
     });
     const [logs, setLogs] = useState([]);
     const [filteredLogs, setFilteredLogs] = useState([]);
@@ -78,7 +87,6 @@ function History() {
         today: 0,
         lastUpdate: ""
     });
-    const [tabValue, setTabValue] = useState(0);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate()
 
@@ -144,53 +152,96 @@ function History() {
         fetchData();
     };
 
-    const handleFilter = () => {
-        setFilteredLogs(logs.filter(log => {
-            const matchesSearch =
-                filters.search === "" ||
-                log.description.toLowerCase().includes(filters.search.toLowerCase()) ||
-                log.device.name.toLowerCase().includes(filters.search.toLowerCase());
-            const matchesType = filters.type === "" || log.type === filters.type;
-            const matchesSeverity =
-                filters.status === "" || log.status === filters.status;
-            const matchesDate =
-                filters.dateRange === "" ||
-                new Date(log.created_at).toDateString() ===
-                new Date(filters.dateRange).toDateString();
 
-            return matchesSearch && matchesType && matchesSeverity && matchesDate;
-        }))
+const handleFilter = () => {
+    setFilteredLogs(logs.filter(log => {
+        const matchesType = filters.type === "" || log.type === filters.type;
+        const matchesSeverity = filters.status === "" || log.status === filters.status;
+        const matchesAcknowledgement = filters.isAcknowledged === "" || (log.isAcknowledged === filters.isAcknowledged && log.status !== "NORMAL");
+
+        const logDate = new Date(log.created_at).setHours(0, 0, 0, 0);
+        const start = filters.startDate ? new Date(filters.startDate).setHours(0, 0, 0, 0) : null;
+        const end = filters.endDate ? new Date(filters.endDate).setHours(0, 0, 0, 0) : null;
+
+        const matchesDate =
+            (!start && !end) ||
+            (start && !end && logDate >= start) ||
+            (!start && end && logDate <= end) ||
+            (start && end && logDate >= start && logDate <= end);
+
+        return matchesType && matchesSeverity && matchesDate && matchesAcknowledgement;
+    }));
+};
+
+
+const handleExport = async () => {
+    try {
+        const response = await client.post(
+            API_BASE_URL + "actions/",
+            {
+                actionType: "export",
+                ids: filteredLogs.map(log => log.action_id),
+            },
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+                responseType: 'blob',
+            }
+        );
+
+        // Dodanie BOM do danych CSV
+        const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+        const csvBlob = new Blob([bom, response.data], { type: 'text/csv;charset=utf-8;' });
+
+        const url = window.URL.createObjectURL(csvBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'actions_export.csv';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+    } catch (error) {
+        console.error("Export error:", error);
+    } finally {
+        setLoading(false);
+    }
+};
+
+
+        const handleDanger = async (alarmID) => {
+        await client.put(API_BASE_URL + `action/${alarmID}/`,
+            {
+                isDanger: true,
+            }, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            }
+        );
+
+         setFilteredLogs((prev) => prev.map((a) => a.action_id === alarmID ? {
+                ...a,
+                status: a.status === "HIGH"? "NORMAL": "HIGH"
+            } : a));
     };
 
-    const handleExport = async () => {
-        try {
-            const response = await client.post(
-                API_BASE_URL + "actions/",
-                {
-                    actionType: "export",
-                    ids: filteredLogs.map(log => log.action_id),
-                },
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                    responseType: 'blob',
-                }
-            );
 
-            // Tworzenie linku do pobrania pliku
-            const url = window.URL.createObjectURL(new Blob([response.data]));
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'actions_export.csv';
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-        } catch (error) {
-            console.error("Export error:", error);
-        } finally {
-            setLoading(false);
-        }
+    const handleAcknowledge = async (alarmID) => {
+        await client.put(API_BASE_URL + `action/${alarmID}/`,
+            {
+                isAcknowledged: true,
+            }, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            }
+        );
+
+        setFilteredLogs((prev) => prev.map((a) => a.action_id === alarmID ? {
+            ...a,
+            isAcknowledged: !a.isAcknowledged
+        } : a));
     };
 
 
@@ -201,26 +252,8 @@ function History() {
 
             <Paper elevation={2} sx={{p: 3, mb: 3, borderRadius: 2}}>
                 <Grid container spacing={2} alignItems="center">
-                    <Grid item xs={12} md={4}>
-                        <TextField
-                            fullWidth
-                            variant="outlined"
-                            size="small"
-                            placeholder="Wyszukaj akcje..."
-                            value={filters.search}
-                            onChange={e => setFilters({...filters, search: e.target.value})}
-                            InputProps={{
-                                startAdornment: (
-                                    <InputAdornment position="start">
-                                        <SearchIcon color="action"/>
-                                    </InputAdornment>
-                                ),
-                            }}
-                        />
-                    </Grid>
 
-                    {/* Typ akcji */}
-                    <Grid item xs={12} sm={4} md={2}>
+                    <Grid size={{xs: 12, sm: 2}}>
                         <Select
                             fullWidth
                             size="small"
@@ -234,8 +267,7 @@ function History() {
                         </Select>
                     </Grid>
 
-                    {/* Status */}
-                    <Grid item xs={12} sm={4} md={2}>
+                    <Grid size={{xs: 12, sm: 2}}>
                         <Select
                             fullWidth
                             size="small"
@@ -250,22 +282,55 @@ function History() {
                         </Select>
                     </Grid>
 
+                    <Grid size={{xs: 12, sm: 2}}>
+                        <Select
+                            fullWidth
+                            size="small"
+                            value={filters.isAcknowledged}
+                            onChange={e => setFilters({...filters, isAcknowledged: e.target.value})}
+                            displayEmpty
+                        >
+                            <MenuItem value="">Wszystkie</MenuItem>
+                            <MenuItem value={false}>Nieoznaczone</MenuItem>
+                            <MenuItem value={true}>Oznaczone</MenuItem>
+                        </Select>
+                    </Grid>
+
                     {/* Data */}
-                    <Grid item xs={12} sm={4} md={2}>
+                    <Grid size={{xs: 12, sm: 3}}>
                         <TextField
                             fullWidth
                             size="small"
                             type="date"
                             variant="outlined"
-                            label="Data"
+                            label="Data początkowa"
                             InputLabelProps={{shrink: true}}
                             value={filters.date}
-                            onChange={e => setFilters({...filters, date: e.target.value})}
+                            onChange={e => setFilters({...filters, startDate: e.target.value})}
+                        />
+                    </Grid>
+
+                    <Grid size={{xs: 12, sm: 3}}>
+                        <TextField
+                            fullWidth
+                            size="small"
+                            type="date"
+                            variant="outlined"
+                            label="Data końcowa"
+                            InputLabelProps={{shrink: true}}
+                            value={filters.date}
+                            onChange={e => setFilters({...filters, endDate: e.target.value})}
                         />
                     </Grid>
 
                     {/* Przyciski akcji */}
-                    <Grid item xs={12} sm={6} md={2} sx={{display: 'flex', gap: 1}}>
+                    <Grid
+                      item
+                      xs={12}
+                      sm={4}
+                      md={2}
+                      sx={{ display: 'flex', gap: 1}}
+                    >
                         <Button
                             fullWidth
                             variant="contained"
@@ -287,6 +352,16 @@ function History() {
                             onClick={handleFilter}
                         >
                             Filtruj
+                        </Button>
+                        <Button
+                            fullWidth
+                            variant="contained"
+                            color="primary"
+                            size="small"
+                            startIcon={<Download/>}
+                            onClick={handleExport}
+                        >
+                            Eksportuj
                         </Button>
                     </Grid>
                 </Grid>
@@ -315,7 +390,7 @@ function History() {
                                     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                                     .map(log => (
                                         <TableRow
-                                            key={log.id}
+                                            key={log.action_id}
                                             hover
                                         >
                                             <TableCell>
@@ -397,6 +472,25 @@ function History() {
                                                     )}
 
                                                 </Box>
+                                            </TableCell>
+                                            <TableCell sx={{padding: '4px', width: '80px'}}>
+                                                {log.status !== "NORMAL"? (
+                                                    <Box sx={{display: 'flex'}}>
+                                                        <IconButton size="small" onClick={()=> handleDanger(log.action_id)}>
+                                                            <RemoveCircleOutline fontSize="small" color="action"/>
+                                                        </IconButton>
+                                                        <IconButton size="small" onClick={()=> handleAcknowledge(log.action_id)}>
+                                                            {log.isAcknowledged? <CheckBox fontSize="small" color="action"/>:
+                                                            <CheckBoxOutlineBlank fontSize="small" color="action"/>}
+                                                        </IconButton>
+                                                    </Box>
+                                                ):
+                                                    <Box sx={{display: 'flex', gap: '4px'}}>
+                                                        <IconButton size="small" onClick={()=> handleDanger(log.action_id)}>
+                                                            <Dangerous fontSize="small" color="error"/>
+                                                        </IconButton>
+                                                    </Box>
+                                                }
                                             </TableCell>
                                         </TableRow>
                                     ))

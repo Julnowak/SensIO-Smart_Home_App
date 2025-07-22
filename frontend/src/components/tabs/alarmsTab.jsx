@@ -12,6 +12,7 @@ import {
     Typography
 } from "@mui/material";
 import {
+    CheckBox,
     CheckBoxOutlineBlank,
     CheckBoxOutlined,
     CheckCircleOutline,
@@ -25,6 +26,8 @@ import {format} from "date-fns";
 import {pl} from "date-fns/locale";
 import {styled} from "@mui/material/styles";
 import {useNavigate} from "react-router-dom";
+import client from "../../client.jsx";
+import {API_BASE_URL} from "../../config.jsx";
 
 const StyledCard = styled(Card)(({theme}) => ({
     height: '100%', display: 'flex', flexDirection: 'column', transition: 'transform 0.3s', '&:hover': {
@@ -32,10 +35,12 @@ const StyledCard = styled(Card)(({theme}) => ({
     }
 }));
 
-const AlarmsTab = ({alarms, loading, type}) => {
+const AlarmsTab = ({alarms, setAlarms, loading, type}) => {
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
     const navigate = useNavigate();
+    const token = localStorage.getItem("access");
+
     const handleChangePage = (event, newPage) => {
         setPage(newPage);
     };
@@ -45,6 +50,41 @@ const AlarmsTab = ({alarms, loading, type}) => {
         setPage(0);
     };
 
+
+    const handleDanger = async (alarmID) => {
+        await client.put(API_BASE_URL + `action/${alarmID}/`,
+            {
+                isDanger: true,
+            }, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            }
+        );
+
+         setAlarms((prev) => prev.map((a) => a.action_id === alarmID ? {
+                ...a,
+                status: a.status === "HIGH"? "NORMAL": "HIGH"
+            } : a));
+    };
+
+
+    const handleAcknowledge = async (alarmID) => {
+        await client.put(API_BASE_URL + `action/${alarmID}/`,
+            {
+                isAcknowledged: true,
+            }, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            }
+        );
+
+        setAlarms((prev) => prev.map((a) => a.action_id === alarmID ? {
+            ...a,
+            isAcknowledged: !a.isAcknowledged
+        } : a));
+    };
 
     return (
         <>
@@ -88,7 +128,8 @@ const AlarmsTab = ({alarms, loading, type}) => {
                                     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                                     .map((alarm) => (<TableRow key={alarm.action_id}>
                                         <TableCell>
-                                            {Math.round(alarm?.measurement?.value * 100) / 100} {alarm?.measurement?.sensor.unit}
+                                            {alarm.measurement.sensor.data_type === "LIGHT"? `${Boolean(parseInt(alarm?.measurement?.value) === 1)}`:
+                                            (`${Math.round(alarm?.measurement?.value * 100) / 100} ${alarm?.measurement?.sensor.unit}`)}
                                         </TableCell>
                                         <TableCell>
                                             {alarm.status === "MEDIUM" ?
@@ -112,16 +153,17 @@ const AlarmsTab = ({alarms, loading, type}) => {
                                         <TableCell sx={{padding: '4px', width: '80px'}}>
                                             {alarm.status !== "NORMAL"? (
                                                 <Box sx={{display: 'flex'}}>
-                                                    <IconButton size="small">
-                                                        <RemoveCircleOutline fontSize="small" color="error"/>
+                                                    <IconButton size="small" onClick={()=> handleDanger(alarm.action_id)}>
+                                                        <RemoveCircleOutline fontSize="small" color="action"/>
                                                     </IconButton>
-                                                    <IconButton size="small">
-                                                        <Checkbox sx={{'& svg': {fontSize: '16px'}}} fontSize="small" color="error"/>
+                                                    <IconButton size="small" onClick={()=> handleAcknowledge(alarm.action_id)}>
+                                                        {alarm.isAcknowledged? <CheckBox fontSize="small" color="action"/>:
+                                                        <CheckBoxOutlineBlank fontSize="small" color="action"/>}
                                                     </IconButton>
                                                 </Box>
                                             ):
                                                 <Box sx={{display: 'flex', gap: '4px'}}>
-                                                    <IconButton size="small">
+                                                    <IconButton size="small" onClick={()=> handleDanger(alarm.action_id)}>
                                                         <Dangerous fontSize="small" color="error"/>
                                                     </IconButton>
                                                 </Box>

@@ -245,22 +245,6 @@ const CustomNavbar = () => {
                         </MenuItem>
                     </Menu>
 
-
-                    <IconButton href="/dashboard" sx={{
-                        color: 'text.primary',
-                        borderRadius: 1,
-                        transition: 'all 0.2s ease',
-                        '&:hover': {
-                            bgcolor: 'action.hover',
-                            transform: 'translateY(-2px)',
-                        },
-                        '&.Mui-focusVisible': {
-                            bgcolor: 'action.selected',
-                        },
-                    }}>
-                        <Typography variant="body1">Wykresy</Typography>
-                    </IconButton>
-
                     <IconButton
                         href="/rules"
                         sx={{
@@ -492,25 +476,6 @@ const CustomNavbar = () => {
                             </ListItemIcon>
                             <ListItemText sx={{color: theme.palette.mode === 'dark' ? 'white' : 'black'}}
                                           primary="Reguły"/>
-                        </ListItem>
-
-                        <ListItem sx={{
-                            color: 'text.primary',
-                            borderRadius: 1,
-                            transition: 'all 0.2s ease',
-                            '&:hover': {
-                                bgcolor: 'action.hover',
-                                transform: 'translateY(-1px)',
-                            },
-                            '&.Mui-focusVisible': {
-                                bgcolor: 'action.selected',
-                            },
-                        }} href="/dashboard" component="a">
-                            <ListItemIcon>
-                                <DonutSmall/>
-                            </ListItemIcon>
-                            <ListItemText sx={{color: theme.palette.mode === 'dark' ? 'white' : 'black'}}
-                                          primary="Wykresy"/>
                         </ListItem>
 
                         <ListItem sx={{

@@ -18,25 +18,15 @@ import {
 import {
     PieChart,
     BarChart,
-    LineChart
 } from '@mui/x-charts';
-import {
-    useDrawingArea,
-} from '@mui/x-charts/hooks';
 import {styled} from '@mui/material/styles';
 import {
     Info as InfoIcon,
     Warning as WarningIcon,
-    Error as ErrorIcon,
-    PieChart as PieChartIcon,
-    BarChart as BarChartIcon,
-    ShowChart as LineChartIcon,
-    FilterList as FilterIcon,
     Refresh as RefreshIcon, Warning
 } from '@mui/icons-material';
 import ActionStackedChart from "./stackedActionChart.jsx";
-import {pl} from "date-fns/locale";
-import {format} from "date-fns";
+
 
 const StyledText = styled('text')(({theme}) => ({
     fill: theme.palette.text.primary,
@@ -46,20 +36,13 @@ const StyledText = styled('text')(({theme}) => ({
     fontWeight: 'bold',
 }));
 
-function PieCenterLabel({children}) {
-    const {width, height, left, top} = useDrawingArea();
-    return (
-        <StyledText x={left + width / 2} y={top + height / 2}>
-            {children}
-        </StyledText>
-    );
-}
+
 
 const AlarmStatistics = ({stats, actions, onRefresh}) => {
     const theme = useTheme();
     const [chartType, setChartType] = useState('pie');
     const [timeRange, setTimeRange] = useState('24h');
-    const [activeFilter, setActiveFilter] = useState(['errors', 'warnings', 'info']);
+    const [activeFilter, setActiveFilter] = useState(['HIGH', 'MEDIUM', 'LOW', 'NORMAL']);
 
     // Dane wykresu
     const chartData = [
@@ -69,7 +52,7 @@ const AlarmStatistics = ({stats, actions, onRefresh}) => {
             label: 'Ostrzeżenia krytyczne',
             color: theme.palette.error.main,
             icon: <WarningIcon color="error"/>,
-            type: 'errors'
+            type: 'HIGH'
         },
         {
             id: 1,
@@ -77,27 +60,29 @@ const AlarmStatistics = ({stats, actions, onRefresh}) => {
             label: 'Ostrzeżenia średnie',
             color: theme.palette.warning.main,
             icon: <WarningIcon color="warning"/>,
-            type: 'warnings'
+            type: 'MEDIUM'
         },
         {
-            id: 1,
+            id: 2,
             value: stats.warnings,
             label: 'Ostrzeżenia niskie',
             color: '#f4c52b',
             icon: <Warning color="disabled" sx={{ color: "#f4c52b" }}/>,
-            type: 'warnings'
+            type: 'LOW'
         },
         {
-            id: 2,
+            id: 3,
             value: stats.info,
             label: 'Informacje',
             color: theme.palette.info.main,
             icon: <InfoIcon color="info"/>,
-            type: 'info'
+            type: 'NORMAL'
         },
     ];
 
     const filteredData = chartData.filter(item => activeFilter.includes(item.type));
+    const filteredActions = actions.filter(item => activeFilter.includes(item.status));
+    console.log(activeFilter)
     const totalAlarms = filteredData.reduce((sum, item) => sum + item.value, 0);
 
     const handleFilterToggle = (type) => {
@@ -176,7 +161,7 @@ const AlarmStatistics = ({stats, actions, onRefresh}) => {
                                             },
                                         }}
                                     >
-                                        {actions.length !== 0 && (<ActionStackedChart actions={actions} granularity={"day"}/>)}
+                                        {actions.length !== 0 && (<ActionStackedChart actions={filteredActions} granularity={"day"}/>)}
                                     </Box>
 
                                     <Box
@@ -223,9 +208,8 @@ const AlarmStatistics = ({stats, actions, onRefresh}) => {
                                                         hidden: true,
                                                     },
                                                 }}
-                                            >
-                                                <PieCenterLabel>{totalAlarms}</PieCenterLabel>
-                                            </PieChart>
+                                            />
+
                                         </Box>
 
                                         <Box

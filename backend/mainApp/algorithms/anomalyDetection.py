@@ -1,7 +1,20 @@
+import os
+
 from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import MinMaxScaler
 import numpy as np
 import pandas as pd
+import numpy as np
+from sklearn.preprocessing import MinMaxScaler
+
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
+
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import LSTM, Dropout, RepeatVector, TimeDistributed, Dense
+from tensorflow.keras.optimizers import Adam
+import keras_tuner as kt
+
+
 
 
 def isolation_forest_IQR(data, column='energy_consumption', contamination=0.05):
@@ -54,15 +67,6 @@ def dynamic_iqr(timeseries, w=None, k=1.5):
                 anomalies[i] = True
 
     return anomalies
-
-
-import numpy as np
-from sklearn.preprocessing import MinMaxScaler
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import LSTM, Dropout, RepeatVector, TimeDistributed, Dense
-from tensorflow.keras.optimizers import Adam
-import keras_tuner as kt
-
 
 def create_sequences(data, window_size):
     sequences = []

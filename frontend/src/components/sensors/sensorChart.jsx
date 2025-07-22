@@ -115,9 +115,7 @@ const SensorChart = ({ measurements }) => {
   }
 
   return (
-    <Box sx={{ height: '400px' }}>
       <canvas ref={chartRef} />
-    </Box>
   );
 };
 

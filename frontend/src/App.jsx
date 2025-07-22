@@ -15,7 +15,6 @@ import UserDevicesPage from "./components/devices/userDevicesPage/userDevicesPag
 import DevicePage from "./components/devices/devicePage/devicePage.jsx";
 import AddHome from "./components/locations/addHome/addHome.jsx";
 import BuildingPage from "./components/locations/BuildingPage/BuildingPage.jsx";
-import Dashboard from "./components/dashboard/dashboard.jsx";
 import UserRoomsPage from "./components/rooms/userRoomsPage/userRoomsPage.jsx";
 import NewDevice from "./components/devices/newDevice/newDevice.jsx";
 import RoomPage from "./components/rooms/roomPage/roomPage.jsx";
@@ -31,7 +30,7 @@ import LayoutEditor from "./components/layoutEditor.jsx";
 import UserLocationsPage from "./components/locations/UserHomesPage/UserHomesPage.jsx";
 import NotFoundPage from "./components/notFoundPage/notFoundPage.jsx";
 import Rules from "./components/rules/rules.jsx";
-import EnergyDashboard from "./components/dashboard/EnergyDashboard.jsx";
+import EnergyDashboard from "./components/locations/EnergyDashboard.jsx";
 import Settings from "./components/settings/settings.jsx";
 import ScrollToTop from "./components/stt.jsx";
 import SensorPage from "./components/sensors/sensorPage.jsx";
@@ -63,7 +62,6 @@ function App() {
                         <Route path="/myHomes" element={<UserLocationsPage/>}/>
                         <Route path="/myRooms" element={<UserRoomsPage/>}/>
                         <Route path="/addHome" element={<AddHome/>}/>
-                        <Route path="/dashboard" element={<Dashboard/>}/>
                         <Route path="/device/:id" element={<DevicePage/>}/>
                         <Route path="/home/:id" element={<BuildingPage/>}/>
                         <Route path="/room/:id" element={<RoomPage/>}/>

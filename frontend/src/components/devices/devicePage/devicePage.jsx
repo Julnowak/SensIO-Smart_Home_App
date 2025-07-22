@@ -59,7 +59,7 @@ import {
     StarBorder,
     Close,
     Usb,
-    QrCode, Layers, BarChartOutlined
+    QrCode, Layers, BarChartOutlined, Info
 } from '@mui/icons-material';
 import {styled} from '@mui/material/styles';
 import {format, formatDistance} from 'date-fns';
@@ -71,8 +71,9 @@ import {ChromePicker} from "react-color";
 import AlarmsTab from "../../tabs/alarmsTab.jsx";
 import {BarChart, LineChart, PieChart} from "@mui/x-charts";
 import RulesTab from "../../tabs/rulesTab.jsx";
+import LightUsageChart from "../lightChart.jsx";
 
-const StyledCard = styled(Card)(({theme}) => ({
+const StyledCard = styled(Card)(({theme, s}) => ({
     transition: 'transform 0.3s, box-shadow 0.3s',
     '&:hover': {
         transform: 'translateY(-4px)',
@@ -83,7 +84,8 @@ const StyledCard = styled(Card)(({theme}) => ({
     marginTop: 10,
     flexDirection: 'column',
     border: "1px solid #00000020",
-    borderRadius: 16
+    borderRadius: 16,
+    backgroundColor: (s.data_type === "LIGHT" && parseInt(s.lastValue.value) === 1 ? "rgba(255,242,0,0.2)" : null)
 }));
 
 const DeviceInfoRow = ({label, value, icon}) => (
@@ -110,6 +112,7 @@ const DeviceInfoRow = ({label, value, icon}) => (
 const DevicePage = () => {
     const [sensors, setSensors] = useState([]);
     const [locations, setLocations] = useState([]);
+    const [measurements, setMeasurements] = useState([]);
     const [rooms, setRooms] = useState([]);
     const [floors, setFloors] = useState([]);
     const [rules, setRules] = useState([]);
@@ -160,6 +163,9 @@ const DevicePage = () => {
                 setRooms(response.data.roomsData)
                 setFloors(response.data.floorsData)
                 setAlarms(response.data.actionsData)
+                setRules(response.data.rulesData)
+                setMeasurements(response.data.measurementsData)
+
             } catch (error) {
                 console.error("Błąd podczas pobierania danych:", error);
             } finally {
@@ -203,7 +209,7 @@ const DevicePage = () => {
     };
 
     const filteredFloors = floors.filter(floor =>
-      floor.home.home_id === formDataDevice.location
+        floor.home.home_id === formDataDevice.location
     );
 
     const filteredRooms = rooms.filter(room =>
@@ -219,7 +225,7 @@ const DevicePage = () => {
         }));
 
     };
-        const handleChange= (e) => {
+    const handleChange = (e) => {
         const {name, value} = e.target;
         setFormData(prev => ({
             ...prev,
@@ -249,9 +255,9 @@ const DevicePage = () => {
 
     const handleToggleFavorite = async () => {
         try {
-            const response = await client.put(`${API_BASE_URL}device/${params.id}/`,  {
+            const response = await client.put(`${API_BASE_URL}device/${params.id}/`, {
                 isFavorite: !device.isFavorite,
-            },{
+            }, {
                 headers: {Authorization: `Bearer ${token}`}
             });
             setDevice(response.data);
@@ -338,6 +344,39 @@ const DevicePage = () => {
     }
 
     const toggleDetails = () => setShowDetails(!showDetails);
+
+    const handleLightChange = async (sensID, mes) => {
+        try {
+            await client.put(`${API_BASE_URL}sensor/${sensID}/`,
+                {
+                    type: "lightChange",
+                    measurementID: mes.measurement_id,
+                    value: (parseInt(mes.value)===0? 1: 0)
+                },{
+                headers: {Authorization: `Bearer ${token}`}
+            });
+
+            setSensors((prev) =>
+              prev.map((s) =>
+                s.sensor_id === sensID
+                  ? {
+                      ...s,
+                      lastValue: {
+                        ...s.lastValue, // Zachowaj pozostałe właściwości lastValue
+                        value: (parseInt(mes.value) === 0 ? "1" : "0") // Zaktualizuj tylko value
+                      }
+                    }
+                  : s
+              )
+            );
+
+        } catch (error) {
+            console.error("Błąd podczas pobierania danych:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
 
     return (
         <Container maxWidth="xl">
@@ -475,21 +514,27 @@ const DevicePage = () => {
 
                             <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
                                 <Box sx={{display: 'flex', gap: 1.5, flexWrap: 'wrap'}}>
-                                    <Chip
-                                        icon={<Layers fontSize="small"/>}
-                                        label={`Piętro ${device?.floor?.floor_number || 'N/A'}`}
-                                        variant="outlined"
-                                        size="small"
-                                        sx={{borderRadius: 1}}
-                                    />
-                                    <Chip
-                                        icon={<MeetingRoom fontSize="small"/>}
-                                        onClick={() => navigate(`/room/${device?.room.room_id}`)}
-                                        label={device?.room?.name || 'N/A'}
-                                        variant="outlined"
-                                        size="small"
-                                        sx={{borderRadius: 1}}
-                                    />
+                                    {device?.floor && (
+                                        <Chip
+                                            icon={<Layers fontSize="small"/>}
+                                            label={`Piętro ${device?.floor?.floor_number || 'N/A'}`}
+                                            variant="outlined"
+                                            size="small"
+                                            sx={{borderRadius: 1}}
+                                        />
+                                    )}
+
+                                    {device?.room && (
+                                        <Chip
+                                            icon={<MeetingRoom fontSize="small"/>}
+                                            onClick={() => navigate(`/room/${device?.room.room_id}`)}
+                                            label={device?.room?.name || 'N/A'}
+                                            variant="outlined"
+                                            size="small"
+                                            sx={{borderRadius: 1}}
+                                        />
+                                    )}
+
                                     <Chip
                                         icon={<Business fontSize="small"/>}
                                         onClick={() => navigate(`/home/${device?.location.home_id}`)}
@@ -545,7 +590,7 @@ const DevicePage = () => {
                                     value={device?.type || 'Nieokreślony'}
                                     icon={<DeviceHub fontSize="small"/>}
                                 />
-                                </Grid>
+                            </Grid>
                             <Grid size={{xs: 3, md: 2}}>
                                 <DeviceInfoRow
                                     label="Liczba czujników"
@@ -565,6 +610,13 @@ const DevicePage = () => {
                                     label="Nr. seryjny"
                                     value={device?.serial_number || 'Brak'}
                                     icon={<QrCode fontSize="small"/>}
+                                />
+                            </Grid>
+                            <Grid size={{xs: 12}}>
+                                <DeviceInfoRow
+                                    label="Dodatkowe informacje"
+                                    value={device?.info || 'Brak'}
+                                    icon={<Info fontSize="small"/>}
                                 />
                             </Grid>
                         </Grid>
@@ -604,90 +656,97 @@ const DevicePage = () => {
                 ) : (
                     <>
                         {activeTab === 0 && filteredSensors.length === 0 ?
-                                (
-                                    <Box mt={0.5} sx={{
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        height: '200px',
-                                        textAlign: 'center'
+                            (
+                                <Box mt={0.5} sx={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    height: '200px',
+                                    textAlign: 'center'
 
-                                    }}>
-                                        <InfoOutlined color="disabled" sx={{fontSize: 48, mb: 2}}/>
-                                        <Typography variant="h6" color="text.secondary">
-                                            Brak czujników do wyświetlenia
-                                        </Typography>
-                                        <Typography variant="body2" color="text.secondary">
-                                            Wybierz inny filtr lub sprawdź połączenie z systemem
-                                        </Typography>
-                                    </Box>
+                                }}>
+                                    <InfoOutlined color="disabled" sx={{fontSize: 48, mb: 2}}/>
+                                    <Typography variant="h6" color="text.secondary">
+                                        Brak czujników do wyświetlenia
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        Wybierz inny filtr lub sprawdź połączenie z systemem
+                                    </Typography>
+                                </Box>
 
-                        ) : (
-                            <Grid container spacing={3} mt={0.5}>
-                                {filteredSensors?.map((sensor) => (
-                                    <Grid size={{ xs: 12, sm: 6, md: 4 }} key={sensor.sensor_id}>
-                                        <StyledCard>
-                                            <CardContent sx={{flexGrow: 1}}>
-                                                <Box sx={{display: 'flex', justifyContent: 'space-between', mb: 2}}>
-                                                    <Box sx={{cursor: "pointer"}}
-                                                         onClick={() => navigate(`/sensor/${sensor.sensor_id}`)}>
-                                                        <Typography variant="h6" component="h2">
-                                                            {sensor.visibleName || sensor.name}
-                                                        </Typography>
-                                                        <Typography variant="body2" color="text.secondary">
-                                                            {sensor.room?.name || 'Brak lokalizacji'}
+                            ) : (
+                                <Grid container spacing={3} mt={0.5}>
+                                    {filteredSensors?.map((sensor) => (
+                                        <Grid size={{xs: 12, sm: 6, md: 4}} key={sensor.sensor_id}>
+                                            <StyledCard s={sensor}>
+                                                <CardContent sx={{flexGrow: 1}}>
+                                                    <Box sx={{display: 'flex', justifyContent: 'space-between', mb: 2}}>
+                                                        <Box sx={{cursor: "pointer"}}
+                                                             onClick={() => navigate(`/sensor/${sensor.sensor_id}`)}>
+                                                            <Typography variant="h6" component="h2">
+                                                                {sensor.visibleName || sensor.name}
+                                                            </Typography>
+                                                            <Typography variant="body2" color="text.secondary">
+                                                                {sensor.room?.name || 'Brak lokalizacji'}
+                                                            </Typography>
+                                                        </Box>
+                                                        <Tooltip title={getDataTypeLabel(sensor.data_type)}>
+                                                            <Box sx={{display: 'flex', alignItems: 'center'}}>
+                                                                {getDataTypeIcon(sensor.data_type)}
+                                                            </Box>
+                                                        </Tooltip>
+                                                    </Box>
+
+                                                    <Box sx={{mb: 3}}>
+                                                        <Typography variant="h4" component="div" align="center"
+                                                                    fontWeight="fontWeightMedium">
+                                                            {sensor.data_type === "LIGHT" ? (parseInt(sensor.lastValue.value) === 1 ? "ON" : "OFF") : (Math.round(sensor.lastValue.value * 100) / 100 || "---")}
+                                                            <Typography variant="body1" component="span"
+                                                                        color="text.secondary">
+                                                                {sensor.unit ? ` ${sensor.unit}` : ''}
+                                                            </Typography>
                                                         </Typography>
                                                     </Box>
-                                                    <Tooltip title={getDataTypeLabel(sensor.data_type)}>
-                                                        <Box sx={{display: 'flex', alignItems: 'center'}}>
-                                                            {getDataTypeIcon(sensor.data_type)}
+
+                                                    <Box sx={{
+                                                        display: 'flex',
+                                                        justifyContent: 'space-between',
+                                                        alignItems: 'center'
+                                                    }}>
+                                                        <Box>
+                                                        <Chip
+                                                            label={'Edytuj'}
+                                                            size="small"
+                                                            variant="outlined"
+                                                            onClick={() => {
+                                                                setOpen(!open)
+                                                                setCurrentSensor(sensor.sensor_id)
+                                                                setFormData(sensor)
+                                                            }}
+                                                        />
+                                                            {sensor.data_type === "LIGHT" &&
+                                                                <Switch onChange={()=>handleLightChange(sensor.sensor_id, sensor.lastValue)} color="warning" checked={parseInt(sensor.lastValue.value)}/>}
                                                         </Box>
-                                                    </Tooltip>
-                                                </Box>
 
-                                                <Box sx={{mb: 3}}>
-                                                    <Typography variant="h4" component="div" align="center"
-                                                                fontWeight="fontWeightMedium">
-                                                        {sensor.data_type === "LIGHT"? (sensor.value === 1? "Włączone": "Wyłączone"): (Math.round(sensor.lastValue.value * 100) / 100 || "---")}
-                                                        <Typography variant="body1" component="span"
-                                                                    color="text.secondary">
-                                                            {sensor.unit ? ` ${sensor.unit}` : ''}
+                                                        <Typography variant="caption" color="text.secondary">
+                                                            {sensor.lastValue.saved_at ? formatDistance(new Date(sensor.lastValue.saved_at), new Date(), {
+                                                                addSuffix: true,
+                                                                locale: pl
+                                                            }) : 'Brak danych'}
                                                         </Typography>
-                                                    </Typography>
-                                                </Box>
+                                                    </Box>
+                                                </CardContent>
+                                            </StyledCard>
+                                        </Grid>
+                                    ))}
+                                </Grid>
+                            )}
 
-                                                <Box sx={{
-                                                    display: 'flex',
-                                                    justifyContent: 'space-between',
-                                                    alignItems: 'center'
-                                                }}>
-                                                    <Chip
-                                                        label={'Edytuj'}
-                                                        size="small"
-                                                        variant="outlined"
-                                                        onClick={() => {
-                                                            setOpen(!open)
-                                                            setCurrentSensor(sensor.sensor_id)
-                                                            setFormData(sensor)
-                                                        }}
-                                                    />
-                                                    <Typography variant="caption" color="text.secondary">
-                                                        {sensor.lastValue.saved_at ? formatDistance(new Date(sensor.lastValue.saved_at), new Date(), {
-                                                            addSuffix: true,
-                                                            locale: pl
-                                                        }) : 'Brak danych'}
-                                                    </Typography>
-                                                </Box>
-                                            </CardContent>
-                                        </StyledCard>
-                                    </Grid>
-                                ))}
-                            </Grid>
-                        )}
-
-                        {activeTab === 1 && (<AlarmsTab loading={loading} alarms={alarms} type={"device"}/>)}
-                        {activeTab === 2 && (<RulesTab rules={rules}/>)}
+                        {activeTab === 1 && (
+                            <AlarmsTab loading={loading} alarms={alarms} setAlarms={setAlarms} type={"device"}/>)}
+                        {activeTab === 2 && (<RulesTab rules={rules} devices={device} sensors={sensors}/>)}
+                        {activeTab === 3 && (<LightUsageChart measurements={measurements}/>)}
 
                     </>
                 )}
@@ -762,9 +821,9 @@ const DevicePage = () => {
                         <MemoryIcon/>
                     </Avatar>
                     Edytuj urządzenie
-                        <IconButton onClick={()=> setOpenDeviceModal(!openDeviceModal)} sx={{ml: 'auto'}}>
-                            <Close/>
-                        </IconButton>
+                    <IconButton onClick={() => setOpenDeviceModal(!openDeviceModal)} sx={{ml: 'auto'}}>
+                        <Close/>
+                    </IconButton>
                 </DialogTitle>
 
                 <DialogContent dividers>

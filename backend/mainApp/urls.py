@@ -22,7 +22,12 @@ urlpatterns = [
     path("room/<int:room_id>/light/", get_light_status, name="get_light_status"),
     path("room/<int:room_id>/", views.RoomData.as_view(), name="room"),
     path("device/<int:device_id>/", views.DeviceData.as_view(), name="device"),
-    path("actions/", views.ActionData.as_view(), name="actions"),
+    path("actions/", views.ActionsData.as_view(), name="actions"),
+    path("main/", views.MainAPI.as_view(), name="main"),
+    path("action/<int:action_id>/", views.ActionData.as_view(), name="action"),
     path("charts/", views.ChartsDataAPI.as_view(), name="charts"),
+    path("rules/", views.RulesDataAPI.as_view(), name="rules"),
+    path("newRule/", views.RuleDataAPI.as_view(), name="newRule"),
+    path("rule/<int:rule_id>/", views.RuleDataAPI.as_view(), name="rule"),
     path("layout_handler/", views.LayoutHandler.as_view(), name="layout_handler"),
 ]

@@ -67,6 +67,8 @@ import {pl} from "date-fns/locale";
 import AlarmsTab from "../../tabs/alarmsTab.jsx";
 import {lightGreen} from "@mui/material/colors";
 import RulesTab from "../../tabs/rulesTab.jsx";
+import CalendarChart from "../heatmap.jsx";
+import EnergyDashboard from "../EnergyDashboard.jsx";
 
 
 const InfoItem = ({icon, label, value}) => (
@@ -156,6 +158,7 @@ const BuildingPage = () => {
     const [openEdit, setOpenEdit] = useState(false);
     const [alarms, setAlarms] = useState([]);
     const [rules, setRules] = useState([]);
+    const [measurements, setMeasurements] = useState([]);
 
     const token = localStorage.getItem("access");
     const params = useParams();
@@ -174,6 +177,7 @@ const BuildingPage = () => {
                 setFormData(homeData);
                 setLayout(response.data.roomsData);
                 setAlarms(response.data.alarmsData);
+                setMeasurements(response.data.measurementsData);
                 setSelectedFloor(homeData.floors[0].floor_id);
 
 
@@ -210,9 +214,22 @@ const BuildingPage = () => {
         setFormData({...formData, [e.target.name]: e.target.value});
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         setIsEditing(false);
-        // Add API call to save changes here
+        try {
+            setLoading(true)
+            const response = await client.put(API_BASE_URL + "home/" + params.id + "/",
+                formData,{
+                headers: {Authorization: `Bearer ${token}`}
+            });
+
+            const homeData = response.data;
+            setLocation(homeData);
+        } catch (error) {
+            console.error("Error fetching location:", error);
+        } finally {
+            setLoading(false)
+        }
     };
 
     const handleChangeFloor = async (e) => {
@@ -221,7 +238,6 @@ const BuildingPage = () => {
             headers: {Authorization: `Bearer ${token}`}, params: {floorId: e.target.value},
         });
         setLayout(response.data.roomsData);
-        console.log(response.data.roomsData)
     };
 
     const handleLocationChange = (newLocation) => {
@@ -631,6 +647,13 @@ const BuildingPage = () => {
 
             {activeTab === 2 && (<AlarmsTab alarms={alarms} loading={loading}/>)}
             {activeTab === 3 && (<RulesTab rules={rules}/>)}
+            {activeTab === 4 && measurements.length !== 0 && (
+                <Box>
+                    <Grid size={{sx: 12}}>
+                        <CalendarChart measurements={measurements}/>
+                    </Grid>
+                </Box>
+            )}
 
 
         </Paper>
@@ -751,114 +774,90 @@ const BuildingPage = () => {
             </DialogActions>
         </Dialog>
 
-        {/*<Dialog*/}
-        {/*    open={openEdit}*/}
-        {/*    onClose={handleCloseDialogEdit}*/}
-        {/*    aria-labelledby="alert-dialog-title"*/}
-        {/*    aria-describedby="alert-dialog-description"*/}
-        {/*>*/}
-        {/*    <DialogTitle id="alert-dialog-title">{"Potwierdzenie usunięcia"}</DialogTitle>*/}
-        {/*    <DialogContent>*/}
-        {/*        <Grid container spacing={3}>*/}
-        {/*                <Grid item xs={12} md={6}>*/}
-        {/*                    <TextField*/}
-        {/*                        fullWidth*/}
-        {/*                        label="Adres"*/}
-        {/*                        name="address"*/}
-        {/*                        value={formData.address || ''}*/}
-        {/*                        onChange={handleChange}*/}
-        {/*                        InputProps={{*/}
-        {/*                            startAdornment: (*/}
-        {/*                                <InputAdornment position="start">*/}
-        {/*                                    <LocationOn/>*/}
-        {/*                                </InputAdornment>*/}
-        {/*                            ),*/}
-        {/*                        }}*/}
-        {/*                    />*/}
-        {/*                </Grid>*/}
-        {/*                <Grid item xs={12} md={6}>*/}
-        {/*                    <TextField*/}
-        {/*                        fullWidth*/}
-        {/*                        label="Liczba pięter"*/}
-        {/*                        name="floor_num"*/}
-        {/*                        type="number"*/}
-        {/*                        value={formData.floor_num || ''}*/}
-        {/*                        onChange={handleChange}*/}
-        {/*                        InputProps={{*/}
-        {/*                            startAdornment: (*/}
-        {/*                                <InputAdornment position="start">*/}
-        {/*                                    <Layers/>*/}
-        {/*                                </InputAdornment>*/}
-        {/*                            ),*/}
-        {/*                        }}*/}
-        {/*                    />*/}
-        {/*                </Grid>*/}
-        {/*                <Grid item xs={12} md={6}>*/}
-        {/*                    <Box sx={{display: 'flex', flexDirection: 'column', gap: 1}}>*/}
-        {/*                        <Typography variant="body2" color="text.secondary">*/}
-        {/*                            Lokalizacja*/}
-        {/*                        </Typography>*/}
-        {/*                        <Box sx={{display: 'flex', gap: 2}}>*/}
-        {/*                            <TextField*/}
-        {/*                                label="Szerokość geogr."*/}
-        {/*                                name="lat"*/}
-        {/*                                value={formData.lat || ''}*/}
-        {/*                                onChange={handleChange}*/}
-        {/*                                fullWidth*/}
-        {/*                            />*/}
-        {/*                            <TextField*/}
-        {/*                                label="Długość geogr."*/}
-        {/*                                name="lng"*/}
-        {/*                                value={formData.lng || ''}*/}
-        {/*                                onChange={handleChange}*/}
-        {/*                                fullWidth*/}
-        {/*                            />*/}
-        {/*                        </Box>*/}
-        {/*                        <Button*/}
-        {/*                            variant="outlined"*/}
-        {/*                            startIcon={<Map/>}*/}
-        {/*                            onClick={() => setMapDialogOpen(true)}*/}
-        {/*                            sx={{mt: 1}}*/}
-        {/*                        >*/}
-        {/*                            Wybierz na mapie*/}
-        {/*                        </Button>*/}
-        {/*                        {(!formData.lat || !formData.lng) && (*/}
-        {/*                            <Alert severity="info" sx={{mt: 1}}>*/}
-        {/*                                Lokalizacja nie została jeszcze ustawiona*/}
-        {/*                            </Alert>*/}
-        {/*                        )}*/}
-        {/*                    </Box>*/}
-        {/*                </Grid>*/}
-        {/*                <Grid item xs={12}>*/}
-        {/*                    <Box sx={{display: 'flex', justifyContent: 'flex-end', gap: 2}}>*/}
-        {/*                        <Button*/}
-        {/*                            variant="outlined"*/}
-        {/*                            color="error"*/}
-        {/*                            onClick={() => setIsEditing(false)}*/}
-        {/*                            startIcon={<Cancel/>}*/}
-        {/*                            sx={{px: 3, py: 1}}*/}
-        {/*                        >*/}
-        {/*                            Anuluj*/}
-        {/*                        </Button>*/}
-        {/*                        <Button*/}
-        {/*                            variant="contained"*/}
-        {/*                            onClick={handleSave}*/}
-        {/*                            startIcon={<Save/>}*/}
-        {/*                            sx={{px: 3, py: 1}}*/}
-        {/*                        >*/}
-        {/*                            Zapisz zmiany*/}
-        {/*                        </Button>*/}
-        {/*                    </Box>*/}
-        {/*                </Grid>*/}
-        {/*            </Grid>*/}
-        {/*    </DialogContent>*/}
-        {/*    <DialogActions>*/}
-        {/*        <Button onClick={handleCloseDialogEdit}>Anuluj</Button>*/}
-        {/*        <Button onClick={} color="error" variant="contained" autoFocus>*/}
-        {/*            Zapisz*/}
-        {/*        </Button>*/}
-        {/*    </DialogActions>*/}
-        {/*</Dialog>*/}
+        <Dialog
+            open={openEdit}
+            onClose={()=> setOpenEdit(!openEdit)}
+            aria-labelledby="alert-dialog-title"
+            aria-describedby="alert-dialog-description"
+        >
+            <DialogTitle id="alert-dialog-title">{"Edycja budynku"}</DialogTitle>
+            <DialogContent sx>
+                <Grid container spacing={3}>
+                        <Grid item xs={12} md={6}>
+                            <TextField
+                                fullWidth
+                                label="Adres"
+                                name="address"
+                                value={formData.address || ''}
+                                onChange={handleChange}
+                                InputProps={{
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <LocationOn/>
+                                        </InputAdornment>
+                                    ),
+                                }}
+                            />
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                            <TextField
+                                fullWidth
+                                label="Liczba pięter"
+                                name="floor_num"
+                                type="number"
+                                value={formData.floor_num || ''}
+                                onChange={handleChange}
+                                InputProps={{
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <Layers/>
+                                        </InputAdornment>
+                                    ),
+                                }}
+                            />
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                            <Box sx={{display: 'flex', flexDirection: 'column', gap: 1}}>
+                                <Box sx={{display: 'flex', gap: 2}}>
+                                    <TextField
+                                        label="Szerokość geogr."
+                                        name="lat"
+                                        value={formData.lat || ''}
+                                        onChange={handleChange}
+                                        fullWidth
+                                    />
+                                    <TextField
+                                        label="Długość geogr."
+                                        name="lng"
+                                        value={formData.lng || ''}
+                                        onChange={handleChange}
+                                        fullWidth
+                                    />
+                                </Box>
+                                <Button
+                                    variant="outlined"
+                                    startIcon={<Map/>}
+                                    onClick={() => setMapDialogOpen(true)}
+                                    sx={{mt: 1}}
+                                >
+                                    Wybierz na mapie
+                                </Button>
+                                {(!formData.lat || !formData.lng) && (
+                                    <Alert severity="info" sx={{mt: 1}}>
+                                        Lokalizacja nie została jeszcze ustawiona
+                                    </Alert>
+                                )}
+                            </Box>
+                        </Grid>
+                    </Grid>
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={()=> setOpenEdit(!openEdit)}>Anuluj</Button>
+                <Button onClick={handleSave} color="error" variant="contained" autoFocus>
+                    Zapisz
+                </Button>
+            </DialogActions>
+        </Dialog>
 
     </Container>);
 };

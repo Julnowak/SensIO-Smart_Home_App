@@ -2,15 +2,56 @@ import threading
 import json
 import ssl
 from datetime import datetime
-
+from celery import shared_task
 import paho.mqtt.client as paho
-from paho import mqtt
-
 from .algorithms.anomalyDetection import detect_anomaly
 from .models import Device, Measurement, Sensor, Action
 import pandas as pd
 
 mqtt_threads = {}  # topic -> {"thread": t, "stop_event": e, "client": c}
+
+
+@shared_task
+def process_mqtt_data(payload, topic, device_id):
+    try:
+        print(f"[Celery] Przetwarzam dane z MQTT dla topicu {topic}")
+        device = Device.objects.get(device_id=device_id)
+
+        for k, v in payload.items():
+            sensor, created = Sensor.objects.get_or_create(serial_number=k, device=device, name=k)
+            measurement = Measurement.objects.create(
+                value=float(v["value"]),
+                saved_at=datetime.now(),
+                created_at=v["created_at"],
+                sensor=sensor
+            )
+
+            if sensor.data_type == "ENERGY":
+                all_mes = Measurement.objects.filter(sensor=sensor)
+                mes = all_mes.values_list("saved_at", "value")
+                df = pd.DataFrame(mes, columns=["timestamp", "energy_consumption"])
+                df['energy_consumption'] = df['energy_consumption'].astype(float)
+
+                detRes = detect_anomaly(df)
+
+                if detRes['lastHigh']:
+                    measurement.warning = "HIGH"
+                elif detRes['lastMedium']:
+                    measurement.warning = "MEDIUM"
+                elif detRes['lastLow']:
+                    measurement.warning = "LOW"
+
+                measurement.save()
+
+                Action.objects.create(
+                    measurement=measurement,
+                    device_id=device_id,
+                    description="Pomiar zużycia energii.",
+                    status=measurement.warning
+                )
+
+    except Exception as e:
+        print(f"[Celery] Błąd w przetwarzaniu danych MQTT: {e}")
 
 
 def start_mqtt_thread(topic: str, deviceId: int):
@@ -23,48 +64,11 @@ def start_mqtt_thread(topic: str, deviceId: int):
     def on_message(client, userdata, msg):
         try:
             payload = json.loads(msg.payload.decode())
-            print(f"[MQTT] Odebrano wiadomość z topicu '{msg.topic}': {payload}")
-
-            device = Device.objects.get(device_id=deviceId)
-            payload = json.loads(msg.payload.decode("utf-8"))
-            sensors = Sensor.objects.filter(device=device)
-
-            for k, v in payload.items():
-                if not sensors.filter(serial_number=k).exists():
-                    Sensor.objects.create(serial_number=k, device=device, name=k)
-                    Measurement.objects.create(value=v["value"],
-                                               saved_at=datetime.now(),
-                                               created_at=v['created_at'],
-                                               sensor=sensors.get(serial_number=k))
-                else:
-                    s = sensors.get(serial_number=k)
-                    Measurement.objects.create(value=float(v["value"]),
-                                               saved_at=datetime.now(),
-                                               created_at=v['created_at'],
-                                               sensor=sensors.get(serial_number=k))
-                    if s.data_type == "ENERGY":
-                        print("ssssss")
-                        allMes = Measurement.objects.filter(sensor=s)
-                        last_measurement = allMes.last()
-                        mes = allMes.values_list("saved_at", "value")
-                        df = pd.DataFrame(mes, columns=["timestamp", "energy_consumption"])
-                        df['energy_consumption'] = df['energy_consumption'].astype(float)
-                        detRes = detect_anomaly(df)
-
-                        if detRes['lastHigh']:
-                            last_measurement.warning = "HIGH"
-                        elif detRes['lastMedium']:
-                            last_measurement.warning = "MEDIUM"
-                        elif detRes['lastLow']:
-                            last_measurement.warning = "LOW"
-                        last_measurement.save()
-                        Action.objects.create(measurement=last_measurement, device_id=deviceId,
-                                              description="Pomiar zużycia energii.", status=last_measurement.warning)
-
-
-
+            topic = msg.topic
+            print(f"[MQTT] Odebrano wiadomość z topicu '{topic}': {payload}")
+            process_mqtt_data.apply_async(args=[payload, topic, deviceId], queue="mqtt_tasks")
         except Exception as e:
-            print(f"[MQTT] Błąd w przetwarzaniu danych: {e}")
+            print(f"[MQTT] Błąd w odbiorze wiadomości: {e}")
 
     def mqtt_loop():
         print(f"[MQTT] Startuję nasłuch dla topicu: {topic}")

@@ -154,8 +154,8 @@ class Device(models.Model):
         if not self.topic:  # Only generate topic if it's not set
             components = [
                 str(self.serial_number) if self.serial_number else '',
-                str(self.location) if self.location else '',
-                str(self.owner) if self.owner else '',
+                str(self.location.home_id) if self.location.home_id else '',
+                str(self.owner.id) if self.owner.id else '',
                 str(self.device_id) if self.device_id else ''
             ]
             self.topic = "_".join(filter(None, components))  # Join non-empty components
@@ -264,18 +264,36 @@ class Rule(models.Model):
         ("5", "rocznie"),
     ]
 
+    DATA_TYPES = [
+        # ("LIGHT", "światło"),
+        # ("HUMIDITY", "wilgotność"),
+        # ("ENERGY", "zużycie energii"),
+        # ("TEMPERATURE", "temperatura"),
+        # ("CONTINUOUS", "ciągłe"),
+        # ("DISCRETE", "dyskretne"),
+        # ("WORKER", "sterowanie"),
+        # ("OTHER", "inne/różne"),
+        ("ON/OFF", "włącz/wyłącz"),
+        ("LIMIT", "limity"),
+        ("SET", "ustawienie"),
+    ]
+
     id = models.AutoField(primary_key=True)
+    owner = models.ForeignKey(AppUser, on_delete=models.CASCADE)
     name = models.CharField(max_length=300)
     created_at = models.DateTimeField(auto_now_add=True)
     locations = models.ManyToManyField(Home, blank=True)
     rooms = models.ManyToManyField(Room, blank=True)
     floors = models.ManyToManyField(Floor, blank=True)
+    devices = models.ManyToManyField(Device, blank=True)
     sensors = models.ManyToManyField(Sensor, blank=True)
     start_date = models.DateTimeField(default=timezone.now)
     end_date = models.DateTimeField(blank=True, null=True)
+    type = models.CharField(max_length=20, choices=DATA_TYPES, default="LIMIT")
     value_low = models.CharField(max_length=10, blank=True, null=True)
     value_high = models.CharField(max_length=10, blank=True, null=True)
     isRecurrent = models.BooleanField(default=False)
+    isActive = models.BooleanField(default=True)
     recurrentTime = models.CharField(blank=True, null=True, choices=RECURRENCY_TYPES, max_length=20)
 
     def __str__(self):
