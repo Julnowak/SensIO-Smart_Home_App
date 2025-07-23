@@ -553,7 +553,7 @@ const UserLocationsPage = () => {
 
                                         <TableCell onClick={() => navigate(`/home/${location.home_id}`)}
                                                    sx={{textAlign: 'center'}}>
-                                            {location.warning ? <Warning size={"large"} color={"warning"}/> :
+                                            {location.alarm ? <Warning size={"large"} color={"warning"}/> :
                                                 "---"}
                                         </TableCell>
 

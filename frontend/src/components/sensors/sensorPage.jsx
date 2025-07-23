@@ -51,7 +51,7 @@ import {
     ListAlt,
     Home,
     Room,
-    DeviceHub
+    DeviceHub, MeetingRoom, HomeWork
 } from '@mui/icons-material';
 import {styled} from '@mui/material/styles';
 import {format, formatDistance} from 'date-fns';
@@ -219,14 +219,18 @@ const SensorPage = () => {
 
     return (
         <Container>
-            <Breadcrumbs aria-label="breadcrumb" sx={{mb: 3}}>
+            <Breadcrumbs aria-label="breadcrumb" sx={{mb: 3, mt:3}}>
                 <Link to="/" style={{display: 'flex', alignItems: 'center', color: 'inherit', textDecoration: 'none'}}>
                     <Home sx={{mr: 0.5}} fontSize="inherit" />
                     Strona główna
                 </Link>
                 <Link to="/devices" style={{display: 'flex', alignItems: 'center', color: 'inherit', textDecoration: 'none'}}>
+                    <HomeWork sx={{mr: 0.5}} fontSize="inherit" />
+                    {sensor?.device?.location?.name}
+                </Link>
+                <Link to="/devices" style={{display: 'flex', alignItems: 'center', color: 'inherit', textDecoration: 'none'}}>
                     <DeviceHub sx={{mr: 0.5}} fontSize="inherit" />
-                    Urządzenia
+                    {sensor?.device?.name}
                 </Link>
                 <Typography color="text.primary" sx={{display: 'flex', alignItems: 'center'}}>
                     <Sensors sx={{mr: 0.5}} fontSize="inherit" />
@@ -234,9 +238,9 @@ const SensorPage = () => {
                 </Typography>
             </Breadcrumbs>
 
-            <Grid container spacing={3} sx={{mb: 4}}>
+            <Grid container spacing={3} sx={{mb: 4, width: "100%"}} >
                 {/* Sensor Info Card */}
-                <Grid size={{xs: 12, md: 6}}>
+                <Grid size={{xs: 9}}>
                     <StyledCard>
                         <CardContent>
                             <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3}}>
@@ -359,7 +363,7 @@ const SensorPage = () => {
                 </Grid>
 
                 {/* Last Measurement Card */}
-                <Grid  size={{xs: 4}}>
+                <Grid size={{xs: 3}}>
                     <StyledCard>
                         <CardContent sx={{height: '100%', display: 'flex', flexDirection: 'column', textAlign: "center", alignItems: "center", }}>
                             <Typography variant="h6" gutterBottom sx={{fontWeight: 600}}>

@@ -10,7 +10,7 @@ import {
     IconButton,
     Tooltip,
     Container,
-    Autocomplete, TextField
+    Autocomplete, TextField, Button
 } from '@mui/material';
 import {
     Thermostat as ThermostatIcon,
@@ -66,19 +66,19 @@ const Main = () => {
     const navigate = useNavigate()
 
     const token = localStorage.getItem("access");
-     const validLocations = locations.filter(loc => loc.lat && loc.lng);
+    const validLocations = locations.filter(loc => loc.lat && loc.lng);
 
-      // Oblicz środek mapy na podstawie wszystkich lokalizacji
-      const calculateCenter = () => {
-        if (validLocations.length === 0) return [52.237, 21.017]; // Warszawa jako domyślna
+    // Oblicz środek mapy na podstawie wszystkich lokalizacji
+    const calculateCenter = () => {
+        if (validLocations.length === 0) return [52.237, 19.517]; // Warszawa jako domyślna
 
         const latSum = validLocations.reduce((sum, loc) => sum + parseFloat(loc.lat), 0);
         const lngSum = validLocations.reduce((sum, loc) => sum + parseFloat(loc.lng), 0);
 
         return [latSum / validLocations.length, lngSum / validLocations.length];
-      };
+    };
 
-      const center = calculateCenter();
+    const center = calculateCenter();
 
     const fetchData = async () => {
         setLoading(true);
@@ -155,8 +155,6 @@ const Main = () => {
                                 </Typography>
                             </Box>
 
-                            {measurements.length !== 0 && (<EnergyCharts measurements={measurements}/>)}
-
                             <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
                                 <Tooltip title="Odśwież">
                                     <IconButton
@@ -177,41 +175,82 @@ const Main = () => {
                     </Box>
                 </Box>
             </Box>
-            <Box sx={{flexGrow: 1, p: 3}}>
 
-                <Box sx={{ p: 3 }}>
-      <Typography variant="h5" gutterBottom>
-        Mapa lokalizacji budynków
-      </Typography>
+            <Box>{measurements.length !== 0 && (<EnergyCharts measurements={measurements}/>)}</Box>
 
-      <Paper elevation={3} sx={{ height: '500px', width: '100%' }}>
-        <MapContainer
-          center={center}
-          zoom={13}
-          style={{ height: '100%', width: '100%', borderRadius: '4px' }}
-        >
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          />
+            <Grid container>
+                <Grid size={{xs: 6}}>
+                    <Paper elevation={3} sx={{height: '500px', width: '100%'}}>
+                        <MapContainer
+                            center={center}
+                            zoom={6}
+                            style={{height: '100%', width: '100%', borderRadius: '4px'}}
+                        >
+                            <TileLayer
+                                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                            />
 
-          {validLocations.map((location, index) => (
-            <Marker
-              key={`marker-${index}`}
-              position={[parseFloat(location.lat), parseFloat(location.lng)]}
-            >
-              <Popup>
-                <div>
-                  <strong>{location.name}</strong>
-                  <p>Współrzędne: {location.lat}, {location.lng}</p>
-                  {location.description && <p>{location.description}</p>}
-                </div>
-              </Popup>
-            </Marker>
-          ))}
-        </MapContainer>
-      </Paper>
-    </Box>
+                            {validLocations.map((location, index) => (
+                                <Marker
+                                    key={`marker-${index}`}
+                                    position={[parseFloat(location.lat), parseFloat(location.lng)]}
+                                >
+                                    <Popup
+                                        closeButton={false}
+                                        className="custom-popup"
+                                        maxWidth={250}
+                                        minWidth={180}
+                                    >
+                                        <Box sx={{p: 1}}>
+                                            <Typography
+                                                variant="subtitle1"
+                                                component="div"
+                                                sx={{
+                                                    fontWeight: 'bold',
+                                                    color: 'primary.main',
+                                                }}
+                                            >
+                                                {location.name}
+                                            </Typography>
+
+                                            <Box sx={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                            }}>
+                                                <Box sx={{
+                                                    width: 10,
+                                                    height: 10,
+                                                    borderRadius: '50%',
+                                                    bgcolor: parseInt(location.activeDevices[0]) > 0 ? 'success.main' : 'error.main',
+                                                    mr: 1.5
+                                                }}/>
+
+                                                <Typography variant="body2">
+                                                    <Box component="span" sx={{fontWeight: 'bold'}}>
+                                                        {location.activeDevices}
+                                                    </Box>
+                                                    {parseInt(location.activeDevices[0]) === 1 ? ' urządzenie aktywne' : ' urządzeń aktywnych'}
+                                                </Typography>
+                                            </Box>
+
+                                            <Button variant={"outlined"}
+                                                    onClick={() => navigate(`/home/${location.home_id}`)}>
+                                                Przejdź na stronę
+                                            </Button>
+                                        </Box>
+                                    </Popup>
+                                </Marker>
+                            ))}
+                        </MapContainer>
+                    </Paper>
+                </Grid>
+            </Grid>
+            <Box sx={{p: 3}}>
+                <Box sx={{p: 3}}>
+
+
+                </Box>
 
                 {/* Główne statystyki */}
                 <Grid container spacing={3} sx={{mb: 3}}>
@@ -250,19 +289,19 @@ const Main = () => {
                 </Grid>
 
                 <Grid container spacing={3}>
-                                      <Autocomplete
-                disablePortal
-                id="room-select"
-                options={locations}
-                value={selectedLocation}
-                getOptionLabel={(option) => option ? `${option.name}` : ""}
-                sx={{ width: '100%', mt: 2 }}
-                isOptionEqualToValue={(option, value) => option?.id === value?.id}
-                renderInput={(params) => <TextField {...params} label="Pokój" />}
-                onChange={(event, newValue) => {
-                    setSelectedLocation(newValue);
-                }}
-            />
+                    <Autocomplete
+                        disablePortal
+                        id="room-select"
+                        options={locations}
+                        value={selectedLocation}
+                        getOptionLabel={(option) => option ? `${option.name}` : ""}
+                        sx={{width: '100%', mt: 2}}
+                        isOptionEqualToValue={(option, value) => option?.id === value?.id}
+                        renderInput={(params) => <TextField {...params} label="Pokój"/>}
+                        onChange={(event, newValue) => {
+                            setSelectedLocation(newValue);
+                        }}
+                    />
                     <Grid size={{xs: 12, sm: 6}}>
                         <Item>
                             <Typography variant="h6" gutterBottom>

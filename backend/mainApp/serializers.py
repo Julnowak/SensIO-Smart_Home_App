@@ -55,10 +55,11 @@ class HomeSerializer(serializers.ModelSerializer):
     isActive = serializers.SerializerMethodField()
     activeDevices = serializers.SerializerMethodField()
     roomsCount = serializers.SerializerMethodField()
+    alarm = serializers.SerializerMethodField()
 
     class Meta:
         model = Home
-        fields = [field.name for field in Home._meta.fields] + ['roomsCount','activeDevices', 'devicesCount', 'floors','lastUpdated', 'isActive']
+        fields = [field.name for field in Home._meta.fields] + ['roomsCount', 'alarm', 'activeDevices', 'devicesCount', 'floors','lastUpdated', 'isActive']
         depth = 2
 
     def get_devicesCount(self, obj):
@@ -68,6 +69,10 @@ class HomeSerializer(serializers.ModelSerializer):
         f = Floor.objects.filter(home=obj)
         floors = FloorSerializer(f, many=True).data
         return floors
+
+    def get_alarm(self, obj):
+        num = Action.objects.filter(device__location=obj, isAcknowledged=False, status__in=["HIGH", "MEDIUM", "LOW"]).count()
+        return num > 0
 
     def get_lastUpdated(self, obj):
         measurements = Measurement.objects.filter(sensor__device__location=obj)

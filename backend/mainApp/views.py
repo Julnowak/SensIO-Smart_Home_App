@@ -8,6 +8,7 @@ from django.http import JsonResponse, HttpResponse
 from django.core.cache import cache
 from django.utils import timezone
 from fontTools.designspaceLib.types import Rules
+from jupyter_events.cli import console
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 
 from .models import Room, Device, Floor, Notification, Action, Sensor, Measurement, Rule
@@ -298,7 +299,6 @@ class RoomData(APIView):
         actions = Action.objects.filter(device__room=room).order_by("-created_at")
 
 
-
         serializer = RoomSerializer(room)
         devicesSerializer = DeviceSerializer(devices, many=True)
         sensorsSerializer = SensorSerializer(sensors, many=True)
@@ -402,9 +402,18 @@ class ActionsData(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request):
-        actions = Action.objects.filter(device__owner=request.user).order_by("-created_at")
+
+        locations = Home.objects.filter(owner=request.user)
+        if "sel" in request.GET:
+            loc = locations.get(home_id=int(request.GET.get("sel")))
+        else:
+            loc = locations.get(current=True)
+
+        actions = Action.objects.filter(device__owner=request.user, device__location=loc).order_by("-created_at")
         serializer = ActionSerializer(actions, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        locationsSerializer = HomeSerializer(locations, many=True)
+        return Response({"actionsData": serializer.data,
+                         "locationsData": locationsSerializer.data}, status=status.HTTP_200_OK)
 
     def post(self,request):
         if request.data.get('actionType') == "export":
@@ -496,6 +505,20 @@ class SensorDataAPI(APIView):
                     type="MANUAL",
                 )
 
+                if sensor.room:
+                    sensors = Sensor.objects.filter(room=sensor.room)
+                    if sensors.count() > 1:
+                        l = list()
+                        for s in sensors:
+                            m = Measurement.objects.filter(sensor=s).last()
+                            l.append(m.value)
+
+                        any_sensor_on = any(int(ll) == 1 for ll in l)
+                        sensor.room.light = any_sensor_on
+                    else:
+                        sensor.room.light = int(request.data["value"]) == 1
+                    sensor.room.save()
+
                 return Response(status=status.HTTP_200_OK)
 
 
@@ -504,7 +527,8 @@ class SensorDataAPI(APIView):
         sensor.serial_number = request.data["serial_number"]
         sensor.data_type = request.data["data_type"]
         sensor.unit = request.data["unit"]
-        sensor.room = Room.objects.get(pk=int(request.data["room"]))
+        if "room" in request.data and request.data["room"]:
+            sensor.room = Room.objects.get(pk=int(request.data["room"]))
         sensor.save()
 
         serializer = SensorSerializer(sensor)

@@ -29,7 +29,7 @@ import {
     InputLabel,
     FormControl,
     Dialog,
-    DialogTitle, DialogContent, DialogActions
+    DialogTitle, DialogContent, DialogActions, InputAdornment, Popover
 } from '@mui/material';
 import {
     LightbulbOutlined,
@@ -67,7 +67,7 @@ import {pl} from 'date-fns/locale';
 import {API_BASE_URL} from "../../../config.jsx";
 import client from "../../../client.jsx";
 import {lightGreen} from "@mui/material/colors";
-import {ChromePicker} from "react-color";
+import {ChromePicker, SketchPicker} from "react-color";
 import AlarmsTab from "../../tabs/alarmsTab.jsx";
 import {BarChart, LineChart, PieChart} from "@mui/x-charts";
 import RulesTab from "../../tabs/rulesTab.jsx";
@@ -178,17 +178,19 @@ const DevicePage = () => {
         }
     }, [params.id, token]);
 
-    const [showColorPicker, setShowColorPicker] = useState(false);
-
     const [formDataDevice, setFormDataDevice] = useState({});
 
-
-    const handleToggleFavoriteDevice = () => {
-        setFormData(prev => ({...prev, isFavorite: !prev.isFavorite}));
+    const handleChangeComplete = (newColor) => {
+        setFormDataDevice(prev => ({...prev, color: newColor.hex}));
     };
 
-    const handleColorChange = (color) => {
-        setFormDataDevice(prev => ({...prev, color: color.hex}));
+    const handleClose = () => {
+        setAnchorEl(null);
+    };
+
+    const [anchorEl, setAnchorEl] = useState(null);
+    const handleClick = (event) => {
+        setAnchorEl(event.currentTarget);
     };
 
     const handleSubmitDevice = async () => {
@@ -351,23 +353,23 @@ const DevicePage = () => {
                 {
                     type: "lightChange",
                     measurementID: mes.measurement_id,
-                    value: (parseInt(mes.value)===0? 1: 0)
-                },{
-                headers: {Authorization: `Bearer ${token}`}
-            });
+                    value: (parseInt(mes.value) === 0 ? 1 : 0)
+                }, {
+                    headers: {Authorization: `Bearer ${token}`}
+                });
 
             setSensors((prev) =>
-              prev.map((s) =>
-                s.sensor_id === sensID
-                  ? {
-                      ...s,
-                      lastValue: {
-                        ...s.lastValue, // Zachowaj pozostałe właściwości lastValue
-                        value: (parseInt(mes.value) === 0 ? "1" : "0") // Zaktualizuj tylko value
-                      }
-                    }
-                  : s
-              )
+                prev.map((s) =>
+                    s.sensor_id === sensID
+                        ? {
+                            ...s,
+                            lastValue: {
+                                ...s.lastValue, // Zachowaj pozostałe właściwości lastValue
+                                value: (parseInt(mes.value) === 0 ? "1" : "0") // Zaktualizuj tylko value
+                            }
+                        }
+                        : s
+                )
             );
 
         } catch (error) {
@@ -539,6 +541,13 @@ const DevicePage = () => {
                                         icon={<Business fontSize="small"/>}
                                         onClick={() => navigate(`/home/${device?.location.home_id}`)}
                                         label={device?.location?.name || 'N/A'}
+                                        variant="outlined"
+                                        size="small"
+                                        sx={{borderRadius: 1}}
+                                    />
+                                    <Chip
+                                        icon={getDataTypeIcon(device?.data_type)}
+                                        label={device?.data_type|| 'N/A'}
                                         variant="outlined"
                                         size="small"
                                         sx={{borderRadius: 1}}
@@ -715,18 +724,21 @@ const DevicePage = () => {
                                                         alignItems: 'center'
                                                     }}>
                                                         <Box>
-                                                        <Chip
-                                                            label={'Edytuj'}
-                                                            size="small"
-                                                            variant="outlined"
-                                                            onClick={() => {
-                                                                setOpen(!open)
-                                                                setCurrentSensor(sensor.sensor_id)
-                                                                setFormData(sensor)
-                                                            }}
-                                                        />
+                                                            <Chip
+                                                                label={'Edytuj'}
+                                                                size="small"
+                                                                variant="outlined"
+                                                                onClick={() => {
+                                                                    setOpen(!open)
+                                                                    setCurrentSensor(sensor.sensor_id)
+                                                                    setFormData(sensor)
+                                                                }}
+                                                            />
                                                             {sensor.data_type === "LIGHT" &&
-                                                                <Switch onChange={()=>handleLightChange(sensor.sensor_id, sensor.lastValue)} color="warning" checked={parseInt(sensor.lastValue.value)}/>}
+                                                                <Switch
+                                                                    onChange={() => handleLightChange(sensor.sensor_id, sensor.lastValue)}
+                                                                    color="warning"
+                                                                    checked={parseInt(sensor.lastValue.value)}/>}
                                                         </Box>
 
                                                         <Typography variant="caption" color="text.secondary">
@@ -863,29 +875,55 @@ const DevicePage = () => {
                                 margin="normal"
                             />
 
-                            <Box sx={{mt: 2, display: 'flex', alignItems: 'center', gap: 2}}>
-                                <Box sx={{position: 'relative'}}>
-                                    <Tooltip title="Zmień kolor">
-                                        <IconButton onClick={() => setShowColorPicker(!showColorPicker)}>
-                                            <Palette/>
-                                        </IconButton>
-                                    </Tooltip>
-                                    {showColorPicker && (
-                                        <Box sx={{
-                                            position: 'absolute',
-                                            zIndex: 10,
-                                            top: '100%',
-                                            left: 0,
-                                            mt: 1
-                                        }}>
-                                            <ChromePicker
-                                                color={formDataDevice.color}
-                                                onChangeComplete={handleColorChange}
-                                            />
-                                        </Box>
-                                    )}
-                                </Box>
-                            </Box>
+                            <TextField
+                                label="Kolor"
+                                value={formDataDevice.color}
+                                onClick={handleClick}
+                                margin="normal"
+                                InputProps={{
+                                    readOnly: true,
+                                    endAdornment: (
+                                        <InputAdornment position="end">
+                                            <IconButton onClick={handleClick} size="small">
+                                                <div
+                                                    style={{
+                                                        width: 24,
+                                                        height: 24,
+                                                        borderRadius: '50%',
+                                                        backgroundColor: formDataDevice.color,
+                                                        border: '1px solid #ccc',
+                                                        cursor: 'pointer'
+                                                    }}
+                                                />
+                                            </IconButton>
+                                        </InputAdornment>
+                                    ),
+                                }}
+                                fullWidth
+                            />
+
+                            <Popover
+                                open={Boolean(anchorEl)}
+                                anchorEl={anchorEl}
+                                onClose={handleClose}
+                                anchorOrigin={{
+                                    vertical: 'bottom',
+                                    horizontal: 'left',
+                                }}
+                            >
+
+                            <SketchPicker
+                                color={formData.color}
+                                onChangeComplete={handleChangeComplete}
+                                presetColors={[
+                                    '#FF0000', '#00FF00', '#0000FF',
+                                    '#FFFF00', '#FF00FF', '#00FFFF',
+                                    '#FFFFFF', '#000000', '#888888'
+                                ]}
+                            />
+
+                            </Popover>
+
                         </Box>
 
                         {/* Prawa kolumna - lokalizacja i typ */}

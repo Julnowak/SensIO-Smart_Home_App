@@ -10,7 +10,12 @@ MQTT_BROKER = "66159fe671ed443f94b00666425069a3.s1.eu.hivemq.cloud"
 MQTT_PORT = 8883
 MQTT_USER = "hivemq.webclient.1741361005809"
 MQTT_PASSWORD = "Dtf>&v4?XW8pb39BE:xC"
-MQTT_TOPIC = "3cn79rgynv20vm491x_14_1_8"
+
+# ENERGYMAX
+# MQTT_TOPIC = "3cn79rgynv20vm491x_14_1_8"
+
+# EnergyBEAR
+MQTT_TOPIC = "vie204jls3-j422k_12_1"
 
 # TLS (SSL) settings
 TLS_SETTINGS = {
@@ -50,14 +55,11 @@ client.connect(MQTT_BROKER, MQTT_PORT, 60)
 client.loop_start()
 
 def generate_data():
-    # temperature = round(random.uniform(18.0, 30.0), 1)
-    # humidity = round(random.uniform(30.0, 70.0), 1)
-    # light = random.choice([True, False])  # Simulate on/off
     now = datetime.now(UTC)
     data = {}
 
     for s in sensors:
-        energy = round(random.uniform(1.0, 2.0), 3)
+        energy = abs(round(random.gauss(1.0, 1.0), 3))
         data[s] = {
             "value": energy,
             "type": "continuous",

@@ -36,7 +36,7 @@ const StackedHorizontalChart = ({ actions, granularity = 'hour' }) => {
   ).filter(status => status !== 'time');
 
   return (
-    <div style={{ height: '500px', width: '100%' }}>
+    <div style={{ height: '500px', width: '100%', }}>
       <ResponsiveBar
         data={data}
         keys={statuses}

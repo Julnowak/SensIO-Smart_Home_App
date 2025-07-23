@@ -4,16 +4,12 @@ import {
     Typography,
     Paper,
     useTheme,
-    Tooltip,
-    IconButton,
-    ToggleButton,
-    ToggleButtonGroup,
     Card,
     CardContent,
     Grid,
     Chip,
     Divider,
-    Stack
+    Stack, Checkbox
 } from '@mui/material';
 import {
     PieChart,
@@ -21,12 +17,11 @@ import {
 } from '@mui/x-charts';
 import {styled} from '@mui/material/styles';
 import {
+    Check,
     Info as InfoIcon,
-    Warning as WarningIcon,
-    Refresh as RefreshIcon, Warning
+    Warning as WarningIcon, Warning
 } from '@mui/icons-material';
 import ActionStackedChart from "./stackedActionChart.jsx";
-
 
 const StyledText = styled('text')(({theme}) => ({
     fill: theme.palette.text.primary,
@@ -36,9 +31,7 @@ const StyledText = styled('text')(({theme}) => ({
     fontWeight: 'bold',
 }));
 
-
-
-const AlarmStatistics = ({stats, actions, onRefresh}) => {
+const AlarmStatistics = ({stats, actions}) => {
     const theme = useTheme();
     const [chartType, setChartType] = useState('pie');
     const [timeRange, setTimeRange] = useState('24h');
@@ -82,8 +75,9 @@ const AlarmStatistics = ({stats, actions, onRefresh}) => {
 
     const filteredData = chartData.filter(item => activeFilter.includes(item.type));
     const filteredActions = actions.filter(item => activeFilter.includes(item.status));
-    console.log(activeFilter)
     const totalAlarms = filteredData.reduce((sum, item) => sum + item.value, 0);
+    const notAcknowledgedAlarms = actions.filter(f => f.status !== "NORMAL" && !f.isAcknowledged).length
+    const acknowledgedAlarms = actions.filter(f => f.status !== "NORMAL" && f.isAcknowledged).length
 
     const handleFilterToggle = (type) => {
         setActiveFilter(prev =>
@@ -95,29 +89,6 @@ const AlarmStatistics = ({stats, actions, onRefresh}) => {
 
     return (
         <Box sx={{pb: 2}}>
-            {/* Nagłówek i kontrole */}
-            <Box sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                mb: 3,
-                flexWrap: 'wrap',
-                gap: 2
-            }}>
-                <Tooltip title={"Odśwież"}>
-                    <Typography variant="h4"  sx={{fontWeight: 600}}>
-                        Historia zdarzeń i alarmów
-                    </Typography>
-                </Tooltip>
-
-                <Stack direction="row" spacing={1} alignItems="center">
-                    <IconButton onClick={onRefresh} color="primary" aria-label="Odśwież">
-                        <RefreshIcon/>
-                    </IconButton>
-                </Stack>
-            </Box>
-
-            {/* Filtry */}
             <Box sx={{mb: 3}}>
                 <Stack direction="row" spacing={1}>
                     {chartData.map((item) => (
@@ -125,11 +96,12 @@ const AlarmStatistics = ({stats, actions, onRefresh}) => {
                             key={item.id}
                             icon={item.icon}
                             label={`${item.label} (${item.value})`}
-                            variant={activeFilter.includes(item.type) ? 'filled' : 'outlined'}
+                            variant={activeFilter.includes(item.type) ? 'outlined' : 'outlined'}
                             onClick={() => handleFilterToggle(item.type)}
                             sx={{
                                 borderColor: activeFilter.includes(item.type) ? item.color : undefined,
-                                backgroundColor: activeFilter.includes(item.type) ? `${item.color}20` : undefined
+                                backgroundColor: activeFilter.includes(item.type) ? `${item.color}20` : undefined,
+                                p:1
                             }}
                         />
                     ))}
@@ -139,13 +111,13 @@ const AlarmStatistics = ({stats, actions, onRefresh}) => {
             <Grid container spacing={3}>
                 <Grid size={{xs: 12, md: 8}}>
                     <Card elevation={3} sx={{height: '100%', borderRadius: 2}}>
-                        <CardContent sx={{display: 'flex', flexDirection: 'column', height: '100%', padding: 2}}>
-                            {chartType === 'pie' && (
+                        <CardContent sx={{display: 'flex',border: "1px solid #00000020", flexDirection: 'column', height: '100%', padding: 2}}>
                                 <Box
                                     sx={{
                                         display: 'flex',
                                         flexDirection: 'row',
                                         width: '100%',
+
                                         minHeight: 600,
                                         maxHeight: 800,
                                     }}
@@ -153,15 +125,74 @@ const AlarmStatistics = ({stats, actions, onRefresh}) => {
                                     <Box
                                         sx={{
                                             flex: 1,
+                                             flexDirection: 'column',
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
-                                            '& .MuiChartsAxis-directionX': {
+                                            '& .MuiChartsAxis-tickLabel': {
                                                 display: 'none',
                                             },
+
                                         }}
                                     >
+                                        {notAcknowledgedAlarms === 0?
+                                            <Box sx={{
+                                            p:2,
+                                            backgroundColor: theme.palette.info.dark,
+                                            color: theme.palette.error.contrastText,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            borderRadius: 2,
+                                            width: '100%',
+                                            zIndex: 2,
+                                            '&:hover': {
+                                              backgroundColor: theme.palette.error.main,
+                                            }
+                                          }}>
+                                            <Check color="inherit" sx={{ mr: 1.5, fontSize: 24 }} />
+                                            <Typography variant="subtitle1" sx={{ mr: 1 }}>
+                                                <b>Wszystko w porządku!</b> {acknowledgedAlarms} z {acknowledgedAlarms+notAcknowledgedAlarms} rozwiązanych alarmów
+                                            </Typography>
+                                        </Box>:
+                                        <Box sx={{
+                                            p:2,
+                                            backgroundColor: theme.palette.error.dark,
+                                            color: theme.palette.error.contrastText,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            borderRadius: 2,
+                                            width: '100%',
+                                            zIndex: 2,
+                                            '&:hover': {
+                                              backgroundColor: theme.palette.error.main,
+                                            }
+                                          }}>
+                                            <Warning color="inherit" sx={{ mr: 1.5, fontSize: 24 }} />
+                                            <Typography variant="subtitle1" fontWeight="bold" sx={{ mr: 1 }}>
+                                              Nierozwiązane alarmy krytyczne:
+                                            </Typography>
+                                            <Box sx={{
+                                              backgroundColor: theme.palette.common.white,
+                                              color: theme.palette.error.main,
+                                              borderRadius: 12,
+                                              px: 1.5,
+                                              py: 0.5,
+                                              fontWeight: 'bold',
+                                              fontSize: 18
+                                            }}>
+                                              {notAcknowledgedAlarms}
+                                            </Box>
+                                            <Typography variant="subtitle1" fontWeight="bold" sx={{ ml: 1, mr: 1 }}>
+                                                 z {acknowledgedAlarms+notAcknowledgedAlarms}
+                                            </Typography>
+                                        </Box>
+                                        }
+
                                         {actions.length !== 0 && (<ActionStackedChart actions={filteredActions} granularity={"day"}/>)}
+
+
                                     </Box>
 
                                     <Box
@@ -209,7 +240,6 @@ const AlarmStatistics = ({stats, actions, onRefresh}) => {
                                                     },
                                                 }}
                                             />
-
                                         </Box>
 
                                         <Box
@@ -233,19 +263,22 @@ const AlarmStatistics = ({stats, actions, onRefresh}) => {
                                                         hidden: true,
                                                     },
                                                 }}
+                                                sx={{
+                                                    '& .MuiChartsAxis-directionX .MuiChartsAxis-tickLabel': {
+                                                      display: 'none'
+                                                    }
+                                                }}
 
                                             />
                                         </Box>
                                     </Box>
                                 </Box>
-                            )}
                         </CardContent>
                     </Card>
-
                 </Grid>
 
                 <Grid size={{xs: 12, md: 4}}>
-                    <Card elevation={3} sx={{height: '100%', borderRadius: 2}}>
+                    <Card elevation={3} sx={{height: '100%', borderRadius: 2,border: "1px solid #00000020",}}>
                         <CardContent>
                             <Typography variant="h6" gutterBottom>
                                 Podsumowanie alarmów
@@ -279,11 +312,13 @@ const AlarmStatistics = ({stats, actions, onRefresh}) => {
                                                 {item.value}
                                             </Typography>
                                         </Box>
-                                        {totalAlarms > 0 && (
-                                            <Box sx={{mt: 1}}>
-                                                <Typography variant="body2" color="text.secondary">
-                                                    {Math.round((item.value / totalAlarms) * 100)}% wszystkich zdarzeń
-                                                </Typography>
+                                        <Box sx={{mt: 1}}>
+                                            <Typography variant="body2" color="text.secondary">
+                                                {activeFilter.includes(item.type)
+                                                    ? `${Math.round(((item.value / totalAlarms) * 10000))/100}% zdarzeń`
+                                                    : '---'}
+                                            </Typography>
+                                            {activeFilter.includes(item.type) && (
                                                 <Box sx={{
                                                     height: 4,
                                                     width: '100%',
@@ -298,8 +333,8 @@ const AlarmStatistics = ({stats, actions, onRefresh}) => {
                                                         bgcolor: item.color
                                                     }}/>
                                                 </Box>
-                                            </Box>
-                                        )}
+                                            )}
+                                        </Box>
                                     </Paper>
                                 ))}
                             </Stack>

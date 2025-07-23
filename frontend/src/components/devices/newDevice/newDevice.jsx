@@ -15,7 +15,7 @@ import {
     CircularProgress,
     Snackbar,
     InputAdornment,
-    MenuItem, Select, FormControl, InputLabel
+    MenuItem, Select, FormControl, InputLabel, IconButton, Popover, DialogContent, Dialog, Backdrop, DialogContentText
 } from "@mui/material";
 import {
     Save as SaveIcon,
@@ -26,7 +26,9 @@ import {
     Room as RoomIcon,
     BrandingWatermark as BrandIcon, CheckCircle
 } from "@mui/icons-material";
-import {ChromePicker} from "react-color";
+import {SketchPicker} from "react-color";
+import {useTheme} from "@mui/material/styles";
+
 
 const NewDevice = () => {
     const navigate = useNavigate();
@@ -49,6 +51,21 @@ const NewDevice = () => {
     const [buildings, setBuildings] = useState([]);
     const [rooms, setRooms] = useState([]);
     const [floors, setFloors] = useState([]);
+    const [anchorEl, setAnchorEl] = useState(null);
+    const [color, setColor] = useState('#ffffff');
+    const theme = useTheme()
+    const handleClick = (event) => {
+        setAnchorEl(event.currentTarget);
+    };
+
+    const handleClose = () => {
+        setColor(color);
+        setAnchorEl(null);
+    };
+
+    const handleChangeComplete = (newColor) => {
+        setColor(newColor.hex);
+    };
 
     const handleChange = async (e) => {
         const {name, value} = e.target;
@@ -136,7 +153,7 @@ const NewDevice = () => {
                 width: "100%",
                 maxWidth: 800,
                 borderRadius: 3,
-                boxShadow: 3
+                boxShadow: 3, border: "1px solid #00000020"
             }}>
                 <CardContent>
                     <Box sx={{
@@ -160,7 +177,7 @@ const NewDevice = () => {
 
                     <form onSubmit={handleSubmit}>
                         <Grid container spacing={3}>
-                            <Grid item xs={12} md={6}>
+                            <Grid size={{xs: 6}}>
                                 <TextField
                                     fullWidth
                                     label="Nazwa urządzenia"
@@ -177,8 +194,57 @@ const NewDevice = () => {
                                     }}
                                 />
                             </Grid>
+                            <Grid size={{xs: 6}}>
+                                    <TextField
+                                        label="Kolor"
+                                        value={color}
+                                        onClick={handleClick}
+                                        InputProps={{
+                                            readOnly: true,
+                                            endAdornment: (
+                                                <InputAdornment position="end">
+                                                    <IconButton onClick={handleClick} size="small">
+                                                        <div
+                                                            style={{
+                                                                width: 24,
+                                                                height: 24,
+                                                                borderRadius: '50%',
+                                                                backgroundColor: color,
+                                                                border: '1px solid #ccc',
+                                                                cursor: 'pointer'
+                                                            }}
+                                                        />
+                                                    </IconButton>
+                                                </InputAdornment>
+                                            ),
+                                        }}
+                                        fullWidth
+                                    />
 
-                            <Grid item xs={6} md={6}>
+                                    <Popover
+                                        open={Boolean(anchorEl)}
+                                        anchorEl={anchorEl}
+                                        onClose={handleClose}
+                                        anchorOrigin={{
+                                            vertical: 'bottom',
+                                            horizontal: 'left',
+                                        }}
+                                    >
+                                        <Box p={2}>
+                                            <SketchPicker
+                                                color={color}
+                                                onChangeComplete={handleChangeComplete}
+                                                presetColors={[
+                                                    '#FF0000', '#00FF00', '#0000FF',
+                                                    '#FFFF00', '#FF00FF', '#00FFFF',
+                                                    '#FFFFFF', '#000000', '#888888'
+                                                ]}
+                                            />
+                                        </Box>
+                                    </Popover>
+                            </Grid>
+
+                            <Grid size={{xs: 6}}>
                                 <TextField
                                     fullWidth
                                     label="Marka"
@@ -196,7 +262,7 @@ const NewDevice = () => {
                                 />
                             </Grid>
 
-                            <Grid item xs={6} md={6}>
+                            <Grid size={{xs: 6}}>
                                 <TextField
                                     fullWidth
                                     label="Numer seryjny"
@@ -214,7 +280,7 @@ const NewDevice = () => {
                                 />
                             </Grid>
 
-                            <Grid item xs={4} md={4}>
+                            <Grid size={{xs: 4}}>
                                 <FormControl fullWidth>
                                     <InputLabel id="locationLabel">Lokacja*</InputLabel>
                                     <Select
@@ -234,7 +300,7 @@ const NewDevice = () => {
                                 </FormControl>
                             </Grid>
 
-                            <Grid item xs={4} md={4}>
+                            <Grid size={{xs: 4}}>
                                 <FormControl fullWidth>
                                     <InputLabel id="floorLabel">Piętro</InputLabel>
                                     <Select
@@ -254,7 +320,7 @@ const NewDevice = () => {
                                 </FormControl>
                             </Grid>
 
-                            <Grid item xs={4} md={4}>
+                            <Grid size={{xs: 4}}>
                                 <FormControl fullWidth>
                                     <InputLabel id="roomLabel">Pomieszczenie</InputLabel>
                                     <Select
@@ -274,44 +340,7 @@ const NewDevice = () => {
                                 </FormControl>
                             </Grid>
 
-                            <Grid item xs={12}>
-                                <div>
-                                    <TextField
-                                        label="Kolor"
-                                        value={deviceData.color}
-
-                                        InputProps={{
-                                            readOnly: true,
-                                            endAdornment: (
-                                                <InputAdornment position="end">
-                                                    <div
-                                                        style={{
-                                                            width: 24,
-                                                            height: 24,
-                                                            borderRadius: '50%',
-                                                            backgroundColor: deviceData.color,
-                                                            border: '1px solid #ccc',
-                                                        }}
-                                                    />
-                                                </InputAdornment>
-                                            ),
-                                        }}
-                                        fullWidth
-                                    />
-
-                                    <Box p={2}>
-                                        <Typography variant="subtitle1" gutterBottom>Wybierz kolor</Typography>
-                                        <ChromePicker color={deviceData.color} onChange={(color) => {
-                                            setDeviceData(prev => ({
-                                                ...prev,
-                                                color: color.hex, // hex is like "#ff0000"
-                                            }));
-                                        }}/>
-                                    </Box>
-                                </div>
-                            </Grid>
-
-                            <Grid item xs={12}>
+                            <Grid size={{xs: 12}}>
                                 <TextField
                                     fullWidth
                                     label="Dodatkowe informacje"
@@ -323,7 +352,7 @@ const NewDevice = () => {
                                 />
                             </Grid>
 
-                            <Grid item xs={12}>
+                            <Grid size={{xs: 12}}>
                                 <Box sx={{
                                     display: "flex",
                                     justifyContent: "flex-end",
@@ -354,21 +383,59 @@ const NewDevice = () => {
                 </CardContent>
             </Card>
 
-            <Snackbar
-                open={success}
-                autoHideDuration={6000}
-                onClose={handleCloseSnackbar}
-                anchorOrigin={{vertical: "top", horizontal: "center"}}
-            >
-                <Alert
-                    onClose={handleCloseSnackbar}
-                    severity="success"
-                    sx={{width: "100%"}}
-                    icon={<CheckCircle fontSize="inherit"/>}
-                >
-                    Urządzanie zostało dodane pomyślnie! Przekierowywanie...
-                </Alert>
-            </Snackbar>
+    <Dialog
+      open={success}
+      onClose={()=> setSuccess(!success)}
+      aria-labelledby="loading-modal-title"
+      aria-describedby="loading-modal-description"
+      BackdropComponent={Backdrop}
+      BackdropProps={{
+        sx: {
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          backdropFilter: 'blur(3px)'
+        }
+      }}
+      PaperProps={{
+        sx: {
+          borderRadius: 3,
+          padding: 3,
+          minWidth: 300,
+          textAlign: 'center'
+        }
+      }}
+    >
+      <DialogContent>
+        <CircularProgress
+          size={60}
+          thickness={4}
+          sx={{
+            color: theme.palette.success.main,
+            mb: 2
+          }}
+        />
+        <DialogContentText
+          id="loading-modal-description"
+          sx={{
+            fontSize: '1.1rem',
+            color: theme.palette.text.primary,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 1
+          }}
+        >
+          <CheckCircle
+            fontSize="medium"
+            color="success"
+            sx={{
+              verticalAlign: 'middle',
+              mr: 1
+            }}
+          />
+          Urządzenie zostało dodane pomyślnie! Przekierowywanie...
+        </DialogContentText>
+      </DialogContent>
+    </Dialog>
         </Box>
     );
 };

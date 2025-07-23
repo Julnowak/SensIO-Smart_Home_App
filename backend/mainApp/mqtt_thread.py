@@ -26,6 +26,21 @@ def process_mqtt_data(payload, topic, device_id):
                 sensor=sensor
             )
 
+            if sensor.data_type == "LIGHT":
+                if sensor.room:
+                    sensors = Sensor.objects.filter(room=sensor.room)
+                    if sensors.count() > 1:
+                        l = list()
+                        for s in sensors:
+                            m = Measurement.objects.filter(sensor=s).last()
+                            l.append(m.value)
+
+                        any_sensor_on = any(int(ll) == 1 for ll in l)
+                        sensor.room.light = any_sensor_on
+                    else:
+                        sensor.room.light = int(v["value"]) == 1
+                    sensor.room.save()
+
             if sensor.data_type == "ENERGY":
                 all_mes = Measurement.objects.filter(sensor=sensor)
                 mes = all_mes.values_list("saved_at", "value")
