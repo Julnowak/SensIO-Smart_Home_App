@@ -265,14 +265,6 @@ class Rule(models.Model):
     ]
 
     DATA_TYPES = [
-        # ("LIGHT", "światło"),
-        # ("HUMIDITY", "wilgotność"),
-        # ("ENERGY", "zużycie energii"),
-        # ("TEMPERATURE", "temperatura"),
-        # ("CONTINUOUS", "ciągłe"),
-        # ("DISCRETE", "dyskretne"),
-        # ("WORKER", "sterowanie"),
-        # ("OTHER", "inne/różne"),
         ("ON/OFF", "włącz/wyłącz"),
         ("LIMIT", "limity"),
         ("SET", "ustawienie"),

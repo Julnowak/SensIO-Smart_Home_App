@@ -435,7 +435,7 @@ const Rules = () => {
               <Grid item xs={12} md={6}>
                 <DateTimePicker
                   label="Data rozpoczęcia"
-                  value={currentRule.start_date}
+                  value={new Date(currentRule.start_date)}
                   onChange={(date) => handleDateChange('start_date', date)}
                   renderInput={(params) => <TextField {...params} fullWidth />}
                 />
@@ -444,7 +444,7 @@ const Rules = () => {
               <Grid item xs={12} md={6}>
                 <DateTimePicker
                   label="Data zakończenia (opcjonalnie)"
-                  value={currentRule.end_date}
+                  value={new Date(currentRule.end_date)}
                   onChange={(date) => handleDateChange('end_date', date)}
                   renderInput={(params) => <TextField {...params} fullWidth />}
                 />

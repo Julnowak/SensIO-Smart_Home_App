@@ -14,84 +14,90 @@ import {
     FormControlLabel,
     Checkbox,
     Box,
-    Chip, Autocomplete, IconButton
+    Chip, Autocomplete, IconButton, FormControl, InputLabel, Select, Tooltip
 } from '@mui/material';
 
 import {CheckBox, CheckBoxOutlineBlank, Grading, InfoOutlined, Layers, Memory} from "@mui/icons-material";
 import client from "../../client.jsx";
 import {API_BASE_URL} from "../../config.jsx";
+import {DateTimePicker, LocalizationProvider} from "@mui/x-date-pickers";
+import {AdapterDateFns} from "@mui/x-date-pickers/AdapterDateFns";
+import {pl} from "date-fns/locale";
 
-const icon = <CheckBoxOutlineBlank fontSize="small" />;
-const checkedIcon = <CheckBox fontSize="small" />;
+const icon = <CheckBoxOutlineBlank fontSize="small"/>;
+const checkedIcon = <CheckBox fontSize="small"/>;
 
-const SensorMultiSelect = ({ sensors, selectedSensors, onSensorChange }) => {
-  const [inputValue, setInputValue] = useState('');
+const SensorMultiSelect = ({sensors, selectedSensors, onSensorChange}) => {
+    const [inputValue, setInputValue] = useState('');
 
-  const allOption = { sensor_id: "all", visibleName: "Wszystkie" };
-  const options = [allOption, ...sensors];
+    const allOption = {sensor_id: "all", visibleName: "Wszystkie"};
+    const options = [allOption, ...sensors];
 
-  const handleChange = (event, newValue) => {
-    // Jeśli wybrano "Wszystkie" i nie były wcześniej wszystkie wybrane
-    if (newValue.find(option => option.sensor_id === "all") && !selectedSensors.includes("all")) {
-      onSensorChange([allOption, ...sensors]);
-      return;
-    }
+    const handleChange = (event, newValue) => {
+        // Jeśli wybrano "Wszystkie" i nie były wcześniej wszystkie wybrane
+        if (newValue.find(option => option.sensor_id === "all") && !selectedSensors.includes("all")) {
+            onSensorChange([allOption, ...sensors]);
+            return;
+        }
 
-    // Jeśli odznaczono "Wszystkie"
-    if (!newValue.find(option => option.sensor_id === "all") && selectedSensors.includes("all")) {
-      onSensorChange([]);
-      return;
-    }
+        // Jeśli odznaczono "Wszystkie"
+        if (!newValue.find(option => option.sensor_id === "all") && selectedSensors.includes("all")) {
+            onSensorChange([]);
+            return;
+        }
 
-    // Normalna zmiana wyboru
-    onSensorChange(newValue);
-  };
+        // Normalna zmiana wyboru
+        onSensorChange(newValue);
+    };
 
-  return (
-    <Autocomplete
-      multiple
-      options={options}
-      disableCloseOnSelect
-      getOptionLabel={(option) => option.visibleName}
-      value={selectedSensors}
-      onChange={handleChange}
-      inputValue={inputValue}
-      onInputChange={(event, newInputValue) => {
-        setInputValue(newInputValue);
-      }}
-      renderOption={(props, option, { selected }) => (
-        <li {...props}>
-          <Checkbox
-            icon={icon}
-            checkedIcon={checkedIcon}
-            style={{ marginRight: 8 }}
-            checked={selected}
-          />
-          {option.visibleName}
-        </li>
-      )}
-      renderTags={(value, getTagProps) =>
-        value.map((option, index) => (
-          <Chip
-            {...getTagProps({ index })}
-            key={option.sensor_id}
-            label={option.visibleName}
-            size="small"
-            variant="outlined"
-          />
-        ))
-      }
-      renderInput={(params) => (
-        <TextField {...params} label="Wybierz czujniki" placeholder="Wyszukaj..." />
-      )}
-      sx={{ mt: 2 }}
-    />
-  );
+    return (
+        <Autocomplete
+            multiple
+            options={options}
+            disableCloseOnSelect
+            getOptionLabel={(option) => option.visibleName}
+            value={selectedSensors}
+            onChange={handleChange}
+            inputValue={inputValue}
+            onInputChange={(event, newInputValue) => {
+                setInputValue(newInputValue);
+            }}
+            renderOption={(props, option, {selected}) => (
+                <li {...props}>
+                    <Checkbox
+                        icon={icon}
+                        checkedIcon={checkedIcon}
+                        style={{marginRight: 8}}
+                        checked={selected}
+                    />
+                    {option.visibleName}
+                </li>
+            )}
+            renderTags={(value, getTagProps) =>
+                value.map((option, index) => (
+                    <Chip
+                        {...getTagProps({index})}
+                        key={option.sensor_id}
+                        label={option.visibleName}
+                        size="small"
+                        variant="outlined"
+                    />
+                ))
+            }
+            renderInput={(params) => (
+                <TextField {...params} label="Wybierz czujniki" placeholder="Wyszukaj..."/>
+            )}
+            sx={{mt: 2}}
+        />
+    );
 };
 
 const RulesTab = ({rules, devices, sensors}) => {
     const [openDialog, setOpenDialog] = useState(false);
     const [selectedSensors, setSelectedSensors] = useState([]);
+    const [selectedDevices, setSelectedDevices] = useState([]);
+    const [filteredSensors, setFilteredSensors] = useState(sensors);
+
     const [newRule, setNewRule] = useState({
         name: '',
         locations: [],
@@ -99,14 +105,25 @@ const RulesTab = ({rules, devices, sensors}) => {
         floors: [],
         sensors: sensors,
         devices: devices,
-        start_date: new Date().toISOString().slice(0, 16),
-        end_date: '',
+        start_date: new Date().toLocaleString('en-US', {
+            year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit'
+        }),
+        end_date: new Date(new Date().setDate(new Date().getDate() + 1)).toLocaleString('en-US', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        }),
         value_low: '',
         value_high: '',
         isRecurrent: false,
+        actionType: 'LIMIT',
         recurrentTime: ''
     });
 
+    console.log(newRule.start_date)
     const recurrencyTypes = [
         {value: '1', label: 'godzinowo'},
         {value: '2', label: 'dziennie'},
@@ -119,6 +136,26 @@ const RulesTab = ({rules, devices, sensors}) => {
     const handleInputChange = (e) => {
         const {name, value} = e.target;
         setNewRule(prev => ({...prev, [name]: value}));
+
+        // # ("LIGHT", "światło"),
+        // # ("HUMIDITY", "wilgotność"),
+        // # ("ENERGY", "zużycie energii"),
+        // # ("TEMPERATURE", "temperatura"),
+        // # ("CONTINUOUS", "ciągłe"),
+        // # ("DISCRETE", "dyskretne"),
+        // # ("WORKER", "sterowanie"),
+
+        if (name === "actionType") {
+            let temp;
+            if (value === "SET") {
+                temp = sensors.filter((f) => f.data_type === "WORKER" || f.data_type === "TEMPERATURE" ||
+                    f.data_type === "LIGHT")
+            } else if (value === "LIMIT") {
+                temp = sensors.filter((f) => f.data_type === "HUMIDITY" || f.data_type === "ENERGY" ||
+                    f.data_type === "TEMPERATURE" || f.data_type === "CONTINUOUS" || f.data_type === "DISCRETE")
+            }
+            setFilteredSensors(temp)
+        }
     };
 
     const handleCheckboxChange = (e) => {
@@ -162,63 +199,72 @@ const RulesTab = ({rules, devices, sensors}) => {
         });
     };
 
+    const handleSelectAll = () => {
+        setFilteredSensors
+    };
+
+    const handleDateChange = (name, date) => {
+        setNewRule(prev => ({...prev, [name]: date}));
+    };
+
+
     return (
-        <>
+        <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={pl}>
             <Grid container spacing={3}>
                 {rules.length > 0 ? (
                     rules.map((rule) => (
                         <Grid size={{xs: 12, sm: 6, md: 4}} key={rule.id}>
-                                <CardContent sx={{flexGrow: 1}}>
-                                    <Typography gutterBottom variant="h5" component="h2">
-                                        {rule.name}
-                                    </Typography>
+                            <CardContent sx={{flexGrow: 1}}>
+                                <Typography gutterBottom variant="h5" component="h2">
+                                    {rule.name}
+                                </Typography>
 
+                                <Typography variant="body2" color="text.secondary">
+                                    <strong>Zakres
+                                        wartości:</strong> {rule.value_low || '–'} - {rule.value_high || '–'}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                    <strong>Okres:</strong> {new Date(rule.start_date).toLocaleString()}
+                                    {rule.end_date && ` - ${new Date(rule.end_date).toLocaleString()}`}
+                                </Typography>
+                                {rule.isRecurrent && (
                                     <Typography variant="body2" color="text.secondary">
-                                        <strong>Zakres
-                                            wartości:</strong> {rule.value_low || '–'} - {rule.value_high || '–'}
+                                        <strong>Częstotliwość:</strong> {recurrencyTypes.find(t => t.value === rule.recurrentTime)?.label}
                                     </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        <strong>Okres:</strong> {new Date(rule.start_date).toLocaleString()}
-                                        {rule.end_date && ` - ${new Date(rule.end_date).toLocaleString()}`}
-                                    </Typography>
-                                    {rule.isRecurrent && (
-                                        <Typography variant="body2" color="text.secondary">
-                                            <strong>Częstotliwość:</strong> {recurrencyTypes.find(t => t.value === rule.recurrentTime)?.label}
-                                        </Typography>
+                                )}
+                                <Box sx={{mt: 1}}>
+                                    {rule.locations.length > 0 && (
+                                        <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 0.5}}>
+                                            {rule.locations.map(loc => (
+                                                <Chip key={loc.id} label={loc.name} size="small"/>
+                                            ))}
+                                        </Box>
                                     )}
-                                    <Box sx={{mt: 1}}>
-                                        {rule.locations.length > 0 && (
-                                            <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 0.5}}>
-                                                {rule.locations.map(loc => (
-                                                    <Chip key={loc.id} label={loc.name} size="small"/>
-                                                ))}
-                                            </Box>
-                                        )}
-                                        {rule.rooms.length > 0 && (
-                                            <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 0.5}}>
-                                                {rule.rooms.map(room => (
-                                                    <Chip key={room.id} label={room.name} size="small" color="primary"/>
-                                                ))}
-                                            </Box>
-                                        )}
-                                        {rule.floors.length > 0 && (
-                                            <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 0.5}}>
-                                                {rule.floors.map(floor => (
-                                                    <Chip key={floor.id} label={floor.name} size="small"
-                                                          color="secondary"/>
-                                                ))}
-                                            </Box>
-                                        )}
-                                        {rule.sensors.length > 0 && (
-                                            <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 0.5}}>
-                                                {rule.sensors.map(sensor => (
-                                                    <Chip key={sensor.sensor_id} label={sensor.name} size="small"
-                                                          variant="outlined"/>
-                                                ))}
-                                            </Box>
-                                        )}
-                                    </Box>
-                                </CardContent>
+                                    {rule.rooms.length > 0 && (
+                                        <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 0.5}}>
+                                            {rule.rooms.map(room => (
+                                                <Chip key={room.id} label={room.name} size="small" color="primary"/>
+                                            ))}
+                                        </Box>
+                                    )}
+                                    {rule.floors.length > 0 && (
+                                        <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 0.5}}>
+                                            {rule.floors.map(floor => (
+                                                <Chip key={floor.id} label={floor.name} size="small"
+                                                      color="secondary"/>
+                                            ))}
+                                        </Box>
+                                    )}
+                                    {rule.sensors.length > 0 && (
+                                        <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 0.5}}>
+                                            {rule.sensors.map(sensor => (
+                                                <Chip key={sensor.sensor_id} label={sensor.name} size="small"
+                                                      variant="outlined"/>
+                                            ))}
+                                        </Box>
+                                    )}
+                                </Box>
+                            </CardContent>
                         </Grid>
                     ))
                 ) : (
@@ -245,7 +291,7 @@ const RulesTab = ({rules, devices, sensors}) => {
                                 variant="contained"
                                 color="primary"
                                 onClick={() => setOpenDialog(true)}
-                                sx={{mt:2}}
+                                sx={{mt: 2}}
                             >
                                 Dodaj nową regułę
                             </Button>
@@ -282,98 +328,158 @@ const RulesTab = ({rules, devices, sensors}) => {
                                 required
                             />
                         </Grid>
-                        <Grid size={{xs: 10}}>
-                            <Autocomplete
-                              multiple
-                              limitTags={2}
-                              id="sensors-multi-select"
-                              options={sensors}
-                              getOptionLabel={(option) => option.visibleName}
-                              defaultValue={[]}
-                              renderInput={(params) => (
-                                <TextField {...params} label="Wybierz czujniki" placeholder="Wyszukaj..." />
-                              )}
-                              sx={{ width: '100%'}}
-                              disableCloseOnSelect
-                              renderOption={(props, option, { selected }) => (
-                                <li {...props}>
-                                  <Checkbox
-                                    icon={<CheckBoxOutlineBlank fontSize="small" />}
-                                    checkedIcon={<CheckBox fontSize="small" />}
-                                    style={{ marginRight: 8 }}
-                                    checked={selected}
-                                  />
-                                  {option.visibleName}
-                                </li>
-                              )}
-                              onChange={(event, newValue) => {
-                                if (newValue.find(opt => opt.sensor_id === "all")) {
-                                  // Jeśli wybrano "Wszystkie" - zaznacz wszystkie sensory
-                                  setSelectedSensors([{ sensor_id: "all", visibleName: "Wszystkie" }, ...sensors]);
-                                } else {
-                                  setSelectedSensors(newValue);
-                                }
-                              }}
-                            />
+
+                        <Grid size={{xs: 12, sm: 6}}>
+                            <FormControl fullWidth>
+                                <InputLabel>Typ akcji *</InputLabel>
+                                <Select
+                                    value={newRule.actionType || ''}
+                                    onChange={handleInputChange}
+                                    name="actionType"
+                                    required
+                                >
+                                    <MenuItem value="LIMIT">Ogranicz</MenuItem>
+                                    <MenuItem value="SET">Ustaw</MenuItem>
+                                    <MenuItem value="ON/OFF">Włącz/wyłącz</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        <Grid size={{xs: 11}}>
+                            {newRule.actionType === "ON/OFF" ?
+                                <Autocomplete
+                                    // multiple
+                                    limitTags={2}
+                                    id="sensors-multi-select"
+                                    options={[devices]}
+                                    getOptionLabel={(option) => option.name}
+                                    defaultValue={[]}
+                                    renderInput={(params) => (
+                                        <TextField {...params} label="Wybierz urzązenie" placeholder="Wyszukaj..."/>
+                                    )}
+                                    sx={{width: '100%'}}
+                                    disableCloseOnSelect
+                                    renderOption={(props, option, {selected}) => (
+                                        <li {...props}>
+                                            <Checkbox
+                                                icon={<CheckBoxOutlineBlank fontSize="small"/>}
+                                                checkedIcon={<CheckBox fontSize="small"/>}
+                                                style={{marginRight: 8}}
+                                                checked={selected}
+                                            />
+                                            {option.name}
+                                        </li>
+                                    )}
+                                    onChange={(event, newValue) => {
+                                        if (newValue.find(opt => opt.sensor_id === "all")) {
+                                            // Jeśli wybrano "Wszystkie" - zaznacz wszystkie sensory
+                                            setSelectedDevices([{
+                                                sensor_id: "all",
+                                                visibleName: "Wszystkie"
+                                            }, ...sensors]);
+                                        } else {
+                                            setSelectedDevices(newValue);
+                                        }
+                                    }}
+                                /> :
+
+                                <Autocomplete
+                                    multiple
+                                    limitTags={2}
+                                    id="sensors-multi-select"
+                                    options={filteredSensors}
+                                    getOptionLabel={(option) => option.visibleName}
+                                    value={selectedSensors}
+                                    renderInput={(params) => (
+                                        <TextField {...params} label="Wybierz czujniki" placeholder="Wyszukaj..."/>
+                                    )}
+                                    sx={{width: '100%'}}
+                                    disableCloseOnSelect
+                                    renderOption={(props, option, {selected}) => (
+                                        <li {...props}>
+                                            <Checkbox
+                                                icon={<CheckBoxOutlineBlank fontSize="small"/>}
+                                                checkedIcon={<CheckBox fontSize="small"/>}
+                                                style={{marginRight: 8}}
+                                                checked={selected}
+                                            />
+                                            {option.visibleName}
+                                        </li>
+                                    )}
+                                    onChange={(event, newValue) => {
+                                        if (newValue.some(opt => opt.sensor_id === "all")) {
+                                            setSelectedSensors(filteredSensors);
+                                        } else {
+                                            setSelectedSensors(newValue);
+                                        }
+                                    }}
+                                />}
                         </Grid>
 
                         <Grid size={{xs: 1}} sx={{alignContent: "center"}}>
-                            <IconButton>
-                                <Grading/>
-                            </IconButton>
+                            <Tooltip title="Wybierz wszystkie" arrow>
+                                <IconButton onClick={() => setSelectedSensors(filteredSensors)}>
+                                    <Grading/>
+                                </IconButton>
+                            </Tooltip>
                         </Grid>
-
-                        <Grid size={{xs: 1}} sx={{alignContent: "center"}}>
-                            <IconButton>
-                                <Memory/>
-                            </IconButton>
-                        </Grid>
-
 
 
                         <Grid size={{xs: 12, sm: 6}}>
-                            <TextField
-                                fullWidth
+                            <DateTimePicker
                                 label="Data rozpoczęcia"
-                                type="datetime-local"
-                                name="start_date"
-                                value={newRule.start_date}
-                                onChange={handleInputChange}
-                                InputLabelProps={{shrink: true}}
+                                value={new Date(newRule.start_date)}
+                                onChange={(date) => handleDateChange('start_date', date)}
+                                renderInput={(params) => <TextField {...params} fullWidth/>}
+                                sx={{width: '100%'}}
                             />
                         </Grid>
 
-                        <Grid size={{xs: 12, sm: 6}}>
-                            <TextField
-                                fullWidth
-                                label="Data zakończenia (opcjonalnie)"
-                                type="datetime-local"
-                                name="end_date"
-                                value={newRule.end_date}
-                                onChange={handleInputChange}
-                                InputLabelProps={{shrink: true}}
-                            />
-                        </Grid>
+                        {(newRule.actionType === "LIMIT" || newRule.actionType === "") &&
+                            (<Grid size={{xs: 12, sm: 6}}>
+                                <DateTimePicker
+                                    label="Data zakończenia (opcjonalnie)"
+                                    value={new Date(newRule.end_date)}
+                                    onChange={(date) => handleDateChange('end_date', date)}
+                                    renderInput={(params) => <TextField {...params} fullWidth/>}
+                                    sx={{width: '100%'}}
+                                />
+                            </Grid>)}
 
-                        <Grid size={{xs: 12, sm: 6}}>
-                            <TextField
-                                fullWidth
-                                label="Wartość minimalna (opcjonalnie)"
-                                name="value_low"
-                                value={newRule.value_low}
-                                onChange={handleInputChange}
-                            />
-                        </Grid>
+                        {newRule.actionType !== "ON/OFF" ?
+                            <Grid size={{xs: 12, sm: 6}}>
+                                <TextField
+                                    fullWidth
+                                    label={newRule.actionType === "SET" ? "Wartość" : "Wartość minimalna (opcjonalnie)"}
+                                    name="value_low"
+                                    value={newRule.value_low}
+                                    onChange={handleInputChange}
+                                />
+                            </Grid> :
+                            <Grid size={{xs: 12, sm: 6}}>
+                                <FormControl fullWidth>
+                                    <InputLabel>Stan *</InputLabel>
+                                    <Select
+                                        value={newRule.value_low || ''}
+                                        onChange={handleInputChange}
+                                        name="value_low"
+                                        required
+                                    >
+                                        <MenuItem value={"ON"}>Włącz</MenuItem>
+                                        <MenuItem value={"OFF"}>Wyłącz</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Grid>}
 
-                        <Grid size={{xs: 12, sm: 6}}>
-                            <TextField
-                                fullWidth
-                                label="Wartość maksymalna (opcjonalnie)"
-                                name="value_high"
-                                value={newRule.value_high}
-                                onChange={handleInputChange}
-                            />
-                        </Grid>
+                        {(newRule.actionType === "LIMIT" || newRule.actionType === "") &&
+                            (<Grid size={{xs: 12, sm: 6}}>
+                                <TextField
+                                    fullWidth
+                                    label="Wartość maksymalna (opcjonalnie)"
+                                    name="value_high"
+                                    value={newRule.value_high}
+                                    onChange={handleInputChange}
+                                />
+                            </Grid>)}
 
                         <Grid size={{xs: 12}}>
                             <FormControlLabel
@@ -415,7 +521,7 @@ const RulesTab = ({rules, devices, sensors}) => {
                     </Button>
                 </DialogActions>
             </Dialog>
-        </>
+        </LocalizationProvider>
     );
 };
 
