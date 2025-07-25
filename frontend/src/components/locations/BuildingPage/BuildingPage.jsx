@@ -69,6 +69,7 @@ import {lightGreen} from "@mui/material/colors";
 import RulesTab from "../../tabs/rulesTab.jsx";
 import CalendarChart from "../heatmap.jsx";
 import EnergyDashboard from "../EnergyDashboard.jsx";
+import RulesTabLR from "../../tabs/rulesTabLR.jsx";
 
 
 const InfoItem = ({icon, label, value}) => (
@@ -645,8 +646,8 @@ const BuildingPage = () => {
                 </Paper>
             </Box>)}
 
-            {activeTab === 2 && (<AlarmsTab alarms={alarms} loading={loading}/>)}
-            {activeTab === 3 && (<RulesTab rules={rules}/>)}
+            {activeTab === 2 && (<AlarmsTab alarms={alarms} setAlarms={setAlarms} loading={loading}/>)}
+            {activeTab === 3 && (<RulesTabLR rules={rules} setRules={setRules} floors={floors} rooms={rooms}/>)}
             {activeTab === 4 && measurements.length !== 0 && (
                 <Box>
                     <Grid size={{sx: 12}}>

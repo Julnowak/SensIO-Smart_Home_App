@@ -49,11 +49,11 @@ import {pl} from "date-fns/locale";
 import {useNavigate} from "react-router-dom";
 
 
-const RulesTab = ({rules, setRules, devices, sensors, type}) => {
+const RulesTabLR = ({rules, setRules, rooms, devices, locations, type}) => {
     const [openDialog, setOpenDialog] = useState(false);
-    const [selectedSensors, setSelectedSensors] = useState(type==="sensor"? sensors: []);
-    const [selectedDevices, setSelectedDevices] = useState(type==="device"? devices: []);
-    const [filteredSensors, setFilteredSensors] = useState(sensors);
+    const [selectedRooms, setSelectedRooms] = useState(type==="room"? rooms: []);
+    const [selectedDevices, setSelectedDevices] = useState([]);
+    // const [filteredSensors, setFilteredSensors] = useState(sensors);
     const navigate = useNavigate()
 
     // Pagination state
@@ -73,7 +73,8 @@ const RulesTab = ({rules, setRules, devices, sensors, type}) => {
         value_high: '',
         isRecurrent: false,
         actionType: 'LIMIT',
-        recurrentTime: ''
+        recurrentTime: '',
+        mainType: ''
     });
 
     const recurrencyTypes = [
@@ -98,19 +99,6 @@ const RulesTab = ({rules, setRules, devices, sensors, type}) => {
         const {name, value} = e.target;
         setNewRule(prev => ({...prev, [name]: value}));
 
-        if (name === "actionType") {
-            let temp;
-            if (value === "SET") {
-                temp = sensors?.filter((f) => f.data_type === "WORKER" || f.data_type === "TEMPERATURE" ||
-                    f.data_type === "LIGHT")
-            } else if (value === "LIMIT") {
-                temp = sensors?.filter((f) => f.data_type === "HUMIDITY" || f.data_type === "ENERGY" ||
-                    f.data_type === "TEMPERATURE" || f.data_type === "CONTINUOUS" || f.data_type === "DISCRETE")
-            }
-            setFilteredSensors(temp)
-            setSelectedSensors([])
-            setSelectedDevices([])
-        }
     };
 
     const handleCheckboxChange = (e) => {
@@ -147,8 +135,8 @@ const RulesTab = ({rules, setRules, devices, sensors, type}) => {
             actionType: 'LIMIT',
             recurrentTime: ''
         });
-        setSelectedDevices([])
-        setSelectedSensors([])
+        setSelectedRooms(type==="room"? rooms: [])
+        // setSelectedSensors([])
     };
 
     const handleDateChange = (name, date) => {
@@ -340,7 +328,7 @@ const RulesTab = ({rules, setRules, devices, sensors, type}) => {
                 <DialogTitle>Dodaj nową regułę</DialogTitle>
                 <DialogContent>
                     <Grid container spacing={2} sx={{mt: 1}}>
-                        <Grid size={{xs: 12, sm: 6}}>
+                        <Grid size={{xs: 12, sm: 4}}>
                             <TextField
                                 fullWidth
                                 label="Nazwa reguły"
@@ -351,7 +339,24 @@ const RulesTab = ({rules, setRules, devices, sensors, type}) => {
                             />
                         </Grid>
 
-                        <Grid size={{xs: 12, sm: 6}}>
+                        <Grid size={{xs: 12, sm: 4}}>
+                            <FormControl fullWidth>
+                                <InputLabel>Typ mierzony *</InputLabel>
+                                <Select
+                                    value={newRule.mainType}
+                                    onChange={handleInputChange}
+                                    name="mainType"
+                                    required
+                                >
+                                    <MenuItem value="ENERGY">Zużycie energii</MenuItem>
+                                    <MenuItem value="TEMPERATURE">Temperatura</MenuItem>
+                                    <MenuItem value="LIGHT">Oświetlenie</MenuItem>
+
+                                </Select>
+                            </FormControl>
+                        </Grid>
+
+                        <Grid size={{xs: 12, sm: 4}}>
                             <FormControl fullWidth>
                                 <InputLabel>Typ akcji *</InputLabel>
                                 <Select
@@ -360,28 +365,22 @@ const RulesTab = ({rules, setRules, devices, sensors, type}) => {
                                     name="actionType"
                                     required
                                 >
-                                    {type === "sensor" ? (
-                                        (sensors.length === 1 && sensors[0].data_type !== "LIGHT" && sensors[0].data_type !== "ROBOT") ? (
-                                            <MenuItem value="LIMIT">Ogranicz</MenuItem>
-                                        ) : null
-                                    ) : (
+
+                                    {newRule.mainType === "ENERGY" || newRule.mainType === "TEMPERATURE" && (
                                         <MenuItem value="LIMIT">Ogranicz</MenuItem>
                                     )}
 
-                                    {type === "sensor" ? (
-                                        (sensors.length === 1 && (sensors[0].data_type === "LIGHT" || sensors[0].data_type === "ROBOT" || sensors[0].data_type === "TEMPERATURE")) ? (
-                                            <MenuItem value="SET">Ustaw</MenuItem>
-                                        ) : null
-                                    ) : (
+                                    {newRule.mainType === "LIGHT" || newRule.mainType === "TEMPERATURE" && (
                                         <MenuItem value="SET">Ustaw</MenuItem>
                                     )}
 
-                                    {type !== "sensor" && <MenuItem value="ON/OFF">Włącz/wyłącz</MenuItem>}
+                                    <MenuItem value="ON/OFF">Włącz/wyłącz</MenuItem>
                                 </Select>
                             </FormControl>
                         </Grid>
+
                         <Grid size={{xs: 11}}>
-                            {newRule.actionType === "ON/OFF" ?
+                            {newRule.actionType === "ON/OFF" &&
                                 <Autocomplete
                                     multiple
                                     limitTags={2}
@@ -409,46 +408,17 @@ const RulesTab = ({rules, setRules, devices, sensors, type}) => {
                                         setSelectedDevices(newValue);
 
                                     }}
-                                /> :
-
-                                <Autocomplete
-                                    multiple
-                                    limitTags={2}
-                                    id="sensors-multi-select"
-                                    options={filteredSensors}
-                                    getOptionLabel={(option) => option.visibleName}
-                                    value={selectedSensors}
-                                    renderInput={(params) => (
-                                        <TextField {...params} label="Wybierz czujniki" placeholder="Wyszukaj..."/>
-                                    )}
-                                    sx={{width: '100%'}}
-                                    disableCloseOnSelect
-                                    renderOption={(props, option, {selected}) => (
-                                        <li {...props}>
-                                            <Checkbox
-                                                icon={<CheckBoxOutlineBlank fontSize="small"/>}
-                                                checkedIcon={<CheckBox fontSize="small"/>}
-                                                style={{marginRight: 8}}
-                                                checked={selected}
-                                            />
-                                            {option.visibleName}
-                                        </li>
-                                    )}
-                                    onChange={(event, newValue) => {
-                                        console.log(newValue)
-                                        setSelectedSensors(newValue);
-                                        setNewRule(prev => ({...prev, sensors: newValue}));
-                                    }}
                                 />}
                         </Grid>
 
+                        {newRule.actionType === "ON/OFF" &&
                         <Grid size={{xs: 1}} sx={{alignContent: "center"}}>
                             <Tooltip title="Wybierz wszystkie" arrow>
-                                <IconButton onClick={() => setSelectedSensors(filteredSensors)}>
+                                <IconButton onClick={() => setSelectedDevices(devices)}>
                                     <Grading/>
                                 </IconButton>
                             </Tooltip>
-                        </Grid>
+                        </Grid>}
 
 
                         <Grid size={{xs: 12, sm: 6}}>
@@ -552,4 +522,4 @@ const RulesTab = ({rules, setRules, devices, sensors, type}) => {
     );
 };
 
-export default RulesTab;
+export default RulesTabLR;

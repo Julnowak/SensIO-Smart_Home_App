@@ -478,7 +478,7 @@ const SensorPage = () => {
 
             {/* Rules Tab */}
             {activeTab === 'rules' && (
-                <RulesTab rules={rules} sensors={sensor} devices={sensor.device} />
+                <RulesTab rules={rules} setRules={setRules} sensors={[sensor]} devices={sensor.device} type={"sensor"} />
             )}
 
             {/* Edit Dialog */}

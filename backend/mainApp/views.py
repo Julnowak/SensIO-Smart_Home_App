@@ -1,5 +1,6 @@
 import io
 import json
+from datetime import datetime, timedelta
 
 import pandas as pd
 from django.contrib.auth import authenticate, login, logout
@@ -7,9 +8,8 @@ from django.contrib.auth import get_user_model
 from django.http import JsonResponse, HttpResponse
 from django.core.cache import cache
 from django.utils import timezone
-from fontTools.designspaceLib.types import Rules
-from jupyter_events.cli import console
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+
 
 from .models import Room, Device, Floor, Notification, Action, Sensor, Measurement, Rule
 
@@ -294,7 +294,35 @@ class RoomData(APIView):
         sensors = Sensor.objects.filter(room=room)
         rules = Rule.objects.filter(rooms=room)
 
-        energySen = sensors.filter(data_type="ENERGY")
+        energySensors = sensors.filter(data_type="ENERGY")
+        now = timezone.now()
+
+        # Today's measurements (midnight to now)
+        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        energy_today = Measurement.objects.filter(
+            sensor__in=energySensors,
+            created_at__gte=today_start
+        ).values_list('value', flat=True)
+
+        # Current week measurements (Monday to now)
+        monday = now - timedelta(days=now.weekday())
+        week_start = monday.replace(hour=0, minute=0, second=0, microsecond=0)
+        energy_week = Measurement.objects.filter(
+            sensor__in=energySensors,
+            created_at__gte=week_start
+        ).values_list('value', flat=True)
+
+        # Current month measurements (1st to now)
+        month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        energy_month = Measurement.objects.filter(
+            sensor__in=energySensors,
+            created_at__gte=month_start
+        ).values_list('value', flat=True)
+
+        dayEnergySum = sum(list(energy_today))
+        weekEnergySum = sum(list(energy_week))
+        monthEnergySum = sum(list(energy_month))
+
 
         actions = Action.objects.filter(device__room=room).order_by("-created_at")
 
@@ -306,8 +334,15 @@ class RoomData(APIView):
         actionsSerializer = ActionSerializer(actions, many=True)
         return Response({"roomData": serializer.data, "devicesData": devicesSerializer.data,
                          "sensorsData": sensorsSerializer.data, "rulesData": ruleSerializer.data,
-                         "actionsData": actionsSerializer.data}, status=status.HTTP_200_OK)
+                         "actionsData": actionsSerializer.data, "energyData": {"day": dayEnergySum, "week": weekEnergySum, "month": monthEnergySum}}, status=status.HTTP_200_OK)
 
+    def put(self, request, room_id):
+        room = Room.objects.get(room_id=room_id)
+        if "isFavorite" in request.data:
+            room.isFavorite = not room.isFavorite
+        room.save()
+        serializer = RoomSerializer(room)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 class DeviceData(APIView):
     permission_classes = (permissions.IsAuthenticated,)
@@ -318,8 +353,8 @@ class DeviceData(APIView):
         rooms = Room.objects.filter(home__owner=request.user)
         floors = Floor.objects.filter(home__owner=request.user)
         locations = Home.objects.filter(owner=request.user)
-        actions = Action.objects.filter(device=device).order_by("-created_at")
-        rules = Rule.objects.filter(devices=device).order_by("-created_at")
+        actions = Action.objects.filter(device=device).order_by("-created_at")[:100]
+        rules = Rule.objects.filter(sensors__in=sensors).order_by("-created_at")
         measurements = Measurement.objects.filter(sensor__in=sensors).order_by("-created_at")
 
         serializer = DeviceSerializer(device)
@@ -666,10 +701,27 @@ class RuleDataAPI(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request):
-        print(request.data)
-        # rule = Rule.objects.get(pk=rule_id)
-        # serializer = RuleSerializer(rule)
-        return Response(status=status.HTTP_200_OK)
+        newRule = request.data['newRule']
+        rule = Rule.objects.create(name=newRule['name'], owner=request.user,
+                                   start_date=(newRule['start_date'] if newRule['start_date'] != "" else None), end_date=(newRule['end_date'] if newRule['end_date'] != "" else None), value_low=newRule['value_low'],
+                                   value_high=newRule['value_high'], isRecurrent=newRule['isRecurrent'], recurrentTime=newRule['recurrentTime'],
+                                   type=newRule['actionType'])
+
+        print(newRule['sensors'])
+        if newRule['sensors']:
+            for i in newRule['sensors']:
+                rule.sensors.add(i['sensor_id'])
+        if newRule['locations']:
+            rule.locations.add(newRule['locations'])
+        if newRule['devices']:
+            rule.devices.add(newRule['devices'])
+        if newRule['rooms']:
+            rule.rooms.add(newRule['rooms'])
+        if newRule['floors']:
+            rule.floors.add(newRule['floors'])
+
+        serializer = RuleSerializer(rule)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request, rule_id):
         rule = Rule.objects.get(pk=rule_id)

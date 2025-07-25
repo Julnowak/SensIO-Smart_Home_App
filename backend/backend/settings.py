@@ -125,11 +125,10 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
-
 USE_I18N = True
 
 USE_TZ = True
+TIME_ZONE = 'Europe/Warsaw'
 
 
 # Static files (CSS, JavaScript, Images)
@@ -172,9 +171,6 @@ SIMPLE_JWT = {
 import os
 MEDIA_URL = '../frontend/public/images/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, '../frontend/public/images/media/')
-
-USE_TZ = True
-TIME_ZONE = 'Europe/Warsaw'
 
 CELERY_BROKER_URL = 'redis://localhost:6379/0'
 CELERY_TIMEZONE = 'Europe/Warsaw'

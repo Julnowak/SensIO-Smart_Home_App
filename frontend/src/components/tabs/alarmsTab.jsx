@@ -2,7 +2,7 @@ import React, {useState} from 'react';
 import {
     Box, Button,
     Card,
-    CardContent, Checkbox, Chip, IconButton,
+    CardContent, Checkbox, Chip, IconButton, Link, Paper,
     Skeleton,
     Table, TableBody,
     TableCell, TableContainer,
@@ -95,7 +95,7 @@ const AlarmsTab = ({alarms, setAlarms, loading, type}) => {
                     alignItems: 'center',
                     justifyContent: 'center',
                     height: '200px',
-                    textAlign: 'center'
+                    textAlign: 'center', mt:1
 
                 }}>
                     <InfoOutlined color="disabled" sx={{fontSize: 48, mb: 2}}/>
@@ -106,8 +106,12 @@ const AlarmsTab = ({alarms, setAlarms, loading, type}) => {
                         Alarmy zostaną wyświetlone, gdy się pojawią
                     </Typography>
                 </Box>) : (
-                <CardContent>
-                    <TableContainer>
+                <>
+                    <Box sx={{mt:2, mb:2}}>
+                        Wyświetlane jest 100 ostatnich wyników. <Link onClick={()=> navigate('/history')} > Zobacz więcej...</Link>
+                    </Box>
+
+                    <TableContainer component={Paper}  sx={{border: "1px solid #00000020", mt:1}}>
                         <Table>
                             <TableHead>
                                 <TableRow>
@@ -126,9 +130,9 @@ const AlarmsTab = ({alarms, setAlarms, loading, type}) => {
                                     </TableCell>
                                 </TableRow>) : alarms.length > 0 ? (alarms
                                     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                                    .map((alarm) => (<TableRow key={alarm.action_id}>
+                                    ?.map((alarm) => (<TableRow key={alarm.action_id}>
                                         <TableCell>
-                                            {alarm.measurement.sensor.data_type === "LIGHT"? `${Boolean(parseInt(alarm?.measurement?.value) === 1)}`:
+                                            {alarm?.measurement?.sensor?.data_type === "LIGHT"? `${Boolean(parseInt(alarm?.measurement?.value) === 1)}`:
                                             (`${Math.round(alarm?.measurement?.value * 100) / 100} ${alarm?.measurement?.sensor.unit}`)}
                                         </TableCell>
                                         <TableCell>
@@ -143,9 +147,9 @@ const AlarmsTab = ({alarms, setAlarms, loading, type}) => {
                                         </TableCell>
 
                                             <TableCell>
-                                                <Chip label={alarm.measurement.sensor.visibleName} variant={"outlined"}
+                                                <Chip label={alarm?.measurement?.sensor?.visibleName} variant={"outlined"}
                                                       size={"small"}
-                                                      onClick={() => navigate(`/sensor/${alarm.measurement.sensor.sensor_id}`)}/>
+                                                      onClick={() => navigate(`/sensor/${alarm?.measurement?.sensor.sensor_id}`)}/>
                                             </TableCell>
                                         <TableCell>
                                             {alarm.description}
@@ -215,7 +219,7 @@ const AlarmsTab = ({alarms, setAlarms, loading, type}) => {
                             `${from}–${to} z ${count !== -1 ? count : `ponad ${to}`}`
                         }
                     />
-                </CardContent>
+                </>
             )}
 
         </>

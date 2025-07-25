@@ -140,6 +140,7 @@ const DevicePage = () => {
         color: ''
     });
 
+
     const dataTypes = [
         {value: 'LIGHT', label: 'Światło'},
         {value: 'HUMIDITY', label: 'Wilgotność'},
@@ -364,8 +365,8 @@ const DevicePage = () => {
                         ? {
                             ...s,
                             lastValue: {
-                                ...s.lastValue, // Zachowaj pozostałe właściwości lastValue
-                                value: (parseInt(mes.value) === 0 ? "1" : "0") // Zaktualizuj tylko value
+                                ...s.lastValue,
+                                value: (parseInt(mes.value) === 0 ? "1" : "0")
                             }
                         }
                         : s
@@ -757,7 +758,7 @@ const DevicePage = () => {
 
                         {activeTab === 1 && (
                             <AlarmsTab loading={loading} alarms={alarms} setAlarms={setAlarms} type={"device"}/>)}
-                        {activeTab === 2 && (<RulesTab rules={rules} devices={device} sensors={sensors}/>)}
+                        {activeTab === 2 && (<RulesTab rules={rules} setRules={setRules} devices={[device]} sensors={sensors}/>)}
                         {activeTab === 3 && (<LightUsageChart measurements={measurements}/>)}
 
                     </>

@@ -576,6 +576,7 @@ function History() {
                                 <TableCell>Nazwa</TableCell>
                                 <TableCell width="60px">Typ</TableCell>
                                 <TableCell width="200px">Urządzenie</TableCell>
+                                <TableCell width="100px">Reguła</TableCell>
                                 <TableCell>Wartość</TableCell>
                                 <TableCell>Lokacja</TableCell>
                                 <TableCell>Akcja</TableCell>
@@ -619,11 +620,19 @@ function History() {
                                             </TableCell>
                                             <TableCell>
                                                 <Chip sx={{m: 0.2}} size={"small"}
-                                                      onClick={() => navigate(`/sensor/${log.measurement.sensor.sensor_id}`)}
-                                                      variant={"outlined"} label={log.measurement.sensor.visibleName}/>
+                                                      onClick={() => navigate(`/sensor/${log?.measurement?.sensor?.sensor_id}`)}
+                                                      variant={"outlined"} label={log?.measurement?.sensor?.visibleName}/>
                                                 <Chip sx={{m: 0.2}} size={"small"}
                                                       onClick={() => navigate(`/device/${log.device.device_id}`)}
                                                       variant={"outlined"} label={log.device.name}/>
+                                            </TableCell>
+                                            <TableCell>
+                                                {log?.rule?
+                                                <Chip sx={{m: 0.2}} size={"small"}
+                                                      // onClick={() => navigate(`/sensor/${log.measurement.sensor.sensor_id}`)}
+                                                      variant={"outlined"} label={log?.rule?.name}/>:
+                                                '---'}
+
                                             </TableCell>
                                             <TableCell>
                                                 <Typography
@@ -655,14 +664,6 @@ function History() {
                                                         <Chip
                                                             onClick={() => navigate(`/room/${log?.device?.room.room_id}`)}
                                                             label={log?.device?.room?.name}
-                                                            size="small"
-                                                            color="secondary"
-                                                            variant="outlined"
-                                                        />
-                                                    )}
-                                                    {log?.device?.floor && (
-                                                        <Chip
-                                                            label={`Piętro ${log?.device?.floor?.floor_number}`}
                                                             size="small"
                                                             color="secondary"
                                                             variant="outlined"
@@ -706,7 +707,7 @@ function History() {
                                     ))
                             ) : (
                                 <TableRow>
-                                    <TableCell colSpan={7} align="center" sx={{py: 4}}>
+                                    <TableCell colSpan={9} align="center" sx={{py: 4}}>
                                         <Typography variant="body1" color="text.secondary">
                                             Nie znaleziono rezultatów.
                                         </Typography>
