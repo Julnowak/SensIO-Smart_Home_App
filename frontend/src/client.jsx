@@ -4,7 +4,7 @@ import {API_BASE_URL} from "./config.jsx";
 const client = axios.create({
     // baseURL: "http://127.0.0.1:8000/api/",
     baseURL: "https://improved-vervet-happy.ngrok-free.app/api/",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", 'ngrok-skip-browser-warning': 'true' },
 });
 
 let isRefreshing = false;

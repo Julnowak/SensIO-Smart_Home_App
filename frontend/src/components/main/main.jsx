@@ -89,7 +89,6 @@ const Main = () => {
             const response = await client.get(API_BASE_URL + "main", {
                 headers: {
                     Authorization: `Bearer ${token}`,
-                    'ngrok-skip-browser-warning': 'true'
                 }
             });
 
