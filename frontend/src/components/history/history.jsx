@@ -107,24 +107,24 @@ function History() {
             setLogs(response.data.actionsData);
             setFilteredLogs(response.data.actionsData);
             setLocations(response.data.locationsData);
-            setSelectedLocation(response.data.locationsData.filter((l) => l.current === true)[0]);
+            setSelectedLocation(response.data.locationsData?.filter((l) => l.current === true)[0]);
 
             // Calculate statistics
-            const errorCount = response.data.actionsData.filter(
+            const errorCount = response.data.actionsData?.filter(
                 log => log.status === "HIGH"
             ).length;
-            const mediumCount = response.data.actionsData.filter(
+            const mediumCount = response.data.actionsData?.filter(
                 log => log.status === "MEDIUM"
             ).length;
-            const warningCount = response.data.actionsData.filter(
+            const warningCount = response.data.actionsData?.filter(
                 log => log.status === "LOW"
             ).length;
-            const infoCount = response.data.actionsData.filter(
+            const infoCount = response.data.actionsData?.filter(
                 log => log.status === "NORMAL"
             ).length;
 
             setStats({
-                total: response.data.actionsData.length,
+                total: response.data.actionsData?.length,
                 errors: errorCount,
                 mediums: mediumCount,
                 warnings: warningCount,
@@ -165,26 +165,26 @@ function History() {
             setLogs(response.data.actionsData);
             setFilteredLogs(response.data.actionsData);
 
-            const errorCount = response.data.actionsData.filter(
+            const errorCount = response.data.actionsData?.filter(
                 log => log.status === "HIGH"
             ).length;
-            const mediumCount = response.data.actionsData.filter(
+            const mediumCount = response.data.actionsData?.filter(
                 log => log.status === "MEDIUM"
             ).length;
-            const warningCount = response.data.actionsData.filter(
+            const warningCount = response.data.actionsData?.filter(
                 log => log.status === "LOW"
             ).length;
-            const infoCount = response.data.actionsData.filter(
+            const infoCount = response.data.actionsData?.filter(
                 log => log.status === "NORMAL"
             ).length;
 
             setStats({
-                total: response.data.actionsData.length,
+                total: response.data?.actionsData.length,
                 errors: errorCount,
                 mediums: mediumCount,
                 warnings: warningCount,
                 info: infoCount,
-                lastUpdate: response.data.actionsData[0].created_at
+                lastUpdate: response.data?.actionsData[0].created_at
             });
         } catch (error) {
             console.error("Failed to fetch logs", error);
@@ -583,7 +583,7 @@ function History() {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {filteredLogs.length > 0 ? (
+                            {filteredLogs?.length > 0 ? (
                                 filteredLogs
                                     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                                     .map(log => (

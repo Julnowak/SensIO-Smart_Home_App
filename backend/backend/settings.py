@@ -25,13 +25,12 @@ SECRET_KEY = 'django-insecure-h9o57f-scvp%_bm)xk)&qh2v2o2d7a#@%gc0sj_c-o14i^%1h^
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', "improved-vervet-happy.ngrok-free.app"]
 
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
 
-# Application definition
 
 INSTALLED_APPS = [
     "daphne",
@@ -94,21 +93,21 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 DATABASES = {
-    # 'default': {
-    #     'ENGINE': 'django.db.backends.sqlite3',
-    #     'NAME': BASE_DIR / 'db.sqlite3',
-    # }
-    "default": {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": "julnowak",
-        "USER": "julnowak",
-        "PASSWORD": "2hud4FgSbeKDztaw",
-        "HOST": "mysql.agh.edu.pl",
-        "PORT": "3306",
-        "OPTIONS": {
-            "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
-        },
-    },
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+    # "default": {
+    #     "ENGINE": "django.db.backends.mysql",
+    #     "NAME": "julnowak",
+    #     "USER": "julnowak",
+    #     "PASSWORD": "2hud4FgSbeKDztaw",
+    #     "HOST": "mysql.agh.edu.pl",
+    #     "PORT": "3306",
+    #     "OPTIONS": {
+    #         "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
+    #     },
+    # },
 
 }
 
@@ -170,6 +169,23 @@ CHANNEL_LAYERS = {
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 CORS_ORIGIN_ALLOW_ALL = True
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+    'ngrok-skip-browser-warning',
+]
+CSRF_TRUSTED_ORIGINS = [
+    "https://improved-vervet-happy.ngrok-free.app",
+    "http://localhost",
+    "http://127.0.0.1",
+]
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=1),  # Short-lived access token

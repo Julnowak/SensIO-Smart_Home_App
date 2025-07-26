@@ -69,16 +69,16 @@ const Main = () => {
     const navigate = useNavigate()
 
     const token = localStorage.getItem("access");
-    const validLocations = locations.filter(loc => loc.lat && loc.lng);
+    const validLocations = locations?.filter(loc => loc.lat && loc.lng);
 
     // Oblicz środek mapy na podstawie wszystkich lokalizacji
     const calculateCenter = () => {
-        if (validLocations.length === 0) return [52.237, 19.517]; // Warszawa jako domyślna
+        if (validLocations?.length === 0) return [52.237, 19.517]; // Warszawa jako domyślna
 
-        const latSum = validLocations.reduce((sum, loc) => sum + parseFloat(loc.lat), 0);
-        const lngSum = validLocations.reduce((sum, loc) => sum + parseFloat(loc.lng), 0);
+        const latSum = validLocations?.reduce((sum, loc) => sum + parseFloat(loc.lat), 0);
+        const lngSum = validLocations?.reduce((sum, loc) => sum + parseFloat(loc.lng), 0);
 
-        return [latSum / validLocations.length, lngSum / validLocations.length];
+        return [latSum / validLocations?.length, lngSum / validLocations?.length];
     };
 
     const center = calculateCenter();
@@ -88,7 +88,8 @@ const Main = () => {
         try {
             const response = await client.get(API_BASE_URL + "main", {
                 headers: {
-                    Authorization: `Bearer ${token}`
+                    Authorization: `Bearer ${token}`,
+                    'ngrok-skip-browser-warning': 'true'
                 }
             });
 
@@ -188,7 +189,7 @@ const Main = () => {
                                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                             />
 
-                            {validLocations.map((location, index) => (
+                            {validLocations?.map((location, index) => (
                                 <Marker
                                     key={`marker-${index}`}
                                     position={[parseFloat(location.lat), parseFloat(location.lng)]}
@@ -300,7 +301,7 @@ const Main = () => {
                 </Grid>
             </Grid>
 
-            <Grid container>{measurements.length !== 0 &&
+            <Grid container>{measurements?.length !== 0 &&
                 (<EnergyCharts measurements={measurements}/>)}
             </Grid>
 
@@ -318,19 +319,19 @@ const Main = () => {
                                         data: [
                                             {
                                                 id: 0,
-                                                value: alarms.filter(a => a.status === 'HIGH').length,
+                                                value: alarms?.filter(a => a.status === 'HIGH').length,
                                                 label: 'Wysokie',
                                                 color: "#da1212"
                                             },
                                             {
                                                 id: 1,
-                                                value: alarms.filter(a => a.status === 'MEDIUM').length,
+                                                value: alarms?.filter(a => a.status === 'MEDIUM').length,
                                                 label: 'Średnie',
                                                 color: "#fa751d"
                                             },
                                             {
                                                 id: 2,
-                                                value: alarms.filter(a => a.status === 'LOW').length,
+                                                value: alarms?.filter(a => a.status === 'LOW').length,
                                                 label: 'Niskie',
                                                 color: "#ffbe2d"
                                             },
@@ -348,13 +349,13 @@ const Main = () => {
                         <Box sx={{mt: 3, display: 'flex', justifyContent: 'space-around'}}>
                             <Box sx={{textAlign: 'center'}}>
                                 <Typography variant="h5">
-                                    {alarms.filter(a => a.isAcknowledged).length}
+                                    {alarms?.filter(a => a.isAcknowledged).length}
                                 </Typography>
                                 <Typography variant="caption">Potwierdzone</Typography>
                             </Box>
                             <Box sx={{textAlign: 'center'}}>
                                 <Typography variant="h5">
-                                    {alarms.filter(a => !a.isAcknowledged).length}
+                                    {alarms?.filter(a => !a.isAcknowledged).length}
                                 </Typography>
                                 <Typography variant="caption">Niepotwierdzone</Typography>
                             </Box>
@@ -365,10 +366,10 @@ const Main = () => {
                 <Grid size={{xs: 12, sm: 6}}>
                     <Paper sx={{p: 3}}>
                         <Typography variant="h6" gutterBottom sx={{mb: 2}}>
-                            Ostatnie alerty ({lastAlarms.length})
+                            Ostatnie alerty ({lastAlarms?.length})
                         </Typography>
 
-                        {lastAlarms.map((l) => (
+                        {lastAlarms?.map((l) => (
                             <Paper
                                 key={l.action_id}
                                 sx={{

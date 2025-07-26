@@ -3,14 +3,14 @@ import { Box, Paper, Typography, Grid } from '@mui/material';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const EnergyCharts = ({ measurements }) => {
-  const energyMeasurements = measurements.filter(
+  const energyMeasurements = measurements?.filter(
     m => m.sensor?.data_type === "ENERGY"
   );
 
   const preparePieData = () => {
     const locationMap = {};
 
-    energyMeasurements.forEach(m => {
+    energyMeasurements?.forEach(m => {
       const locationName = m.sensor?.device?.location?.name || 'Brak lokalizacji';
       if (!locationMap[locationName]) {
         locationMap[locationName] = 0;
@@ -27,7 +27,7 @@ const EnergyCharts = ({ measurements }) => {
   const prepareBarData = () => {
     const locationDeviceMap = {};
 
-    energyMeasurements.forEach(m => {
+    energyMeasurements?.forEach(m => {
       const locationName = m.sensor?.device?.location?.name || 'Brak lokalizacji';
       const deviceName = m.sensor?.device?.name || 'Brak urządzenia';
 
@@ -42,9 +42,9 @@ const EnergyCharts = ({ measurements }) => {
       locationDeviceMap[locationName][deviceName] += parseFloat(m.value);
     });
 
-    return Object.entries(locationDeviceMap).map(([location, devices]) => {
+    return Object.entries(locationDeviceMap)?.map(([location, devices]) => {
       const entry = { location };
-      Object.entries(devices).forEach(([device, value]) => {
+      Object.entries(devices)?.forEach(([device, value]) => {
         entry[device] = parseFloat(value.toFixed(2));
       });
       return entry;
@@ -59,7 +59,7 @@ const EnergyCharts = ({ measurements }) => {
 
   // Pobierz unikalne nazwy urządzeń dla legendy
   const deviceNames = [...new Set(
-    energyMeasurements.map(m => m.sensor?.device?.name || 'Brak urządzenia')
+    energyMeasurements?.map(m => m.sensor?.device?.name || 'Brak urządzenia')
   )];
 
   return (

@@ -72,7 +72,6 @@ class Home(models.Model):
     regards = models.TextField(max_length=1000, null=True, blank=True)
     owner = models.ForeignKey('AppUser', on_delete=models.CASCADE, blank=True, null=True)
     floor_num = models.IntegerField(default=1)
-    code = models.CharField(max_length=100, default=get_random_string(length=20))
     buildinq_type = models.CharField(
         max_length=20,
         choices=BUILDING_TYPES,
