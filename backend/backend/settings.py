@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-h9o57f-scvp%_bm)xk)&qh2v2o2d7a#@%gc0sj_c-o14i^%1h^
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', "improved-vervet-happy.ngrok-free.app"]
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', ".ngrok-free.app"]
 
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',

@@ -1,84 +1,100 @@
 import axios from "axios";
-import {API_BASE_URL} from "./config.jsx";
+import { API_BASE_URL } from "./config.jsx";
 
 const client = axios.create({
-    // baseURL: "http://127.0.0.1:8000/api/",
-    baseURL: "https://improved-vervet-happy.ngrok-free.app/api/",
-    headers: { "Content-Type": "application/json", 'ngrok-skip-browser-warning': 'true' },
+  baseURL: API_BASE_URL,
+  headers: {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+    "ngrok-skip-browser-warning": "true" // Always include for ngrok
+  }
 });
 
+// Token refresh state
 let isRefreshing = false;
 let refreshSubscribers = [];
 
-// Funkcja dodająca nowe żądania do kolejki, gdy trwa odświeżanie tokena
 const addRefreshSubscriber = (callback) => {
-    refreshSubscribers.push(callback);
+  refreshSubscribers.push(callback);
 };
 
-// Obsługa dodanych żądań po odświeżeniu tokena
-const onRefreshed = (newAccessToken) => {
-    refreshSubscribers.forEach((callback) => callback(newAccessToken));
-    refreshSubscribers = [];
+const onRefreshed = (token) => {
+  refreshSubscribers.forEach(cb => cb(token));
+  refreshSubscribers = [];
 };
 
-// Interceptor dołączający token do żądań
-client.interceptors.request.use(async (config) => {
-    const accessToken = localStorage.getItem("accessToken");
-    if (accessToken) {
-        config.headers["Authorization"] = `Bearer ${accessToken}`;
-    }
-    return config;
-}, (error) => Promise.reject(error));
+// Request interceptor
+client.interceptors.request.use((config) => {
+  const token = localStorage.getItem("accessToken");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
 
-// Interceptor obsługujący odświeżanie tokena przy 401
+  // Only add ngrok header for ngrok URLs
+  if (config.baseURL.includes('ngrok-free.app')) {
+    config.headers['ngrok-skip-browser-warning'] = 'true';
+  }
+
+  return config;
+}, (error) => {
+  return Promise.reject(error);
+});
+
+// Response interceptor
 client.interceptors.response.use(
-    (response) => response,
-    async (error) => {
-        const originalRequest = error.config;
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
 
+    // Handle 401 Unauthorized
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        return new Promise((resolve) => {
+          addRefreshSubscriber((newToken) => {
+            originalRequest.headers.Authorization = `Bearer ${newToken}`;
+            resolve(client(originalRequest));
+          });
+        });
+      }
 
-        if (error.response?.status === 401 && !originalRequest._retry) {
-            if (isRefreshing) {
-                return new Promise((resolve) => {
-                    addRefreshSubscriber((newToken) => {
-                        originalRequest.headers["Authorization"] = `Bearer ${newToken}`;
-                        resolve(client(originalRequest));
-                    });
-                });
-            }
+      originalRequest._retry = true;
+      isRefreshing = true;
 
-            originalRequest._retry = true;
-            isRefreshing = true;
+      try {
+        const refreshToken = localStorage.getItem("refreshToken");
+        if (!refreshToken) throw new Error("No refresh token available");
 
-            try {
-                const refreshToken = localStorage.getItem("refreshToken");
-                if (!refreshToken) throw new Error("Brak refreshToken");
+        const { data } = await axios.post(`${API_BASE_URL}token/refresh/`, {
+          refresh: refreshToken
+        }, {
+          headers: {
+            "Content-Type": "application/json",
+            "ngrok-skip-browser-warning": "true"
+          }
+        });
 
-                const response = await axios.post(`${API_BASE_URL}token/refresh/`, { refresh: refreshToken });
+        localStorage.setItem("accessToken", data.access);
+        client.defaults.headers.Authorization = `Bearer ${data.access}`;
 
-                const newAccessToken = response.data.access;
-                localStorage.setItem("accessToken", newAccessToken);
+        onRefreshed(data.access);
+        return client(originalRequest);
 
-                client.defaults.headers["Authorization"] = `Bearer ${newAccessToken}`;
-                isRefreshing = false;
-                onRefreshed(newAccessToken);
+      } catch (refreshError) {
+        console.error("Token refresh failed:", refreshError);
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
 
-                return client(originalRequest);  // Powtórzenie oryginalnego żądania
-            } catch (refreshError) {
-                console.error("Błąd odświeżania tokena", refreshError);
-                isRefreshing = false;
-
-                // Usunięcie tokenów i przekierowanie, ale tylko raz
-                localStorage.removeItem("accessToken");
-                localStorage.removeItem("refreshToken");
-
-                if (window.location.pathname !== "/login") {
-                    window.location.href = "/login";
-                }
-            }
+        if (window.location.pathname !== "/login") {
+          window.location.href = "/login";
         }
-        return Promise.reject(error);
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+      }
     }
+
+    return Promise.reject(error);
+  }
 );
 
 export default client;
