@@ -3,13 +3,10 @@ import { Box, Paper, Typography, Grid } from '@mui/material';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const EnergyCharts = ({ measurements }) => {
-  // Filtruj tylko pomiary energii
   const energyMeasurements = measurements.filter(
     m => m.sensor?.data_type === "ENERGY"
   );
 
-  console.log(measurements)
-  // Przygotuj dane dla wykresu kołowego (suma energii per lokalizacja)
   const preparePieData = () => {
     const locationMap = {};
 
@@ -27,7 +24,6 @@ const EnergyCharts = ({ measurements }) => {
     }));
   };
 
-  // Przygotuj dane dla wykresu kolumnowego (wartości per urządzenie w lokalizacji)
   const prepareBarData = () => {
     const locationDeviceMap = {};
 
@@ -67,15 +63,10 @@ const EnergyCharts = ({ measurements }) => {
   )];
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h5" gutterBottom>
-        Analiza zużycia energii
-      </Typography>
 
-      <Grid container spacing={3}>
-        {/* Wykres kołowy - podział zużycia energii per lokalizacja */}
-        <Grid item xs={12} md={6}>
-          <Paper elevation={3} sx={{ p: 2, height: '100%' }}>
+      <>
+        <Grid size={{xs: 12, sm: 6}} >
+          <Paper elevation={3} sx={{ p: 2, height: '100%', mt:2, mr:1  }}>
             <Typography variant="h6" align="center" gutterBottom>
               Zużycie energii według lokalizacji
             </Typography>
@@ -104,9 +95,8 @@ const EnergyCharts = ({ measurements }) => {
           </Paper>
         </Grid>
 
-        {/* Zestackowany wykres kolumnowy - zużycie energii per urządzenie w lokalizacji */}
-        <Grid item xs={12} md={6}>
-          <Paper elevation={3} sx={{ p: 2, height: '100%' }}>
+        <Grid size={{xs: 12, sm: 6}}>
+          <Paper elevation={3} sx={{ p: 2, height: '100%', mt:2, ml:1 }}>
             <Typography variant="h6" align="center" gutterBottom>
               Zużycie energii per urządzenie
             </Typography>
@@ -146,8 +136,7 @@ const EnergyCharts = ({ measurements }) => {
             </ResponsiveContainer>
           </Paper>
         </Grid>
-      </Grid>
-    </Box>
+      </>
   );
 };
 

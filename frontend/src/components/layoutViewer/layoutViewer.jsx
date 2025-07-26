@@ -223,7 +223,7 @@ const LayoutViewer = ({ layout, floorId }) => {
   }, [layout, calculateCenter]);
 
   return (
-    <Box sx={{ position: 'relative', p: isMobile ? 1 : 2 }}>
+    <Box>
       {blocks.length > 0 ? (
         <CanvasContainer
           ref={canvasRef}

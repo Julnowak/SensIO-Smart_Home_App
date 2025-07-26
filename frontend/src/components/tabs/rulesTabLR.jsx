@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {
     Grid,
     Card,
@@ -28,14 +28,14 @@ import {
     TableHead,
     TableRow,
     Paper,
-    TablePagination
+    TablePagination, List, ListItem
 } from '@mui/material';
 
 import {
     CheckBox,
     CheckBoxOutlineBlank,
     Circle,
-    DateRange,
+    DateRange, ExpandMore,
     Grading,
     InfoOutlined,
     Layers,
@@ -49,12 +49,24 @@ import {pl} from "date-fns/locale";
 import {useNavigate} from "react-router-dom";
 
 
-const RulesTabLR = ({rules, setRules, rooms, devices, locations, type}) => {
+const RulesTabLR = ({rules, setRules, rooms, sensors, devices, locations, type}) => {
     const [openDialog, setOpenDialog] = useState(false);
-    const [selectedRooms, setSelectedRooms] = useState(type==="room"? rooms: []);
-    const [selectedDevices, setSelectedDevices] = useState([]);
+    const [selectedRooms, setSelectedRooms] = useState(type === "room" ? rooms : []);
+    const [selectedSensors, setSelectedSensors] = useState(type === "sensor" ? sensors : []);
+    const [selectedDevices, setSelectedDevices] = useState(type === "device" ? devices : []);
+    const [filteredSensors, setFilteredSensors] = useState(sensors);
     // const [filteredSensors, setFilteredSensors] = useState(sensors);
     const navigate = useNavigate()
+    const [openDialogMore, setOpenDialogMore] = useState(false);
+
+    // Połącz wszystkie elementy w jedną tablicę z typem
+    const allItems = (rule) => [
+        ...rule.sensors.map(s => ({...s, type: 'sensor'})),
+        ...rule.devices.map(d => ({...d, type: 'device'})),
+        ...rule.locations.map(l => ({...l, type: 'location'})),
+        ...rule.rooms.map(r => ({...r, type: 'room'})),
+        ...rule.floors.map(f => ({...f, type: 'floor'}))
+    ];
 
     // Pagination state
     const [page, setPage] = useState(0);
@@ -84,7 +96,45 @@ const RulesTabLR = ({rules, setRules, rooms, devices, locations, type}) => {
         {value: '4', label: 'Co miesiąc'},
         {value: '5', label: 'Co rok'}
     ];
+
     const token = localStorage.getItem("access");
+
+
+    const renderChip = (item) => {
+        const commonProps = {
+            key: item.id || item.sensor_id || item.device_id,
+            size: "small",
+            variant: "outlined",
+            sx: {margin: '2px'}
+        };
+
+        switch (item.type) {
+            case 'sensor':
+                return (
+                    <Chip
+                        {...commonProps}
+                        label={item.name}
+                        onClick={() => navigate(`/sensor/${item.sensor_id}`)}
+                    />
+                );
+            case 'device':
+                return (
+                    <Chip
+                        {...commonProps}
+                        label={item.name}
+                        onClick={() => navigate(`/device/${item.device_id}`)}
+                    />
+                );
+            case 'location':
+                return <Chip {...commonProps} label={item.name}/>;
+            case 'room':
+                return <Chip {...commonProps} label={item.name} color="primary"/>;
+            case 'floor':
+                return <Chip {...commonProps} label={item.name} color="secondary"/>;
+            default:
+                return null;
+        }
+    };
 
     const handleChangePage = (event, newPage) => {
         setPage(newPage);
@@ -99,6 +149,34 @@ const RulesTabLR = ({rules, setRules, rooms, devices, locations, type}) => {
         const {name, value} = e.target;
         setNewRule(prev => ({...prev, [name]: value}));
 
+        if (name === "actionType") {
+            let temp;
+            if (value === "SET") {
+                temp = sensors?.filter((f) => f.data_type === "WORKER" || f.data_type === "TEMPERATURE" ||
+                    f.data_type === "LIGHT")
+            } else if (value === "LIMIT") {
+                temp = sensors?.filter((f) => f.data_type === "HUMIDITY" || f.data_type === "ENERGY" ||
+                    f.data_type === "TEMPERATURE" || f.data_type === "CONTINUOUS" || f.data_type === "DISCRETE")
+            }
+            setFilteredSensors(temp)
+            setSelectedSensors([])
+            setSelectedDevices([])
+        }
+
+        if (name === "mainType") {
+            let temp;
+
+            if (value === "LIGHT") {
+                temp = sensors?.filter((f) => f.data_type === "LIGHT")
+            } else if (value === "TEMPERATURE") {
+                temp = sensors?.filter((f) => f.data_type === "TEMPERATURE")
+            } else if (value === "ENERGY") {
+                temp = sensors?.filter((f) => f.data_type === "ENERGY")
+            }
+            setFilteredSensors(temp)
+            setSelectedSensors([])
+            setSelectedDevices([])
+        }
     };
 
     const handleCheckboxChange = (e) => {
@@ -135,7 +213,7 @@ const RulesTabLR = ({rules, setRules, rooms, devices, locations, type}) => {
             actionType: 'LIMIT',
             recurrentTime: ''
         });
-        setSelectedRooms(type==="room"? rooms: [])
+        setSelectedRooms(type === "room" ? rooms : [])
         // setSelectedSensors([])
     };
 
@@ -143,6 +221,53 @@ const RulesTabLR = ({rules, setRules, rooms, devices, locations, type}) => {
         setNewRule(prev => ({...prev, [name]: date}));
         console.log(date)
     };
+
+    const availableOptions = [];
+    if (newRule.mainType === "ENERGY" || newRule.mainType === "TEMPERATURE") {
+        availableOptions.push("LIMIT");
+    }
+    if (newRule.mainType === "LIGHT" || newRule.mainType === "TEMPERATURE") {
+        availableOptions.push("SET");
+    }
+    if (newRule.mainType === "DEVICE") {
+        availableOptions.push("ON/OFF");
+    }
+
+    const getAvailableOptions = useCallback((mainType) => {
+        const options = [];
+        if (mainType === "ENERGY" || mainType === "TEMPERATURE") {
+            options.push({value: "LIMIT", label: "Ogranicz"});
+        }
+        if (mainType === "LIGHT" || mainType === "TEMPERATURE") {
+            options.push({value: "SET", label: "Ustaw"});
+        }
+        if (mainType === "DEVICE") {
+            options.push({value: "ON/OFF", label: "Włącz/wyłącz"});
+        }
+        return options;
+    }, []);
+
+    // Jeśli jest tylko jedna opcja, ustaw ją automatycznie
+    useEffect(() => {
+        if (!newRule.mainType) return;
+
+        const options = getAvailableOptions(newRule.mainType);
+
+        if ( newRule.actionType !== options[0].value) {
+            setNewRule(prev => ({
+                ...prev,
+                actionType: options[0].value,
+                sensors: [],
+                devices: [],
+                value_low: '',
+                value_high: ''
+            }));
+            setSelectedSensors([]);
+            setSelectedDevices([]);
+        }
+
+    }, [newRule.mainType, getAvailableOptions]);
+
 
     return (
         <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={pl}>
@@ -180,30 +305,30 @@ const RulesTabLR = ({rules, setRules, rooms, devices, locations, type}) => {
                                         </TableCell>
                                         <TableCell>
                                             <Box display="flex" alignItems="center">
-                                                            <DateRange fontSize="small"
-                                                                       sx={{mr: 1, color: 'text.secondary'}}/>
-                                                            <Box>
-                                                                {rule.start_date || rule.end_date ? (
-                                                                    <>
-                                                                        <Typography variant="body2">
-                                                                            {rule.type === "LIMIT" && "Od: "}
-                                                                            {new Date(rule.start_date).toLocaleString()}
-                                                                        </Typography>
+                                                <DateRange fontSize="small"
+                                                           sx={{mr: 1, color: 'text.secondary'}}/>
+                                                <Box>
+                                                    {rule.start_date || rule.end_date ? (
+                                                        <>
+                                                            <Typography variant="body2">
+                                                                {rule.type === "LIMIT" && "Od: "}
+                                                                {new Date(rule.start_date).toLocaleString()}
+                                                            </Typography>
 
-                                                                        {rule.type === "LIMIT" && rule.end_date && (
-                                                                            <Typography variant="body2">
-                                                                                {rule.type === "LIMIT" && "Do: "}
-                                                                                {new Date(rule.end_date).toLocaleString()}
-                                                                            </Typography>
-                                                                        )}
-                                                                    </>
-                                                                ) : (
-                                                                    <Typography variant="body2" color="text.disabled">
-                                                                        ---
-                                                                    </Typography>
-                                                                )}
-                                                            </Box>
-                                                        </Box>
+                                                            {rule.type === "LIMIT" && rule.end_date && (
+                                                                <Typography variant="body2">
+                                                                    {rule.type === "LIMIT" && "Do: "}
+                                                                    {new Date(rule.end_date).toLocaleString()}
+                                                                </Typography>
+                                                            )}
+                                                        </>
+                                                    ) : (
+                                                        <Typography variant="body2" color="text.disabled">
+                                                            ---
+                                                        </Typography>
+                                                    )}
+                                                </Box>
+                                            </Box>
                                         </TableCell>
                                         <TableCell>
                                             {rule.isRecurrent ?
@@ -212,26 +337,45 @@ const RulesTabLR = ({rules, setRules, rooms, devices, locations, type}) => {
                                         </TableCell>
 
                                         <TableCell>
-                                            <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 0.5}}>
-                                                {rule.sensors.map(sensor => (
-                                                    <Chip
-                                                        key={sensor.sensor_id}
-                                                        label={sensor.name}
-                                                        size="small"
-                                                        variant="outlined"
-                                                        onClick={() => navigate(`/sensor/${sensor.sensor_id}`)}
-                                                    />
-                                                ))}
-                                                {rule.locations.map(loc => (
-                                                    <Chip key={loc.id} label={loc.name} size="small"/>
-                                                ))}
-                                                {rule.rooms.map(room => (
-                                                    <Chip key={room.id} label={room.name} size="small" color="primary"/>
-                                                ))}
-                                                {rule.floors.map(floor => (
-                                                    <Chip key={floor.id} label={floor.name} size="small"
-                                                          color="secondary"/>
-                                                ))}
+                                            <Box sx={{display: 'flex', flexWrap: 'wrap', alignItems: 'center'}}>
+                                                {allItems(rule).slice(0, 2).map(item => renderChip(item))}
+
+                                                {/* Jeśli jest więcej niż 2 elementy, pokaż przycisk "więcej" */}
+                                                {allItems(rule).length > 2 && (
+                                                    <>
+                                                        <Button
+                                                            size="small"
+
+                                                            startIcon={<ExpandMore/>}
+                                                            onClick={() => setOpenDialogMore(true)}
+                                                            sx={{minWidth: 0, padding: '4px'}}
+                                                        >
+                                                            +{allItems(rule).length - 2}
+                                                        </Button>
+
+                                                        <Dialog open={openDialogMore}
+                                                                onClose={() => setOpenDialogMore(false)} maxWidth="sm"
+                                                                fullWidth>
+                                                            <DialogTitle>Wszystkie powiązane elementy</DialogTitle>
+                                                            <DialogContent>
+                                                                <List>
+                                                                    {allItems(rule).map((item) => (
+                                                                        <ListItem
+                                                                            key={item.id || item.sensor_id || item.device_id}>
+                                                                            <Chip onClick={()=> navigate(`/sensor/${item.sensor_id}`)}
+                                                                                label={item.visibleName || item.name}
+                                                                            />
+                                                                        </ListItem>
+                                                                    ))}
+                                                                </List>
+                                                            </DialogContent>
+                                                            <DialogActions>
+                                                                <Button
+                                                                    onClick={() => setOpenDialogMore(false)}>Zamknij</Button>
+                                                            </DialogActions>
+                                                        </Dialog>
+                                                    </>
+                                                )}
                                             </Box>
                                         </TableCell>
                                         <TableCell>
@@ -341,7 +485,7 @@ const RulesTabLR = ({rules, setRules, rooms, devices, locations, type}) => {
 
                         <Grid size={{xs: 12, sm: 4}}>
                             <FormControl fullWidth>
-                                <InputLabel>Typ mierzony *</InputLabel>
+                                <InputLabel>Typ *</InputLabel>
                                 <Select
                                     value={newRule.mainType}
                                     onChange={handleInputChange}
@@ -351,6 +495,7 @@ const RulesTabLR = ({rules, setRules, rooms, devices, locations, type}) => {
                                     <MenuItem value="ENERGY">Zużycie energii</MenuItem>
                                     <MenuItem value="TEMPERATURE">Temperatura</MenuItem>
                                     <MenuItem value="LIGHT">Oświetlenie</MenuItem>
+                                    <MenuItem value="DEVICE">Urządzenie</MenuItem>
 
                                 </Select>
                             </FormControl>
@@ -360,27 +505,23 @@ const RulesTabLR = ({rules, setRules, rooms, devices, locations, type}) => {
                             <FormControl fullWidth>
                                 <InputLabel>Typ akcji *</InputLabel>
                                 <Select
-                                    value={newRule.actionType || ''}
+                                    value={newRule.actionType}
                                     onChange={handleInputChange}
                                     name="actionType"
                                     required
                                 >
-
-                                    {newRule.mainType === "ENERGY" || newRule.mainType === "TEMPERATURE" && (
-                                        <MenuItem value="LIMIT">Ogranicz</MenuItem>
-                                    )}
-
-                                    {newRule.mainType === "LIGHT" || newRule.mainType === "TEMPERATURE" && (
-                                        <MenuItem value="SET">Ustaw</MenuItem>
-                                    )}
-
-                                    <MenuItem value="ON/OFF">Włącz/wyłącz</MenuItem>
+                                    {getAvailableOptions(newRule.mainType).map(option => (
+                                        <MenuItem key={option.value} value={option.value}>
+                                            {option.label}
+                                        </MenuItem>
+                                    ))}
                                 </Select>
                             </FormControl>
                         </Grid>
 
                         <Grid size={{xs: 11}}>
-                            {newRule.actionType === "ON/OFF" &&
+
+                            {(newRule.actionType === "ON/OFF" || newRule.mainType === "DEVICE") ?
                                 <Autocomplete
                                     multiple
                                     limitTags={2}
@@ -389,7 +530,8 @@ const RulesTabLR = ({rules, setRules, rooms, devices, locations, type}) => {
                                     getOptionLabel={(option) => option.name}
                                     value={selectedDevices}
                                     renderInput={(params) => (
-                                        <TextField {...params} label="Wybierz urządzenie" placeholder="Wyszukaj..."/>
+                                        <TextField {...params} label="Wybierz urządzenie"
+                                                   placeholder="Wyszukaj..."/>
                                     )}
                                     sx={{width: '100%'}}
                                     disableCloseOnSelect
@@ -408,17 +550,55 @@ const RulesTabLR = ({rules, setRules, rooms, devices, locations, type}) => {
                                         setSelectedDevices(newValue);
 
                                     }}
+                                /> :
+
+                                <Autocomplete
+                                    multiple
+                                    limitTags={2}
+                                    id="sensors-multi-select"
+                                    options={filteredSensors}
+                                    getOptionLabel={(option) => option.visibleName}
+                                    value={selectedSensors}
+                                    renderInput={(params) => (
+                                        <TextField {...params} label="Wybierz czujniki" placeholder="Wyszukaj..."/>
+                                    )}
+                                    sx={{width: '100%'}}
+                                    disableCloseOnSelect
+                                    renderOption={(props, option, {selected}) => (
+                                        <li {...props}>
+                                            <Checkbox
+                                                icon={<CheckBoxOutlineBlank fontSize="small"/>}
+                                                checkedIcon={<CheckBox fontSize="small"/>}
+                                                style={{marginRight: 8}}
+                                                checked={selected}
+                                            />
+                                            {option.visibleName}
+                                        </li>
+                                    )}
+                                    onChange={(event, newValue) => {
+                                        console.log(newValue)
+                                        setSelectedSensors(newValue);
+                                        setNewRule(prev => ({...prev, sensors: newValue}));
+                                    }}
                                 />}
                         </Grid>
 
-                        {newRule.actionType === "ON/OFF" &&
-                        <Grid size={{xs: 1}} sx={{alignContent: "center"}}>
-                            <Tooltip title="Wybierz wszystkie" arrow>
-                                <IconButton onClick={() => setSelectedDevices(devices)}>
-                                    <Grading/>
-                                </IconButton>
-                            </Tooltip>
-                        </Grid>}
+                        {newRule.actionType === "ON/OFF" ?
+                            <Grid size={{xs: 1}} sx={{alignContent: "center"}}>
+                                <Tooltip title="Wybierz wszystkie" arrow>
+                                    <IconButton onClick={() => setSelectedDevices(devices)}>
+                                        <Grading/>
+                                    </IconButton>
+                                </Tooltip>
+                            </Grid> :
+                            <Grid size={{xs: 1}} sx={{alignContent: "center"}}>
+                                <Tooltip title="Wybierz wszystkie" arrow>
+                                    <IconButton onClick={() => setSelectedSensors(filteredSensors)}>
+                                        <Grading/>
+                                    </IconButton>
+                                </Tooltip>
+                            </Grid>
+                        }
 
 
                         <Grid size={{xs: 12, sm: 6}}>

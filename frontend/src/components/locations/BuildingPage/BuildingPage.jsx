@@ -4,20 +4,14 @@ import {API_BASE_URL} from "../../../config.jsx";
 import {useNavigate, useParams} from "react-router-dom";
 import LayoutViewer from "../../layoutViewer/layoutViewer.jsx";
 import {
-    Edit,
     Home,
     LocationOn,
     Notes,
     Layers,
-    Save,
-    Cancel,
-    Settings,
     Schema,
-    AddLocation,
     Map,
     Delete,
     Close,
-    Sensors,
     Warning,
     ListAlt,
     BarChartOutlined,
@@ -25,16 +19,12 @@ import {
     Star,
     RefreshOutlined,
     EditOutlined,
-    MeetingRoom,
-    Business,
-    ExpandLess,
-    ExpandMore, Archive, Unarchive, Check, HomeWork, SquareFoot, CalendarToday
+    Archive, Unarchive, Check, HomeWork, SquareFoot, CalendarToday
 } from "@mui/icons-material";
 import {
     Box,
     Button,
     Container,
-    Divider,
     Grid,
     IconButton,
     InputAdornment,
@@ -55,10 +45,7 @@ import {
     Tab,
     Badge,
     Avatar,
-    FormControlLabel,
-    Switch,
     Tooltip,
-    Chip
 } from "@mui/material";
 import {MapContainer, TileLayer, Marker, useMapEvents} from "react-leaflet";
 import "leaflet/dist/leaflet.css";
@@ -66,9 +53,7 @@ import {format} from "date-fns";
 import {pl} from "date-fns/locale";
 import AlarmsTab from "../../tabs/alarmsTab.jsx";
 import {lightGreen} from "@mui/material/colors";
-import RulesTab from "../../tabs/rulesTab.jsx";
 import CalendarChart from "../heatmap.jsx";
-import EnergyDashboard from "../EnergyDashboard.jsx";
 import RulesTabLR from "../../tabs/rulesTabLR.jsx";
 
 
@@ -159,6 +144,10 @@ const BuildingPage = () => {
     const [openEdit, setOpenEdit] = useState(false);
     const [alarms, setAlarms] = useState([]);
     const [rules, setRules] = useState([]);
+    const [sensors, setSensors] = useState([]);
+    const [devices, setDevices] = useState([]);
+    const [floors, setFloors] = useState([]);
+    const [rooms, setRooms] = useState([]);
     const [measurements, setMeasurements] = useState([]);
 
     const token = localStorage.getItem("access");
@@ -180,9 +169,12 @@ const BuildingPage = () => {
                 setAlarms(response.data.alarmsData);
                 setMeasurements(response.data.measurementsData);
                 setSelectedFloor(homeData.floors[0].floor_id);
+                setFloors(homeData.floors)
+                setRooms(homeData.rooms)
+                setSensors(response.data.sensorsData)
+                setDevices(response.data.devicesData)
+                setRules(response.data.rulesData)
 
-
-                console.log(response.data.roomsData)
             } catch (error) {
                 console.error("Error fetching location:", error);
             } finally {
@@ -480,6 +472,7 @@ const BuildingPage = () => {
             </Tabs>
         </Paper>
 
+        {(activeTab === 0 || activeTab === 1) &&
         <Paper elevation={3} sx={{
             width: "100%", border: "1px solid #00000020", borderRadius: 2, overflow: 'hidden', mt: 2, p: 3,
             mb: 3
@@ -635,29 +628,25 @@ const BuildingPage = () => {
                         Tryb edycji
                     </Button>)}
                 </Box>
-
-                <Paper
-                    elevation={2}
-                    sx={{
-                        p: 2, borderRadius: 3, backgroundColor: theme.palette.background.default
-                    }}
-                >
-                    <LayoutViewer layout={layout} floorId={selectedFloor}/>
-                </Paper>
+                <LayoutViewer layout={layout} floorId={selectedFloor}/>
             </Box>)}
 
-            {activeTab === 2 && (<AlarmsTab alarms={alarms} setAlarms={setAlarms} loading={loading}/>)}
-            {activeTab === 3 && (<RulesTabLR rules={rules} setRules={setRules} floors={floors} rooms={rooms}/>)}
-            {activeTab === 4 && measurements.length !== 0 && (
-                <Box>
-                    <Grid size={{sx: 12}}>
-                        <CalendarChart measurements={measurements}/>
-                    </Grid>
-                </Box>
-            )}
+        </Paper>}
 
+        <Box sx={{mt:2}}>
+        {activeTab === 2 && (<AlarmsTab alarms={alarms} setAlarms={setAlarms} loading={loading}/>)}
+        </Box>
 
-        </Paper>
+        {activeTab === 3 && (<RulesTabLR rules={rules} setRules={setRules} floors={floors} rooms={rooms} sensors={sensors} devices={devices} type={"location"}
+        locations={[location]}/>)}
+        {activeTab === 4 && measurements.length !== 0 && (
+            <Box>
+                <Grid size={{sx: 12}}>
+                    <CalendarChart measurements={measurements}/>
+                </Grid>
+            </Box>
+        )}
+
 
 
         <Dialog

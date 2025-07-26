@@ -10,7 +10,7 @@ import {
     IconButton,
     Tooltip,
     Container,
-    Autocomplete, TextField, Button
+    Autocomplete, TextField, Button, Checkbox
 } from '@mui/material';
 import {
     Thermostat as ThermostatIcon,
@@ -18,7 +18,7 @@ import {
     Security as SecurityIcon,
     EnergySavingsLeaf as EnergyIcon,
     DeviceHub as DevicesIcon,
-    Timeline as TimelineIcon, Check, Star, RefreshOutlined, EditOutlined, Archive, Unarchive, Delete,
+    Timeline as TimelineIcon, Check, Star, RefreshOutlined, EditOutlined, Archive, Unarchive, Delete, Warning,
 } from '@mui/icons-material';
 import {styled} from '@mui/material/styles';
 import {lightGreen} from "@mui/material/colors";
@@ -29,6 +29,7 @@ import client from "../../client.jsx";
 import {API_BASE_URL} from "../../config.jsx";
 import EnergyCharts from "./energyCharts.jsx";
 import {MapContainer, Marker, Popup, TileLayer} from "react-leaflet";
+import {PieChart} from "@mui/x-charts";
 
 
 const Item = styled(Paper)(({theme}) => ({
@@ -41,9 +42,9 @@ const Item = styled(Paper)(({theme}) => ({
 }));
 
 const StatCard = ({icon, title, value, subtitle}) => (
-    <Item>
+    <Item sx={{m: 1, border: "1px solid #00000020",}}>
         <Box sx={{display: 'flex', alignItems: 'center', mb: 1}}>
-            {React.cloneElement(icon, {fontSize: 'large', color: 'primary'})}
+            {React.cloneElement(icon, {fontSize: 'large'})}
             <Typography variant="h6" sx={{ml: 1}}>
                 {title}
             </Typography>
@@ -63,6 +64,8 @@ const Main = () => {
     const [measurements, setMeasurements] = useState([]);
     const [locations, setLocations] = useState([]);
     const [selectedLocation, setSelectedLocation] = useState(null);
+    const [lastAlarms, setLastAlarms] = useState([]);
+    const [alarms, setAlarms] = useState([]);
     const navigate = useNavigate()
 
     const token = localStorage.getItem("access");
@@ -91,6 +94,8 @@ const Main = () => {
 
             setMeasurements(response.data.measurementsData);
             setLocations(response.data.locationsData);
+            setAlarms(response.data.actionsData);
+            setLastAlarms(response.data.lastAlarms);
 
         } catch (error) {
             console.error("Failed to fetch logs", error);
@@ -108,77 +113,69 @@ const Main = () => {
         fetchData();
     };
 
+    const handleAcknowledge = async (actionId, isAcknowledged) => {
+        // await client.patch(`/api/actions/${actionId}/`, { isAcknowledged });
+        // // Refresh data or update local state
+    };
+
     return (
         <Container maxWidth="xl">
             <Box sx={{pt: 3}}>
                 <Box
                     sx={{
-                        p: 3,
-                        mb: 2,
-                        border: "1px solid #00000020",
-                        borderRadius: 3,
+                        p: 4,
+                        border: "1px solid",
+                        borderColor: 'divider',
+                        borderRadius: 2,
                         backgroundColor: 'background.paper',
-                        boxShadow: '0px 2px 10px rgba(0, 0, 0, 0.05)',
+                        boxShadow: 1,
                         display: 'flex',
+                        flexDirection: 'column',
                         gap: 3,
-                        alignItems: 'flex-start',
-                        transition: 'all 0.3s ease',
-                        '&:hover': {
-                            boxShadow: '0px 4px 15px rgba(0, 0, 0, 0.1)'
-                        }
+
                     }}
                 >
-                    <Box sx={{flex: 1, display: 'flex', flexDirection: 'column'}}>
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                alignItems: 'flex-start',
-                                justifyContent: 'space-between',
-                                gap: 2,
-                                mb: 1
-                            }}
-                        >
-                            <Box>
-                                <Box sx={{display: 'flex', alignItems: 'center', gap: 2, mb: 1}}>
-                                    <Typography variant="h4" fontWeight={600}>
-                                        Panel główny
-                                    </Typography>
-                                </Box>
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: 2,
+                            mb: 1
+                        }}
+                    >
+                        <Box sx={{display: 'flex', alignItems: 'center', gap: 2}}>
+                            <Typography
+                                variant="h5"
+                                fontWeight={700}
+                                sx={{
+                                    color: 'text.primary',
+                                    letterSpacing: 0.5
+                                }}
+                            >
+                                Panel główny
+                            </Typography>
+                        </Box>
 
-                                <Typography variant="body2" color="text.secondary">
-                                    {location?.address || 'Brak adresu'}
-                                </Typography>
-
-                                <Typography variant="body2" color="text.secondary" sx={{mt: 0.5}}>
-                                    Ostatnia
-                                    aktywność: {location?.lastUpdated ? format(new Date(location?.lastUpdated), "PPpp", {locale: pl}) : format(new Date(), "PPpp", {locale: pl})}
-                                </Typography>
-                            </Box>
-
-                            <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
-                                <Tooltip title="Odśwież">
-                                    <IconButton
-                                        onClick={handleRefresh}
-                                        size="small"
-                                        sx={{
-                                            color: 'text.secondary', '&:hover': {
-                                                color: 'primary.main', bgcolor: 'rgba(25, 118, 210, 0.04)'
-                                            }
-                                        }}
-                                    >
-                                        <RefreshOutlined fontSize="small"/>
-                                    </IconButton>
-                                </Tooltip>
-
-                            </Box>
+                        <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
+                            <Tooltip title="Odśwież">
+                                <IconButton
+                                    onClick={handleRefresh}
+                                    size="small"
+                                    sx={{
+                                        color: 'text.secondary',
+                                        transition: 'all 0.2s ease',
+                                    }}
+                                >
+                                    <RefreshOutlined fontSize="small"/>
+                                </IconButton>
+                            </Tooltip>
                         </Box>
                     </Box>
                 </Box>
             </Box>
 
-            <Box>{measurements.length !== 0 && (<EnergyCharts measurements={measurements}/>)}</Box>
-
-            <Grid container>
+            <Grid container sx={{mt: 2}}>
                 <Grid size={{xs: 6}}>
                     <Paper elevation={3} sx={{height: '500px', width: '100%'}}>
                         <MapContainer
@@ -245,116 +242,178 @@ const Main = () => {
                         </MapContainer>
                     </Paper>
                 </Grid>
-            </Grid>
-            <Box sx={{p: 3}}>
-                <Box sx={{p: 3}}>
+
+                <Grid size={{xs: 6}}>
+                    <Box sx={{m: 2}}>
 
 
-                </Box>
-
-                {/* Główne statystyki */}
-                <Grid container spacing={3} sx={{mb: 3}}>
-                    <Grid size={{xs: 12, sm: 6, md: 3}}>
-                        <StatCard
-                            icon={<ThermostatIcon/>}
-                            title="Temperatura"
-                            value="22.5°C"
-                            subtitle="Średnia w budynku"
+                        <Autocomplete
+                            disablePortal
+                            id="room-select"
+                            options={locations}
+                            value={selectedLocation}
+                            getOptionLabel={(option) => option ? `${option.name}` : ""}
+                            sx={{width: '100%', mt: 2}}
+                            isOptionEqualToValue={(option, value) => option?.id === value?.id}
+                            renderInput={(params) => <TextField {...params} label="Lokacja"/>}
+                            onChange={(event, newValue) => {
+                                setSelectedLocation(newValue);
+                            }}
                         />
-                    </Grid>
-                    <Grid size={{xs: 12, sm: 6, md: 3}}>
-                        <StatCard
-                            icon={<EnergyIcon/>}
-                            title="Energia"
-                            value="245 kW"
-                            subtitle="Zużycie dzienne"
-                        />
-                    </Grid>
-                    <Grid size={{xs: 12, sm: 6, md: 3}}>
-                        <StatCard
-                            icon={<DevicesIcon/>}
-                            title="Urządzenia"
-                            value="87/92"
-                            subtitle="Aktywne/Total"
-                        />
-                    </Grid>
-                    <Grid size={{xs: 12, sm: 6, md: 3}}>
-                        <StatCard
-                            icon={<SecurityIcon/>}
-                            title="Bezpieczeństwo"
-                            value="100%"
-                            subtitle="Systemy aktywne"
-                        />
-                    </Grid>
-                </Grid>
 
-                <Grid container spacing={3}>
-                    <Autocomplete
-                        disablePortal
-                        id="room-select"
-                        options={locations}
-                        value={selectedLocation}
-                        getOptionLabel={(option) => option ? `${option.name}` : ""}
-                        sx={{width: '100%', mt: 2}}
-                        isOptionEqualToValue={(option, value) => option?.id === value?.id}
-                        renderInput={(params) => <TextField {...params} label="Pokój"/>}
-                        onChange={(event, newValue) => {
-                            setSelectedLocation(newValue);
-                        }}
-                    />
-                    <Grid size={{xs: 12, sm: 6}}>
-                        <Item>
-                            <Typography variant="h6" gutterBottom>
-                                Ostatnie alerty
-                            </Typography>
-                            <Box sx={{textAlign: 'left'}}>
-                                <Box sx={{p: 1, borderBottom: '1px solid #eee'}}>
-                                    <Typography>⚠️ Wysoka temperatura w serwerowni</Typography>
-                                    <Typography variant="caption">10 min temu</Typography>
-                                </Box>
-                                <Box sx={{p: 1, borderBottom: '1px solid #eee'}}>
-                                    <Typography>🔋 Niskie zużycie energii w strefie A</Typography>
-                                    <Typography variant="caption">45 min temu</Typography>
-                                </Box>
-                                <Box sx={{p: 1}}>
-                                    <Typography>🌡️ Awaria czujnika temperatury #12</Typography>
-                                    <Typography variant="caption">2 godz. temu</Typography>
-                                </Box>
-                            </Box>
-                        </Item>
-                    </Grid>
-
-                    {/* Status oświetlenia */}
-                    <Grid size={{xs: 12, sm: 6}}>
-                        <Item>
-                            <Typography variant="h6" gutterBottom>
-                                Status oświetlenia
-                            </Typography>
-                            <Grid container spacing={2}>
-                                <Grid size={{xs: 6}}>
-                                    <LightbulbIcon color="primary"/>
-                                    <Typography>Parter: 65%</Typography>
-                                </Grid>
-                                <Grid size={{xs: 6}}>
-                                    <LightbulbIcon color="primary"/>
-                                    <Typography>I piętro: 42%</Typography>
-                                </Grid>
-                                <Grid size={{xs: 6}}>
-                                    <LightbulbIcon color="primary"/>
-                                    <Typography>II piętro: 38%</Typography>
-                                </Grid>
-                                <Grid size={{xs: 6}}>
-                                    <LightbulbIcon color="primary"/>
-                                    <Typography>Piwnica: 90%</Typography>
-                                </Grid>
+                        <Grid container>
+                            <Grid size={{xs: 6}} mb={1}>
+                                <StatCard
+                                    icon={<ThermostatIcon color="error"/>}
+                                    title="Temperatura"
+                                    value="22.5°C"
+                                    subtitle="Średnia w budynku"
+                                />
                             </Grid>
-                            <Typography variant="body2" sx={{mt: 2}}>
-                                Średnie wykorzystanie: 58%
-                            </Typography>
-                        </Item>
-                    </Grid>
+                            <Grid size={{xs: 6}} mb={1}>
+                                <StatCard
+                                    icon={<EnergyIcon color="success"/>}
+                                    title="Energia"
+                                    value="245 kW"
+                                    subtitle="Dzisiejsze zużycie"
+                                />
+                            </Grid>
+                            <Grid size={{xs: 6}} mb={1}>
+                                <StatCard
+                                    icon={<LightbulbIcon color="warning"/>}
+                                    title="Oświetlenie"
+                                    value="On"
+                                    subtitle="Aktywne/Total"
+                                />
+                            </Grid>
+                            <Grid size={{xs: 6}} mb={1}>
+                                <StatCard
+                                    icon={<Warning/>}
+                                    title="Alarmy"
+                                    value="100%"
+                                    subtitle="Systemy aktywne"
+                                />
+                            </Grid>
+                        </Grid>
+
+                    </Box>
                 </Grid>
-            </Box>
+            </Grid>
+
+            <Grid container>{measurements.length !== 0 &&
+                (<EnergyCharts measurements={measurements}/>)}
+            </Grid>
+
+            <Grid container spacing={3}>
+                <Grid size={{xs: 12, sm: 6}}>
+                    <Paper sx={{p: 3, height: '100%'}}>
+                        <Typography variant="h6" gutterBottom sx={{mb: 3}}>
+                            Statystyki alarmów
+                        </Typography>
+
+                        <Box sx={{height: 300}}>
+                            <PieChart
+                                series={[
+                                    {
+                                        data: [
+                                            {
+                                                id: 0,
+                                                value: alarms.filter(a => a.status === 'HIGH').length,
+                                                label: 'Wysokie',
+                                                color: "#da1212"
+                                            },
+                                            {
+                                                id: 1,
+                                                value: alarms.filter(a => a.status === 'MEDIUM').length,
+                                                label: 'Średnie',
+                                                color: "#fa751d"
+                                            },
+                                            {
+                                                id: 2,
+                                                value: alarms.filter(a => a.status === 'LOW').length,
+                                                label: 'Niskie',
+                                                color: "#ffbe2d"
+                                            },
+                                        ],
+                                        innerRadius: 50,
+                                        outerRadius: 100,
+                                        paddingAngle: 5,
+                                        cornerRadius: 5,
+                                        colors: ['#ff0000', '#ffa500', '#222222']
+                                    }
+                                ]}
+                            />
+                        </Box>
+
+                        <Box sx={{mt: 3, display: 'flex', justifyContent: 'space-around'}}>
+                            <Box sx={{textAlign: 'center'}}>
+                                <Typography variant="h5">
+                                    {alarms.filter(a => a.isAcknowledged).length}
+                                </Typography>
+                                <Typography variant="caption">Potwierdzone</Typography>
+                            </Box>
+                            <Box sx={{textAlign: 'center'}}>
+                                <Typography variant="h5">
+                                    {alarms.filter(a => !a.isAcknowledged).length}
+                                </Typography>
+                                <Typography variant="caption">Niepotwierdzone</Typography>
+                            </Box>
+                        </Box>
+                    </Paper>
+                </Grid>
+
+                <Grid size={{xs: 12, sm: 6}}>
+                    <Paper sx={{p: 3}}>
+                        <Typography variant="h6" gutterBottom sx={{mb: 2}}>
+                            Ostatnie alerty ({lastAlarms.length})
+                        </Typography>
+
+                        {lastAlarms.map((l) => (
+                            <Paper
+                                key={l.action_id}
+                                sx={{
+                                    p: 2,
+                                    mb: 2,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    backgroundColor: l.isAcknowledged ? 'action.selected' : 'background.paper'
+                                }}
+                            >
+                                {/* Warning icon */}
+                                <Box sx={{mr: 2}}>
+                                    <Warning
+                                        color={
+                                            l.status === "HIGH"
+                                                ? "error"
+                                                : l.status === "MEDIUM"
+                                                    ? "warning"
+                                                    : "disabled"
+                                        }
+                                        fontSize="medium"
+                                    />
+                                </Box>
+
+                                <Box sx={{flexGrow: 1}}>
+                                    <Typography variant="subtitle2">
+                                        {l.description || `Alarm ${l.action_id}`}
+                                    </Typography>
+                                    <Typography variant="caption" color="text.secondary">
+                                        {new Date(l.created_at).toLocaleString()} • {l.type === 'AUTO' ? 'Automatyczny' : 'Ręczny'}
+                                    </Typography>
+                                </Box>
+
+                                <Checkbox
+                                    checked={l.isAcknowledged}
+                                    onChange={(e) => handleAcknowledge(l.action_id, e.target.checked)}
+                                    color="primary"
+                                    inputProps={{'aria-label': 'Potwierdź alarm'}}
+                                />
+                            </Paper>
+                        ))}
+                    </Paper>
+                </Grid>
+            </Grid>
+
         </Container>
     );
 };

@@ -58,6 +58,7 @@ import {format} from "date-fns";
 import {pl} from "date-fns/locale";
 import RulesTab from "../../tabs/rulesTab.jsx";
 import RulesTabLR from "../../tabs/rulesTabLR.jsx";
+import RoomEditDialog from "./roomEditDialog.jsx";
 
 
 const StatusCard = styled(Card)(({theme}) => ({
@@ -94,13 +95,12 @@ const RoomPage = () => {
     const params = useParams();
     const navigate = useNavigate()
 
-    // Mock device data
     const [devices, setDevices] = useState([]);
     const [sensors, setSensors] = useState([]);
     const [alarms, setAlarms] = useState([]);
     const [rules, setRules] = useState([]);
+    const [openModal, setOpenModal] = useState(false);
 
-    // WebSocket setup
     const [ws, setWs] = useState(null);
 
     useEffect(() => {
@@ -201,6 +201,10 @@ const RoomPage = () => {
             console.error("Błąd podczas odświeżania danych:", error);
         }
     };
+
+    const handleSave = async () => {
+
+    }
 
 
     const energySensors = sensors.filter((s) => s.data_type === "ENERGY")
@@ -313,7 +317,7 @@ const RoomPage = () => {
                                                 }
                                             }}
                                         >
-                                            <EditOutlined fontSize="small"/>
+                                            <EditOutlined fontSize="small" onClick={()=> setOpenModal(!openModal)}/>
                                         </IconButton>
                                     </Tooltip>
                                 </Box>
@@ -363,7 +367,7 @@ const RoomPage = () => {
                         scrollButtons="auto"
                         allowScrollButtonsMobile
                     >
-                        <Tab label="Ogólne" icon={<Sensors/>}/>
+                        <Tab label="Czuniki" icon={<Sensors/>}/>
                         <Tab label="Urządzenia" icon={<Lightbulb/>}/>
                         <Tab label="Alarmy" icon={<Warning/>}/>
                         <Tab label="Zasady" icon={<EventNote/>}/>
@@ -550,7 +554,7 @@ const RoomPage = () => {
                 )}
 
                 {activeTab === 3 && (
-                    <RulesTabLR rules={rules} setRules={setRules} devices={devices} rooms={[room]} type={"room"}/>
+                    <RulesTabLR rules={rules} sensors={sensors} setRules={setRules} devices={devices} rooms={[room]} type={"room"}/>
                 )}
 
                 {activeTab === 4 && (
@@ -566,6 +570,8 @@ const RoomPage = () => {
                     </Box>
                 )}
             </Box>
+
+            <RoomEditDialog room={room} onClose={()=> setOpenModal(!openModal)} open={openModal} homes={[]} floors={[]} onSave={handleSave}/>
         </Container>
     );
 };

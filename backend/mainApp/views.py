@@ -1,10 +1,11 @@
 import io
 import json
 from datetime import datetime, timedelta
-
+from django.db.models import Subquery, Q
 import pandas as pd
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth import get_user_model
+from django.db.models import Subquery
 from django.http import JsonResponse, HttpResponse
 from django.core.cache import cache
 from django.utils import timezone
@@ -195,13 +196,37 @@ class HomeData(APIView):
         rooms = Room.objects.filter(home=home, floor=floor)
         alarms = Action.objects.filter(device__location=home).order_by("-created_at")
         measurements = Measurement.objects.filter(sensor__device__location=home).order_by("-created_at")
+        devices = Device.objects.filter(location=home)
+        sensors = Sensor.objects.filter(device__location=home)
+
+        sensor_rule_ids = (
+            Rule.objects.filter(sensors__in=sensors)
+            .values('id')
+            .distinct()
+            .order_by("-created_at")
+        )
+
+        query1 = Rule.objects.filter(id__in=Subquery(sensor_rule_ids))
+        query2 = Rule.objects.filter(devices__in=devices) if devices else Rule.objects.none()
+        query3 = Rule.objects.filter(rooms__in=rooms) if rooms else Rule.objects.none()
+        query4 = Rule.objects.filter(locations=home) if home else Rule.objects.none()
+
+        rules = (
+            query1.union(query2, query3, query4)
+            .order_by("-created_at")
+        )
 
         roomsSerializer = RoomSerializer(rooms, many=True)
         serializer = HomeSerializer(home)
         alarmSerializer = ActionSerializer(alarms, many=True)
         measurementSerializer = MeasurementSerializer(measurements, many=True)
+        deviceSerializer = DeviceSerializer(devices, many=True)
+        sensorSerializer = SensorSerializer(sensors, many=True)
+        ruleSerializer = RuleSerializer(rules, many=True)
         return Response({"homeData": serializer.data, "roomsData": roomsSerializer.data,
-                         "alarmsData": alarmSerializer.data, 'measurementsData': measurementSerializer.data},
+                         "alarmsData": alarmSerializer.data, 'measurementsData': measurementSerializer.data,
+                         "devicesData": deviceSerializer.data, "sensorsData": sensorSerializer.data,
+                         "rulesData": ruleSerializer.data},
                         status=status.HTTP_200_OK)
 
     def put(self, request, home_id):
@@ -219,7 +244,6 @@ class HomeData(APIView):
         if 'archive' in request.data:
             home.isArchived = not home.isArchived
 
-        print(request.data)
         home.lat = request.data['lat']
         home.lng = request.data['lng']
         home.name = request.data['name']
@@ -292,7 +316,22 @@ class RoomData(APIView):
         room = Room.objects.get(room_id=room_id)
         devices = Device.objects.filter(room=room)
         sensors = Sensor.objects.filter(room=room)
-        rules = Rule.objects.filter(rooms=room)
+
+        sensor_rule_ids = (
+            Rule.objects.filter(sensors__in=sensors)
+            .values('id')
+            .distinct()
+            .order_by("-created_at")
+        )
+
+        query1 = Rule.objects.filter(id__in=Subquery(sensor_rule_ids))
+        query2 = Rule.objects.filter(devices__in=devices) if devices else Rule.objects.none()
+        query3 = Rule.objects.filter(rooms=room)
+
+        rules = (
+            query1.union(query2, query3)
+            .order_by("-created_at")
+        )
 
         energySensors = sensors.filter(data_type="ENERGY")
         now = timezone.now()
@@ -344,6 +383,7 @@ class RoomData(APIView):
         serializer = RoomSerializer(room)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+
 class DeviceData(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
@@ -354,7 +394,12 @@ class DeviceData(APIView):
         floors = Floor.objects.filter(home__owner=request.user)
         locations = Home.objects.filter(owner=request.user)
         actions = Action.objects.filter(device=device).order_by("-created_at")[:100]
-        rules = Rule.objects.filter(sensors__in=sensors).order_by("-created_at")
+
+        distinct_ids = Rule.objects.filter(sensors__in=sensors).values('id').distinct().order_by("-created_at")
+        query1 = Rule.objects.filter(id__in=Subquery(distinct_ids.values('id')))
+        query2 = Rule.objects.filter(devices=device)
+        rules = query1.union(query2).order_by("-created_at")
+
         measurements = Measurement.objects.filter(sensor__in=sensors).order_by("-created_at")
 
         serializer = DeviceSerializer(device)
@@ -687,7 +732,7 @@ class RulesDataAPI(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request):
-        rules = Rule.objects.filter(owner=request.user)
+        rules = Rule.objects.filter(owner=request.user).order_by("-created_at")
         serializer = RuleSerializer(rules, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -707,18 +752,34 @@ class RuleDataAPI(APIView):
                                    value_high=newRule['value_high'], isRecurrent=newRule['isRecurrent'], recurrentTime=newRule['recurrentTime'],
                                    type=newRule['actionType'])
 
-        print(newRule['sensors'])
         if newRule['sensors']:
+            dev = []
             for i in newRule['sensors']:
                 rule.sensors.add(i['sensor_id'])
+                if i['device']['device_id'] not in dev:
+                    dev.append(i['device']['device_id'])
+
+            for idx in dev:
+                d = Device.objects.get(id=idx)
+                rule.devices.add(d)
+
         if newRule['locations']:
             rule.locations.add(newRule['locations'])
+
         if newRule['devices']:
-            rule.devices.add(newRule['devices'])
+            dev = []
+            for i in newRule['devices']:
+                rule.devices.add(i)
+
         if newRule['rooms']:
-            rule.rooms.add(newRule['rooms'])
+            dev = []
+            for i in newRule['rooms']:
+                rule.floors.add(i)
+
         if newRule['floors']:
-            rule.floors.add(newRule['floors'])
+            dev = []
+            for i in newRule['floors']:
+                rule.floors.add(i)
 
         serializer = RuleSerializer(rule)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -735,10 +796,25 @@ class MainAPI(APIView):
     def get(self, request):
         locations = Home.objects.filter(owner=request.user)
         measurements = Measurement.objects.filter(sensor__device__owner=request.user, sensor__data_type="ENERGY")
+        cur = locations.filter(current=True)[0]
+        alarms = Action.objects.filter(
+            device__location=cur,
+            status__in=["LOW", "MEDIUM", "HIGH"]
+        ).select_related(
+            'device'
+        ).order_by(
+            '-created_at'
+        )
+        alarmsSelected = alarms[:3]
+
         measurementSerializer = MeasurementSerializer(measurements, many=True)
         locationSerializer = HomeSerializer(locations, many=True)
+        actionSerializer = ActionSerializer(alarms, many=True)
+        alarmsSelectedSerializer = ActionSerializer(alarmsSelected, many=True)
         return Response({"measurementsData": measurementSerializer.data,
-                              "locationsData": locationSerializer.data}, status=status.HTTP_200_OK)
+                              "locationsData": locationSerializer.data,
+                              "actionsData": actionSerializer.data,
+                              "lastAlarms": alarmsSelectedSerializer.data}, status=status.HTTP_200_OK)
 
 
 class ChartsDataAPI(APIView):

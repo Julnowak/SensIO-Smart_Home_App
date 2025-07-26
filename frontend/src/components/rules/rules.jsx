@@ -30,7 +30,7 @@ import {
     TableContainer,
     TableHead,
     TableRow,
-    TablePagination
+    TablePagination, List, ListItem
 } from '@mui/material';
 import {
     AddCircleOutline,
@@ -42,7 +42,7 @@ import {
     AccessTime,
     WorkHistory,
     Info,
-    InfoOutline
+    InfoOutline, ExpandMore
 } from '@mui/icons-material';
 import {LocalizationProvider, DateTimePicker} from '@mui/x-date-pickers';
 import {AdapterDateFns} from '@mui/x-date-pickers/AdapterDateFns';
@@ -55,6 +55,7 @@ const Rules = () => {
     const [activeTab, setActiveTab] = useState(0);
     const [rules, setRules] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [rule, setRule] = useState(null);
     const token = localStorage.getItem("access");
     const [openDialog, setOpenDialog] = useState(false);
     const [currentRule, setCurrentRule] = useState({
@@ -97,29 +98,6 @@ const Rules = () => {
     const activeRules = rules.filter((r) => r.isActive);
     const inactiveRules = rules.filter((r) => !r.isActive);
     const navigate = useNavigate()
-    const [locations, setLocations] = useState([
-        {id: 1, name: 'Dom główny'},
-        {id: 2, name: 'Biurowiec'}
-    ]);
-
-    const [rooms, setRooms] = useState([
-        {id: 1, name: 'Salon'},
-        {id: 2, name: 'Kuchnia'},
-        {id: 3, name: 'Sypialnia'}
-    ]);
-
-    const [floors, setFloors] = useState([
-        {id: 1, name: 'Parter'},
-        {id: 2, name: 'Pierwsze piętro'}
-    ]);
-
-    const recurrenceTypes = [
-        {value: '1', label: 'Godzinowo'},
-        {value: '2', label: 'Dziennie'},
-        {value: '3', label: 'Tygodniowo'},
-        {value: '4', label: 'Miesięcznie'},
-        {value: '5', label: 'Rocznie'}
-    ];
 
     const handleTabChange = (event, newValue) => {
         setActiveTab(newValue);
@@ -135,60 +113,113 @@ const Rules = () => {
         setPage(0);
     };
 
-    const handleInputChange = (e) => {
-        const {name, value} = e.target;
-        setCurrentRule(prev => ({...prev, [name]: value}));
-    };
+    // const handleInputChange = (e) => {
+    //     const {name, value} = e.target;
+    //     setCurrentRule(prev => ({...prev, [name]: value}));
+    // };
+    //
+    // const handleCheckboxChange = (e) => {
+    //     const {name, checked} = e.target;
+    //     setCurrentRule(prev => ({...prev, [name]: checked}));
+    // };
+    //
+    // const handleDateChange = (name, value) => {
+    //     setCurrentRule(prev => ({...prev, [name]: value}));
+    // };
 
-    const handleCheckboxChange = (e) => {
-        const {name, checked} = e.target;
-        setCurrentRule(prev => ({...prev, [name]: checked}));
-    };
+      const [editedRule, setEditedRule] = useState({
+    name: '',
+    type: 'LIMIT',
+    locations: [],
+    rooms: [],
+    floors: [],
+    devices: [],
+    sensors: [],
+    start_date: new Date(),
+    end_date: null,
+    value_low: '',
+    value_high: '',
+    isRecurrent: false,
+    isActive: true,
+    recurrentTime: ''
+  });
 
-    const handleDateChange = (name, value) => {
-        setCurrentRule(prev => ({...prev, [name]: value}));
-    };
+  const RECURRENCY_TYPES = [
+    { value: "1", label: "godzinowo" },
+    { value: "2", label: "dziennie" },
+    { value: "3", label: "tygodniowo" },
+    { value: "4", label: "miesięcznie" },
+    { value: "5", label: "rocznie" }
+  ];
 
-    const handleSelectChange = (e) => {
-        const {name, value} = e.target;
-        setCurrentRule(prev => ({...prev, [name]: value}));
-    };
+  const DATA_TYPES = [
+    { value: "ON/OFF", label: "włącz/wyłącz" },
+    { value: "LIMIT", label: "limity" },
+    { value: "SET", label: "ustawienie" }
+  ];
 
-    const toggleLocation = (location) => {
-        setCurrentRule(prev => {
-            const isSelected = prev.locations.some(l => l.id === location.id);
-            return {
-                ...prev,
-                locations: isSelected
-                    ? prev.locations.filter(l => l.id !== location.id)
-                    : [...prev.locations, location]
-            };
-        });
-    };
+  // Initialize form with rule data
+  useEffect(() => {
+    if (rule) {
+      setEditedRule({
+        name: rule.name || '',
+        type: rule.type || 'LIMIT',
+        locations: rule.locations.all() || [],
+        rooms: rule.rooms.all() || [],
+        floors: rule.floors.all() || [],
+        devices: rule.devices.all() || [],
+        sensors: rule.sensors.all() || [],
+        start_date: new Date(rule.start_date) || new Date(),
+        end_date: rule.end_date ? new Date(rule.end_date) : null,
+        value_low: rule.value_low || '',
+        value_high: rule.value_high || '',
+        isRecurrent: rule.isRecurrent || false,
+        isActive: rule.isActive !== false,
+        recurrentTime: rule.recurrentTime || ''
+      });
+    } else {
+      // Reset to defaults for new rule
+      setEditedRule({
+        name: '',
+        type: 'LIMIT',
+        locations: [],
+        rooms: [],
+        floors: [],
+        devices: [],
+        sensors: [],
+        start_date: new Date(),
+        end_date: null,
+        value_low: '',
+        value_high: '',
+        isRecurrent: false,
+        isActive: true,
+        recurrentTime: ''
+      });
+    }
+  }, [rule]);
 
-    const toggleRoom = (room) => {
-        setCurrentRule(prev => {
-            const isSelected = prev.rooms.some(r => r.id === room.id);
-            return {
-                ...prev,
-                rooms: isSelected
-                    ? prev.rooms.filter(r => r.id !== room.id)
-                    : [...prev.rooms, room]
-            };
-        });
-    };
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setEditedRule(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  };
 
-    const toggleFloor = (floor) => {
-        setCurrentRule(prev => {
-            const isSelected = prev.floors.some(f => f.id === floor.id);
-            return {
-                ...prev,
-                floors: isSelected
-                    ? prev.floors.filter(f => f.id !== floor.id)
-                    : [...prev.floors, floor]
-            };
-        });
-    };
+  const handleDateChange = (name, date) => {
+    setEditedRule(prev => ({
+      ...prev,
+      [name]: date
+    }));
+  };
+
+  const handleMultiSelectChange = (name, newValue) => {
+    setEditedRule(prev => ({
+      ...prev,
+      [name]: newValue
+    }));
+  };
+
 
     const recurrencyTypes = [
         {value: '1', label: 'Co godzinę'},
@@ -207,6 +238,10 @@ const Rules = () => {
         }
         setOpenDialog(false);
         resetForm();
+    };
+
+    const onClose = () => {
+
     };
 
     const resetForm = () => {
@@ -235,6 +270,53 @@ const Rules = () => {
 
     const currentRules = activeTab === 0 ? activeRules : inactiveRules;
     const emptyRows = rowsPerPage - Math.min(rowsPerPage, currentRules.length - page * rowsPerPage);
+
+    const [openDialogMore, setOpenDialogMore] = useState(false);
+
+    // Połącz wszystkie elementy w jedną tablicę z typem
+    const allItems = (rule) => [
+        ...rule.sensors.map(s => ({...s, type: 'sensor'})),
+        ...rule.devices.map(d => ({...d, type: 'device'})),
+        ...rule.locations.map(l => ({...l, type: 'location'})),
+        ...rule.rooms.map(r => ({...r, type: 'room'})),
+        ...rule.floors.map(f => ({...f, type: 'floor'}))
+    ];
+
+    const renderChip = (item) => {
+        const commonProps = {
+            key: item.id || item.sensor_id || item.device_id,
+            size: "small",
+            variant: "outlined",
+            sx: {margin: '2px'}
+        };
+
+        switch (item.type) {
+            case 'sensor':
+                return (
+                    <Chip
+                        {...commonProps}
+                        label={item.name}
+                        onClick={() => navigate(`/sensor/${item.sensor_id}`)}
+                    />
+                );
+            case 'device':
+                return (
+                    <Chip
+                        {...commonProps}
+                        label={item.name}
+                        onClick={() => navigate(`/device/${item.device_id}`)}
+                    />
+                );
+            case 'location':
+                return <Chip {...commonProps} label={item.name}/>;
+            case 'room':
+                return <Chip {...commonProps} label={item.name} color="primary"/>;
+            case 'floor':
+                return <Chip {...commonProps} label={item.name} color="secondary"/>;
+            default:
+                return null;
+        }
+    };
 
     return (
         <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={pl}>
@@ -330,13 +412,13 @@ const Rules = () => {
                                                                     <>
                                                                         <Typography variant="body2">
                                                                             {rule.type === "LIMIT" && "Od: "}
-                                                                            {new Date(rule.start_date).toLocaleString()}
+                                                                            {rule.start_date? new Date(rule.start_date).toLocaleString(): "---"}
                                                                         </Typography>
 
                                                                         {rule.type === "LIMIT" && rule.end_date && (
                                                                             <Typography variant="body2">
                                                                                 {rule.type === "LIMIT" && "Do: "}
-                                                                                {new Date(rule.end_date).toLocaleString()}
+                                                                                {rule.end_date?new Date(rule.end_date).toLocaleString(): "---"}
                                                                             </Typography>
                                                                         )}
                                                                     </>
@@ -356,24 +438,46 @@ const Rules = () => {
                                                     </TableCell>
 
                                                     <TableCell>
-                                                        <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 0.5}}>
-                                                            {rule.locations.map(location => (
-                                                                <Chip key={location.id} label={location.name}
-                                                                      size="small"/>
-                                                            ))}
-                                                            {rule.floors.map(floor => (
-                                                                <Chip key={floor.id} label={floor.name} size="small"
-                                                                      color="secondary"/>
-                                                            ))}
-                                                            {rule.rooms.map(room => (
-                                                                <Chip key={room.id} label={room.name} size="small"
-                                                                      color="primary"/>
-                                                            ))}
-                                                            {rule.sensors.map(sensor => (
-                                                                <Chip key={sensor.sensor_id} label={sensor.visibleName} onClick={()=> navigate(`/sensor/${sensor.sensor_id}`)} size="small"
-                                                                      color="primary" variant="outlined"/>
-                                                            ))}
-                                                        </Box>
+                                                        <Box sx={{display: 'flex', flexWrap: 'wrap', alignItems: 'center'}}>
+                                                {allItems(rule).slice(0, 2).map(item => renderChip(item))}
+
+                                                {/* Jeśli jest więcej niż 2 elementy, pokaż przycisk "więcej" */}
+                                                {allItems(rule).length > 2 && (
+                                                    <>
+                                                        <Button
+                                                            size="small"
+
+                                                            startIcon={<ExpandMore/>}
+                                                            onClick={() => setOpenDialogMore(true)}
+                                                            sx={{minWidth: 0, padding: '4px'}}
+                                                        >
+                                                            +{allItems(rule).length - 2}
+                                                        </Button>
+
+                                                        <Dialog open={openDialogMore}
+                                                                onClose={() => setOpenDialogMore(false)} maxWidth="sm"
+                                                                fullWidth>
+                                                            <DialogTitle>Wszystkie powiązane elementy</DialogTitle>
+                                                            <DialogContent>
+                                                                <List>
+                                                                    {allItems(rule).map((item) => (
+                                                                        <ListItem
+                                                                            key={item.id || item.sensor_id || item.device_id}>
+                                                                            <Chip onClick={()=> navigate(`/sensor/${item.sensor_id}`)}
+                                                                                label={item.visibleName || item.name}
+                                                                            />
+                                                                        </ListItem>
+                                                                    ))}
+                                                                </List>
+                                                            </DialogContent>
+                                                            <DialogActions>
+                                                                <Button
+                                                                    onClick={() => setOpenDialogMore(false)}>Zamknij</Button>
+                                                            </DialogActions>
+                                                        </Dialog>
+                                                    </>
+                                                )}
+                                            </Box>
                                                     </TableCell>
                                                     <TableCell align="right">
                                                         <IconButton onClick={() => editRule(rule)}>
@@ -429,151 +533,198 @@ const Rules = () => {
 
                 <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="md" fullWidth>
                     <DialogTitle>
-                        {currentRule.id ? 'Edytuj zasadę' : 'Dodaj nową zasadę'}
-                    </DialogTitle>
-                    <DialogContent dividers>
-                        <Grid container spacing={3}>
-                            <Grid item xs={12}>
-                                <TextField
-                                    fullWidth
-                                    label="Nazwa zasady"
-                                    name="name"
-                                    value={currentRule.name}
-                                    onChange={handleInputChange}
-                                    required
-                                />
-                            </Grid>
+          {rule ? `Edytuj regułę ${rule.id}` : 'Dodaj nową regułę'}
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: 2 }}>
+            <TextField
+              fullWidth
+              label="Nazwa reguły"
+              name="name"
+              value={editedRule.name}
+              onChange={handleChange}
+              required
+            />
 
-                            <Grid item xs={12} md={6}>
-                                <Typography variant="subtitle1" sx={{mb: 1}}>
-                                    Lokalizacje
-                                </Typography>
-                                <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 1}}>
-                                    {locations.map(location => (
-                                        <Chip
-                                            key={location.id}
-                                            label={location.name}
-                                            onClick={() => toggleLocation(location)}
-                                            color={currentRule.locations.some(l => l.id === location.id) ? 'primary' : 'default'}
-                                            variant="outlined"
-                                        />
-                                    ))}
-                                </Box>
-                            </Grid>
+            <FormControl fullWidth>
+              <InputLabel>Typ reguły</InputLabel>
+              <Select
+                name="type"
+                value={editedRule.type}
+                onChange={handleChange}
+                label="Typ reguły"
+                required
+              >
+                {DATA_TYPES.map(type => (
+                  <MenuItem key={type.value} value={type.value}>
+                    {type.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
 
-                            <Grid item xs={12} md={6}>
-                                <Typography variant="subtitle1" sx={{mb: 1}}>
-                                    Piętra
-                                </Typography>
-                                <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 1}}>
-                                    {floors.map(floor => (
-                                        <Chip
-                                            key={floor.id}
-                                            label={floor.name}
-                                            onClick={() => toggleFloor(floor)}
-                                            color={currentRule.floors.some(f => f.id === floor.id) ? 'primary' : 'default'}
-                                            variant="outlined"
-                                        />
-                                    ))}
-                                </Box>
-                            </Grid>
+            <Divider sx={{ my: 2 }} />
 
-                            <Grid item xs={12}>
-                                <Typography variant="subtitle1" sx={{mb: 1}}>
-                                    Pomieszczenia
-                                </Typography>
-                                <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 1}}>
-                                    {rooms.map(room => (
-                                        <Chip
-                                            key={room.id}
-                                            label={room.name}
-                                            onClick={() => toggleRoom(room)}
-                                            color={currentRule.rooms.some(r => r.id === room.id) ? 'primary' : 'default'}
-                                            variant="outlined"
-                                        />
-                                    ))}
-                                </Box>
-                            </Grid>
+            <Typography variant="subtitle1">Obiekty:</Typography>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+              {/*<Autocomplete*/}
+              {/*  multiple*/}
+              {/*  options={homes}*/}
+              {/*  getOptionLabel={(option) => option.name}*/}
+              {/*  value={editedRule.locations}*/}
+              {/*  onChange={(e, newValue) => handleMultiSelectChange('locations', newValue)}*/}
+              {/*  renderInput={(params) => (*/}
+              {/*    <TextField {...params} label="Lokalizacje" placeholder="Wybierz lokalizacje" />*/}
+              {/*  )}*/}
+              {/*  sx={{ minWidth: 200, flexGrow: 1 }}*/}
+              {/*/>*/}
 
-                            <Grid item xs={12} md={6}>
-                                <DateTimePicker
-                                    label="Data rozpoczęcia"
-                                    value={new Date(currentRule.start_date)}
-                                    onChange={(date) => handleDateChange('start_date', date)}
-                                    renderInput={(params) => <TextField {...params} fullWidth/>}
-                                />
-                            </Grid>
+              {/*<Autocomplete*/}
+              {/*  multiple*/}
+              {/*  options={rooms}*/}
+              {/*  getOptionLabel={(option) => option.name}*/}
+              {/*  value={editedRule.rooms}*/}
+              {/*  onChange={(e, newValue) => handleMultiSelectChange('rooms', newValue)}*/}
+              {/*  renderInput={(params) => (*/}
+              {/*    <TextField {...params} label="Pokoje" placeholder="Wybierz pokoje" />*/}
+              {/*  )}*/}
+              {/*  sx={{ minWidth: 200, flexGrow: 1 }}*/}
+              {/*/>*/}
 
-                            <Grid item xs={12} md={6}>
-                                <DateTimePicker
-                                    label="Data zakończenia (opcjonalnie)"
-                                    value={new Date(currentRule.end_date)}
-                                    onChange={(date) => handleDateChange('end_date', date)}
-                                    renderInput={(params) => <TextField {...params} fullWidth/>}
-                                />
-                            </Grid>
+              {/*<Autocomplete*/}
+              {/*  multiple*/}
+              {/*  options={floors}*/}
+              {/*  getOptionLabel={(option) => option.name}*/}
+              {/*  value={editedRule.floors}*/}
+              {/*  onChange={(e, newValue) => handleMultiSelectChange('floors', newValue)}*/}
+              {/*  renderInput={(params) => (*/}
+              {/*    <TextField {...params} label="Piętra" placeholder="Wybierz piętra" />*/}
+              {/*  )}*/}
+              {/*  sx={{ minWidth: 200, flexGrow: 1 }}*/}
+              {/*/>*/}
+            </Box>
 
-                            <Grid item xs={12} md={6}>
-                                <TextField
-                                    fullWidth
-                                    label="Wartość minimalna (opcjonalnie)"
-                                    name="value_low"
-                                    value={currentRule.value_low}
-                                    onChange={handleInputChange}
-                                />
-                            </Grid>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+              {/*<Autocomplete*/}
+              {/*  multiple*/}
+              {/*  options={devices}*/}
+              {/*  getOptionLabel={(option) => option.name}*/}
+              {/*  value={editedRule.devices}*/}
+              {/*  onChange={(e, newValue) => handleMultiSelectChange('devices', newValue)}*/}
+              {/*  renderInput={(params) => (*/}
+              {/*    <TextField {...params} label="Urządzenia" placeholder="Wybierz urządzenia" />*/}
+              {/*  )}*/}
+              {/*  sx={{ minWidth: 200, flexGrow: 1 }}*/}
+              {/*/>*/}
 
-                            <Grid item xs={12} md={6}>
-                                <TextField
-                                    fullWidth
-                                    label="Wartość maksymalna (opcjonalnie)"
-                                    name="value_high"
-                                    value={currentRule.value_high}
-                                    onChange={handleInputChange}
-                                />
-                            </Grid>
+              {/*<Autocomplete*/}
+              {/*  multiple*/}
+              {/*  options={sensors}*/}
+              {/*  getOptionLabel={(option) => option.name}*/}
+              {/*  value={editedRule.sensors}*/}
+              {/*  onChange={(e, newValue) => handleMultiSelectChange('sensors', newValue)}*/}
+              {/*  renderInput={(params) => (*/}
+              {/*    <TextField {...params} label="Czujniki" placeholder="Wybierz czujniki" />*/}
+              {/*  )}*/}
+              {/*  sx={{ minWidth: 200, flexGrow: 1 }}*/}
+              {/*/>*/}
+            </Box>
 
-                            <Grid item xs={12}>
-                                <FormControlLabel
-                                    control={
-                                        <Switch
-                                            name="isRecurrent"
-                                            checked={currentRule.isRecurrent}
-                                            onChange={handleCheckboxChange}
-                                        />
-                                    }
-                                    label="Zasada cykliczna"
-                                />
-                            </Grid>
+            <Divider sx={{ my: 2 }} />
 
-                            {currentRule.isRecurrent && (
-                                <Grid item xs={12}>
-                                    <FormControl fullWidth>
-                                        <InputLabel>Częstotliwość</InputLabel>
-                                        <Select
-                                            name="recurrentTime"
-                                            value={currentRule.recurrentTime}
-                                            label="Częstotliwość"
-                                            onChange={handleSelectChange}
-                                            required
-                                        >
-                                            {recurrenceTypes.map(type => (
-                                                <MenuItem key={type.value} value={type.value}>
-                                                    {type.label}
-                                                </MenuItem>
-                                            ))}
-                                        </Select>
-                                    </FormControl>
-                                </Grid>
-                            )}
-                        </Grid>
-                    </DialogContent>
-                    <DialogActions>
-                        <Button onClick={() => setOpenDialog(false)}>Anuluj</Button>
-                        <Button onClick={handleSubmit} variant="contained">
-                            {currentRule.id ? 'Zapisz zmiany' : 'Dodaj zasadę'}
-                        </Button>
-                    </DialogActions>
+            <Typography variant="subtitle1">Okres obowiązywania:</Typography>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <DateTimePicker
+                label="Data rozpoczęcia"
+                value={editedRule.start_date}
+                onChange={(date) => handleDateChange('start_date', date)}
+                renderInput={(params) => <TextField {...params} fullWidth />}
+              />
+
+              <DateTimePicker
+                label="Data zakończenia (opcjonalnie)"
+                value={editedRule.end_date}
+                onChange={(date) => handleDateChange('end_date', date)}
+                renderInput={(params) => <TextField {...params} fullWidth />}
+              />
+            </Box>
+
+            <Divider sx={{ my: 2 }} />
+
+            <Typography variant="subtitle1">Wartości:</Typography>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <TextField
+                fullWidth
+                label={editedRule.type === 'SET' ? 'Wartość' : 'Wartość minimalna'}
+                name="value_low"
+                value={editedRule.value_low}
+                onChange={handleChange}
+                required={editedRule.type !== 'ON/OFF'}
+              />
+
+              {editedRule.type === 'LIMIT' && (
+                <TextField
+                  fullWidth
+                  label="Wartość maksymalna"
+                  name="value_high"
+                  value={editedRule.value_high}
+                  onChange={handleChange}
+                />
+              )}
+            </Box>
+
+            <Divider sx={{ my: 2 }} />
+
+            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    name="isRecurrent"
+                    checked={editedRule.isRecurrent}
+                    onChange={handleChange}
+                  />
+                }
+                label="Reguła cykliczna"
+              />
+
+              <FormControlLabel
+                control={
+                  <Switch
+                    name="isActive"
+                    checked={editedRule.isActive}
+                    onChange={handleChange}
+                  />
+                }
+                label="Reguła aktywna"
+              />
+            </Box>
+
+            {editedRule.isRecurrent && (
+              <FormControl fullWidth>
+                <InputLabel>Częstotliwość</InputLabel>
+                <Select
+                  name="recurrentTime"
+                  value={editedRule.recurrentTime}
+                  onChange={handleChange}
+                  label="Częstotliwość"
+                  required={editedRule.isRecurrent}
+                >
+                  {RECURRENCY_TYPES.map(type => (
+                    <MenuItem key={type.value} value={type.value}>
+                      {type.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={onClose}>Anuluj</Button>
+          <Button onClick={handleSubmit} variant="contained" color="primary">
+            Zapisz regułę
+          </Button>
+        </DialogActions>
                 </Dialog>
             </Container>
         </LocalizationProvider>

@@ -214,7 +214,9 @@ class Measurement(models.Model):
     def __str__(self):
         return "Pomiar " + str(self.measurement_id)
 
+
 class Rule(models.Model):
+
     RECURRENCY_TYPES = [
         ("1", "godzinowo"),
         ("2", "dziennie"),
@@ -249,6 +251,7 @@ class Rule(models.Model):
 
     def __str__(self):
         return f"Reguła ID-{self.id}: {self.name}"
+
 
 class Action(models.Model):
     ACTION_TYPES = [
