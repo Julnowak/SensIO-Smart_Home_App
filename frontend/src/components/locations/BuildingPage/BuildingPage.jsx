@@ -55,6 +55,7 @@ import AlarmsTab from "../../tabs/alarmsTab.jsx";
 import {lightGreen} from "@mui/material/colors";
 import CalendarChart from "../heatmap.jsx";
 import RulesTabLR from "../../tabs/rulesTabLR.jsx";
+import BuildingCharts from "./buildingCharts.jsx";
 
 
 const InfoItem = ({icon, label, value}) => (
@@ -643,6 +644,7 @@ const BuildingPage = () => {
             <Box>
                 <Grid size={{sx: 12}}>
                     <CalendarChart measurements={measurements}/>
+                    <BuildingCharts/>
                 </Grid>
             </Box>
         )}

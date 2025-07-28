@@ -6,7 +6,7 @@ const client = axios.create({
   headers: {
     "Content-Type": "application/json",
     "Accept": "application/json",
-    "ngrok-skip-browser-warning": "true" // Always include for ngrok
+    // "ngrok-skip-browser-warning": "true" // Always include for ngrok
   }
 });
 

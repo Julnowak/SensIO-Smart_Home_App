@@ -1,6 +1,9 @@
 import io
 import json
+import math
 from datetime import datetime, timedelta
+
+import numpy as np
 from django.db.models import Subquery, Q
 import pandas as pd
 from django.contrib.auth import authenticate, login, logout
@@ -614,6 +617,11 @@ class SensorDataAPI(APIView):
         serializer = SensorSerializer(sensor)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    def delete(self, request, sensor_id):
+        sensor = Sensor.objects.get(sensor_id=sensor_id)
+        sensor.delete()
+        return Response(status=status.HTTP_200_OK)
+
 
 class LayoutHandler(APIView):
     permission_classes = (permissions.IsAuthenticated,)
@@ -796,7 +804,11 @@ class MainAPI(APIView):
     def get(self, request):
         locations = Home.objects.filter(owner=request.user)
         measurements = Measurement.objects.filter(sensor__device__owner=request.user, sensor__data_type="ENERGY")
-        cur = locations.filter(current=True)[0]
+        if "cur" in request.GET:
+            cur = locations.get(home_id=request.GET["cur"])
+        else:
+            cur = locations.filter(current=True)[0]
+
         alarms = Action.objects.filter(
             device__location=cur,
             status__in=["LOW", "MEDIUM", "HIGH"]
@@ -805,8 +817,36 @@ class MainAPI(APIView):
         ).order_by(
             '-created_at'
         )
-        alarmsSelected = alarms[:3]
+        alarmsSelected = alarms[:4]
 
+        temp_values = list(measurements.filter(sensor__data_type="TEMPERATURE").values_list("value", flat=True))
+        temp_mean = float(np.mean(temp_values)) if temp_values else None
+
+        energy_values = list(
+            measurements.filter(sensor__data_type="ENERGY", created_at__day=datetime.now().day).values_list("value", flat=True))
+        energy_today = float(sum(energy_values)) if energy_values else 0.0
+
+        alarm_count = alarms.count()
+        alarm_all = f"{alarms.filter(isAcknowledged=True).count()} / {alarm_count}"
+
+        sensors = Sensor.objects.filter(device__location=cur, data_type="LIGHT")
+        sensor_count = sensors.count()
+        sensors_on = sensors.filter(room__light=True).count()
+        lights = f"{sensors_on} / {sensor_count}"
+
+        if temp_mean is None:
+            temp_val = None
+        elif isinstance(temp_mean, (float, int)) and not math.isnan(temp_mean):
+            temp_val = round(temp_mean, 2)
+        else:
+            temp_val = None
+
+        data = {
+            "temp": temp_val,
+            "energy": round(energy_today, 2),
+            "light": lights,
+            "alarms": alarm_all
+        }
         measurementSerializer = MeasurementSerializer(measurements, many=True)
         locationSerializer = HomeSerializer(locations, many=True)
         actionSerializer = ActionSerializer(alarms, many=True)
@@ -814,7 +854,8 @@ class MainAPI(APIView):
         return Response({"measurementsData": measurementSerializer.data,
                               "locationsData": locationSerializer.data,
                               "actionsData": actionSerializer.data,
-                              "lastAlarms": alarmsSelectedSerializer.data}, status=status.HTTP_200_OK)
+                              "lastAlarms": alarmsSelectedSerializer.data,
+                              "info": data }, status=status.HTTP_200_OK)
 
 
 class ChartsDataAPI(APIView):

@@ -107,10 +107,6 @@ const AlarmsTab = ({alarms, setAlarms, loading, type}) => {
                     </Typography>
                 </Box>) : (
                 <>
-                    <Box sx={{mt:2, mb:2}}>
-                        Wyświetlane jest 100 ostatnich wyników. <Link onClick={()=> navigate('/history')} > Zobacz więcej...</Link>
-                    </Box>
-
                     <TableContainer component={Paper}  sx={{border: "1px solid #00000020", mt:1}}>
                         <Table>
                             <TableHead>
@@ -125,7 +121,7 @@ const AlarmsTab = ({alarms, setAlarms, loading, type}) => {
                             </TableHead>
                             <TableBody>
                                 {loading ? (<TableRow>
-                                    <TableCell colSpan={3}>
+                                    <TableCell colSpan={6}>
                                         <Skeleton height={40}/>
                                     </TableCell>
                                 </TableRow>) : alarms.length > 0 ? (alarms

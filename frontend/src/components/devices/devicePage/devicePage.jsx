@@ -72,6 +72,7 @@ import AlarmsTab from "../../tabs/alarmsTab.jsx";
 import {BarChart, LineChart, PieChart} from "@mui/x-charts";
 import RulesTab from "../../tabs/rulesTab.jsx";
 import LightUsageChart from "../lightChart.jsx";
+import DeviceCharts from "./deviceCharts.jsx";
 
 const StyledCard = styled(Card)(({theme, s}) => ({
     transition: 'transform 0.3s, box-shadow 0.3s',
@@ -399,7 +400,6 @@ const DevicePage = () => {
                         boxShadow: '0px 4px 15px rgba(0, 0, 0, 0.1)'
                     }
                 }}>
-                    {/* Lewa sekcja - avatar i podstawowe informacje */}
                     <Box sx={{display: 'flex', gap: 3, flex: 1}}>
                         <Badge
                             anchorOrigin={{vertical: 'top', horizontal: 'left'}}
@@ -759,7 +759,7 @@ const DevicePage = () => {
                         {activeTab === 1 && (
                             <AlarmsTab loading={loading} alarms={alarms} setAlarms={setAlarms} type={"device"}/>)}
                         {activeTab === 2 && (<RulesTab rules={rules} setRules={setRules} devices={[device]} sensors={sensors}/>)}
-                        {activeTab === 3 && (<LightUsageChart measurements={measurements}/>)}
+                        {activeTab === 3 && (<DeviceCharts sensors={sensors} measurements={measurements}/>)}
 
                     </>
                 )}
@@ -927,7 +927,6 @@ const DevicePage = () => {
 
                         </Box>
 
-                        {/* Prawa kolumna - lokalizacja i typ */}
                         <Box>
                             <FormControl fullWidth margin="normal">
                                 <InputLabel>Lokalizacja</InputLabel>

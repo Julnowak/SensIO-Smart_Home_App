@@ -195,53 +195,53 @@ const NewDevice = () => {
                                 />
                             </Grid>
                             <Grid size={{xs: 6}}>
-                                    <TextField
-                                        label="Kolor"
-                                        value={color}
-                                        onClick={handleClick}
-                                        InputProps={{
-                                            readOnly: true,
-                                            endAdornment: (
-                                                <InputAdornment position="end">
-                                                    <IconButton onClick={handleClick} size="small">
-                                                        <div
-                                                            style={{
-                                                                width: 24,
-                                                                height: 24,
-                                                                borderRadius: '50%',
-                                                                backgroundColor: color,
-                                                                border: '1px solid #ccc',
-                                                                cursor: 'pointer'
-                                                            }}
-                                                        />
-                                                    </IconButton>
-                                                </InputAdornment>
-                                            ),
-                                        }}
-                                        fullWidth
-                                    />
+                                <TextField
+                                    label="Kolor"
+                                    value={color}
+                                    onClick={handleClick}
+                                    InputProps={{
+                                        readOnly: true,
+                                        endAdornment: (
+                                            <InputAdornment position="end">
+                                                <IconButton onClick={handleClick} size="small">
+                                                    <div
+                                                        style={{
+                                                            width: 24,
+                                                            height: 24,
+                                                            borderRadius: '50%',
+                                                            backgroundColor: color,
+                                                            border: '1px solid #ccc',
+                                                            cursor: 'pointer'
+                                                        }}
+                                                    />
+                                                </IconButton>
+                                            </InputAdornment>
+                                        ),
+                                    }}
+                                    fullWidth
+                                />
 
-                                    <Popover
-                                        open={Boolean(anchorEl)}
-                                        anchorEl={anchorEl}
-                                        onClose={handleClose}
-                                        anchorOrigin={{
-                                            vertical: 'bottom',
-                                            horizontal: 'left',
-                                        }}
-                                    >
-                                        <Box p={2}>
-                                            <SketchPicker
-                                                color={color}
-                                                onChangeComplete={handleChangeComplete}
-                                                presetColors={[
-                                                    '#FF0000', '#00FF00', '#0000FF',
-                                                    '#FFFF00', '#FF00FF', '#00FFFF',
-                                                    '#FFFFFF', '#000000', '#888888'
-                                                ]}
-                                            />
-                                        </Box>
-                                    </Popover>
+                                <Popover
+                                    open={Boolean(anchorEl)}
+                                    anchorEl={anchorEl}
+                                    onClose={handleClose}
+                                    anchorOrigin={{
+                                        vertical: 'bottom',
+                                        horizontal: 'left',
+                                    }}
+                                >
+                                    <Box p={2}>
+                                        <SketchPicker
+                                            color={color}
+                                            onChangeComplete={handleChangeComplete}
+                                            presetColors={[
+                                                '#FF0000', '#00FF00', '#0000FF',
+                                                '#FFFF00', '#FF00FF', '#00FFFF',
+                                                '#FFFFFF', '#000000', '#888888'
+                                            ]}
+                                        />
+                                    </Box>
+                                </Popover>
                             </Grid>
 
                             <Grid size={{xs: 6}}>
@@ -383,59 +383,59 @@ const NewDevice = () => {
                 </CardContent>
             </Card>
 
-    <Dialog
-      open={success}
-      onClose={()=> setSuccess(!success)}
-      aria-labelledby="loading-modal-title"
-      aria-describedby="loading-modal-description"
-      BackdropComponent={Backdrop}
-      BackdropProps={{
-        sx: {
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          backdropFilter: 'blur(3px)'
-        }
-      }}
-      PaperProps={{
-        sx: {
-          borderRadius: 3,
-          padding: 3,
-          minWidth: 300,
-          textAlign: 'center'
-        }
-      }}
-    >
-      <DialogContent>
-        <CircularProgress
-          size={60}
-          thickness={4}
-          sx={{
-            color: theme.palette.success.main,
-            mb: 2
-          }}
-        />
-        <DialogContentText
-          id="loading-modal-description"
-          sx={{
-            fontSize: '1.1rem',
-            color: theme.palette.text.primary,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 1
-          }}
-        >
-          <CheckCircle
-            fontSize="medium"
-            color="success"
-            sx={{
-              verticalAlign: 'middle',
-              mr: 1
-            }}
-          />
-          Urządzenie zostało dodane pomyślnie! Przekierowywanie...
-        </DialogContentText>
-      </DialogContent>
-    </Dialog>
+            <Dialog
+                open={success}
+                onClose={() => setSuccess(!success)}
+                aria-labelledby="loading-modal-title"
+                aria-describedby="loading-modal-description"
+                BackdropComponent={Backdrop}
+                BackdropProps={{
+                    sx: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                        backdropFilter: 'blur(3px)'
+                    }
+                }}
+                PaperProps={{
+                    sx: {
+                        borderRadius: 3,
+                        padding: 3,
+                        minWidth: 300,
+                        textAlign: 'center'
+                    }
+                }}
+            >
+                <DialogContent>
+                    <CircularProgress
+                        size={60}
+                        thickness={4}
+                        sx={{
+                            color: theme.palette.success.main,
+                            mb: 2
+                        }}
+                    />
+                    <DialogContentText
+                        id="loading-modal-description"
+                        sx={{
+                            fontSize: '1.1rem',
+                            color: theme.palette.text.primary,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 1
+                        }}
+                    >
+                        <CheckCircle
+                            fontSize="medium"
+                            color="success"
+                            sx={{
+                                verticalAlign: 'middle',
+                                mr: 1
+                            }}
+                        />
+                        Urządzenie zostało dodane pomyślnie! Przekierowywanie...
+                    </DialogContentText>
+                </DialogContent>
+            </Dialog>
         </Box>
     );
 };

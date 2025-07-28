@@ -80,6 +80,7 @@ const SensorPage = () => {
     const [alarms, setAlarms] = useState([]);
     const [rules, setRules] = useState([]);
     const [rooms, setRooms] = useState([]);
+
     const [loading, setLoading] = useState(true);
     const [open, setOpen] = useState(false);
     const [activeTab, setActiveTab] = useState('chart');
@@ -99,6 +100,7 @@ const SensorPage = () => {
             setAlarms(response.data.actionsData);
             setRules(response.data.rulesData);
             setRooms(response.data.roomsData);
+
         } catch (error) {
             console.error("Błąd podczas pobierania danych:", error);
         } finally {
@@ -473,7 +475,7 @@ const SensorPage = () => {
 
             {/* Table Tab */}
             {activeTab === 'table' && (
-                <AlarmsTab alarms={alarms} loading={loading} type={"sensor"} />
+                <AlarmsTab alarms={alarms} setAlarms={setAlarms} loading={loading} type={"sensor"} />
             )}
 
             {/* Rules Tab */}
